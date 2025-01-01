@@ -1,9 +1,0 @@
-DROP TABLE IF EXISTS answers;
-DROP TABLE IF EXISTS participants;
-DROP TABLE IF EXISTS options;
-DROP TABLE IF EXISTS entry_points;
-DROP TABLE IF EXISTS blocks;
-DROP TABLE IF EXISTS bots;
-
-DROP TYPE IF EXISTS block_type;
-DROP TYPE IF EXISTS bot_status;
