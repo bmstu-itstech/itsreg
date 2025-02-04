@@ -88,6 +88,7 @@ func (b *telegramBot) SendMessage(toUserID int64, text string, buttons []string)
 	} else {
 		msg.ReplyMarkup = tg.NewRemoveKeyboard(true)
 	}
+	msg.ParseMode = tg.ModeHTML
 
 	_, err := b.api.Send(msg)
 	if err != nil {
