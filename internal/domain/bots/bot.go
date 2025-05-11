@@ -17,14 +17,14 @@ type Bot struct {
 func NewBot(id BotId, token string, script Script) (Bot, error) {
 	if id == "" {
 		return Bot{}, NewInvalidInputError(
-			"invalid-bot-empty-id",
+			"invalid-bot",
 			"expected not empty bot id",
 		)
 	}
 
 	if token == "" {
 		return Bot{}, NewInvalidInputError(
-			"invalid-bot-empty-token",
+			"invalid-bot",
 			"expected not empty bot token",
 		)
 	}

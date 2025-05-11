@@ -5,10 +5,6 @@ import (
 	"fmt"
 )
 
-type State uint
-
-const ZeroState State = 0
-
 var ErrThreadNotStarted = errors.New("thread is not started")
 
 type EntryNotFoundError struct {

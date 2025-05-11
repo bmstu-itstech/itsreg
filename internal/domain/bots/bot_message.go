@@ -23,7 +23,7 @@ func NewBotMessage(text string, opts []Option) (BotMessage, error) {
 	for _, opt := range opts {
 		if opt == "" {
 			return BotMessage{}, NewInvalidInputError(
-				"invalid-bot-message-empty-option",
+				"invalid-bot-message",
 				"expected non-empty string options",
 			)
 		}

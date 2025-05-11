@@ -4,6 +4,10 @@ import (
 	"slices"
 )
 
+// State есть состояние в контексте FSM и уникальный номер узла
+// в пределах скрипта.
+type State uint
+
 // Node есть минимальная структурная единица Script.
 type Node struct {
 	state State        // Собственный State узла.
@@ -15,7 +19,7 @@ type Node struct {
 func NewNode(state State, edges []Edge, msgs []BotMessage) (Node, error) {
 	if len(msgs) == 0 {
 		return Node{}, NewInvalidInputError(
-			"invalid-node-empty-messages",
+			"invalid-node",
 			"expected at least one message in node",
 		)
 	}
@@ -38,7 +42,10 @@ func MustNewNode(state State, edges []Edge, msgs []BotMessage) Node {
 }
 
 func (n Node) IsZero() bool {
-	return n.state == ZeroState
+	// Конструктор гарантирует, что msgs не будет nil.
+	// Поэтому если msgs = nil, то сущность создана не через конструктор,
+	// а значит, пустая.
+	return n.msgs == nil
 }
 
 // Transition совершает условный переход по ребру с наивысшим приоритетом
@@ -49,7 +56,7 @@ func (n Node) Transition(msg Message) (Edge, bool) {
 			return edge, true
 		}
 	}
-	return nil, false
+	return Edge{}, false
 }
 
 // Children возвращает упорядоченное множество State дочерних узлов.

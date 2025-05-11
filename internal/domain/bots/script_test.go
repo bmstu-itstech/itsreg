@@ -13,7 +13,7 @@ var (
 	greetingNode = bots.MustNewNode(
 		bots.State(1),
 		[]bots.Edge{
-			bots.MustNewRegexpEdge("Далее", 2, 1, bots.NoOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Далее"), 2, 1, bots.NoOp{}),
 		},
 		[]bots.BotMessage{
 			bots.MustNewBotMessage("Привет! Это бот-опросник", []bots.Option{"Далее"}),
@@ -22,8 +22,8 @@ var (
 	fullNameNode = bots.MustNewNode(
 		bots.State(2),
 		[]bots.Edge{
-			bots.MustNewRegexpEdge("Назад", 1, 2, bots.NoOp{}),
-			bots.MustNewRegexpEdge(".*", 3, 1, bots.SaveOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), 1, 2, bots.NoOp{}),
+			bots.NewEdge(bots.AlwaysTruePredicate{}, 3, 1, bots.SaveOp{}),
 		},
 		[]bots.BotMessage{
 			bots.MustNewBotMessage("Продолжая пользоваться ботом, Вы подтверждаете блаблабла...", []bots.Option{}),
@@ -33,9 +33,9 @@ var (
 	choosePillNode = bots.MustNewNode(
 		bots.State(3),
 		[]bots.Edge{
-			bots.MustNewRegexpEdge("Красная", 10, 1, bots.AppendOp{}),
-			bots.MustNewRegexpEdge("Синяя", 11, 1, bots.AppendOp{}),
-			bots.MustNewRegexpEdge("Назад", 2, 1, bots.NoOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Красная"), 10, 1, bots.AppendOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Синяя"), 11, 1, bots.AppendOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), 2, 1, bots.NoOp{}),
 		},
 		[]bots.BotMessage{
 			bots.MustNewBotMessage("Выбери таблетку:", []bots.Option{"Красная", "Синяя", "Назад"}),
@@ -44,7 +44,7 @@ var (
 	redPillNode = bots.MustNewNode(
 		bots.State(10),
 		[]bots.Edge{
-			bots.MustNewRegexpEdge("Назад", 3, 1, bots.NoOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), 3, 1, bots.NoOp{}),
 		},
 		[]bots.BotMessage{
 			bots.MustNewBotMessage("Теперь ты увидел суровую реальность...", []bots.Option{}),
@@ -53,7 +53,7 @@ var (
 	bluePill = bots.MustNewNode(
 		bots.State(11),
 		[]bots.Edge{
-			bots.MustNewRegexpEdge("Назад", 3, 1, bots.NoOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), 3, 1, bots.NoOp{}),
 		},
 		[]bots.BotMessage{
 			bots.MustNewBotMessage("Оставайся в иллюзии...", []bots.Option{}),
@@ -170,15 +170,15 @@ func TestScript_Entry(t *testing.T) {
 
 func TestNewScript(t *testing.T) {
 	node1 := bots.MustNewNode(1, []bots.Edge{
-		bots.MustNewRegexpEdge("2", 2, 1, bots.NoOp{}),
-		bots.MustNewRegexpEdge("3", 3, 1, bots.NoOp{}),
+		bots.NewEdge(bots.MustNewExactMatchPredicate("2"), 2, 1, bots.NoOp{}),
+		bots.NewEdge(bots.MustNewExactMatchPredicate("3"), 3, 1, bots.NoOp{}),
 	}, []bots.BotMessage{
 		bots.NewBotMessageWithoutOptions("1"),
 	})
 
 	node2 := bots.MustNewNode(2, []bots.Edge{
-		bots.MustNewRegexpEdge("2", 2, 1, bots.NoOp{}), // Цикл
-		bots.MustNewRegexpEdge("1", 1, 1, bots.NoOp{}), // Цикл на себя
+		bots.NewEdge(bots.MustNewExactMatchPredicate("2"), 2, 1, bots.NoOp{}), // Цикл
+		bots.NewEdge(bots.MustNewExactMatchPredicate("1"), 1, 1, bots.NoOp{}), // Цикл на себя
 	}, []bots.BotMessage{
 		bots.NewBotMessageWithoutOptions("2"),
 	})
@@ -194,6 +194,7 @@ func TestNewScript(t *testing.T) {
 	})
 
 	t.Run("Non-existent node - invalid script", func(t *testing.T) {
+		// Узел 1 имеет ребро к несуществующему узлу 3.
 		entry := bots.MustNewEntry("start", 1)
 		_, err := bots.NewScript([]bots.Node{node1, node2}, []bots.Entry{entry})
 		require.Error(t, err)

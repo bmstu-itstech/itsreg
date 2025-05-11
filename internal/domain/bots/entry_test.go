@@ -32,14 +32,6 @@ func TestNewEntry(t *testing.T) {
 			errSlug:       "invalid-entry-key",
 			expectedError: "expected not empty key",
 		},
-		{
-			name:          "Zero state",
-			key:           "valid_key",
-			start:         bots.ZeroState,
-			wantErr:       true,
-			errSlug:       "invalid-entry-start",
-			expectedError: "invalid start state",
-		},
 	}
 
 	for _, tt := range tests {

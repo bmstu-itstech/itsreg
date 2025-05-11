@@ -15,13 +15,6 @@ func NewEntry(key EntryKey, start State) (Entry, error) {
 		)
 	}
 
-	if start == ZeroState {
-		return Entry{}, NewInvalidInputError(
-			"invalid-entry-start",
-			"failed to create entry: invalid start state",
-		)
-	}
-
 	return Entry{
 		key:   key,
 		start: start,
