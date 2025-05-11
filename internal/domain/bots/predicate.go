@@ -41,6 +41,10 @@ func (p ExactMatchPredicate) Match(msg Message) bool {
 	return p.text == msg.Text()
 }
 
+func (p ExactMatchPredicate) Text() string {
+	return p.text
+}
+
 type RegexMatchPredicate struct {
 	regex *regexp.Regexp
 }
@@ -74,4 +78,8 @@ func MustNewRegexMatchPredicate(pattern string) Predicate {
 
 func (p RegexMatchPredicate) Match(msg Message) bool {
 	return p.regex.MatchString(msg.Text())
+}
+
+func (p RegexMatchPredicate) Pattern() string {
+	return p.regex.String()
 }

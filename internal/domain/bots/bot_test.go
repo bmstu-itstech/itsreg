@@ -18,7 +18,8 @@ func TestNewBot(t *testing.T) {
 	tests := []struct {
 		name        string
 		id          bots.BotId
-		token       string
+		token       bots.Token
+		author      bots.UserId
 		script      bots.Script
 		wantErr     bool
 		errContains string
@@ -27,6 +28,7 @@ func TestNewBot(t *testing.T) {
 			name:    "Valid bot",
 			id:      "bot",
 			token:   "token",
+			author:  1,
 			script:  validScript,
 			wantErr: false,
 		},
@@ -34,6 +36,7 @@ func TestNewBot(t *testing.T) {
 			name:        "Empty bot id",
 			id:          "",
 			token:       "token",
+			author:      1,
 			script:      validScript,
 			wantErr:     true,
 			errContains: "expected not empty bot id",
@@ -42,14 +45,25 @@ func TestNewBot(t *testing.T) {
 			name:        "Empty token",
 			id:          "bot",
 			token:       "",
+			author:      1,
 			script:      validScript,
 			wantErr:     true,
 			errContains: "expected not empty bot token",
 		},
 		{
+			name:        "Zero author id",
+			id:          "bot",
+			token:       "token",
+			author:      0,
+			script:      validScript,
+			wantErr:     true,
+			errContains: "expected not empty bot author id",
+		},
+		{
 			name:        "Zero script",
 			id:          "bot",
 			token:       "token",
+			author:      1,
 			script:      zeroScript,
 			wantErr:     true,
 			errContains: "empty script",
@@ -58,7 +72,7 @@ func TestNewBot(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bot, err := bots.NewBot(tt.id, tt.token, tt.script)
+			bot, err := bots.NewBot(tt.id, tt.token, tt.author, tt.script)
 			if tt.wantErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), tt.errContains)

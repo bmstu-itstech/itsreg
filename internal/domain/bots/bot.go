@@ -10,11 +10,12 @@ type Token string
 
 type Bot struct {
 	id     BotId
-	token  string
+	token  Token
+	author UserId
 	script Script
 }
 
-func NewBot(id BotId, token string, script Script) (Bot, error) {
+func NewBot(id BotId, token Token, author UserId, script Script) (Bot, error) {
 	if id == "" {
 		return Bot{}, NewInvalidInputError(
 			"invalid-bot",
@@ -26,6 +27,13 @@ func NewBot(id BotId, token string, script Script) (Bot, error) {
 		return Bot{}, NewInvalidInputError(
 			"invalid-bot",
 			"expected not empty bot token",
+		)
+	}
+
+	if author == 0 {
+		return Bot{}, NewInvalidInputError(
+			"invalid-bot",
+			"expected not empty bot author id",
 		)
 	}
 
@@ -44,8 +52,12 @@ func (b Bot) Id() BotId {
 	return b.id
 }
 
-func (b Bot) Token() string {
+func (b Bot) Token() Token {
 	return b.token
+}
+
+func (b Bot) Author() UserId {
+	return b.author
 }
 
 func (b Bot) Script() Script {

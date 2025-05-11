@@ -30,30 +30,24 @@ func (id ParticipantId) BotId() BotId {
 
 type Participant struct {
 	id              ParticipantId
-	username        string
 	threads         map[ThreadId]*Thread
 	currentThreadId *ThreadId
 }
 
-func NewParticipant(id ParticipantId, uname string) (*Participant, error) {
+func NewParticipant(id ParticipantId) (*Participant, error) {
 	if id.IsZero() {
 		return nil, fmt.Errorf("id is zero")
 	}
 
-	if uname == "" {
-		return nil, fmt.Errorf("username is zero")
-	}
-
 	return &Participant{
 		id:              id,
-		username:        uname,
 		threads:         make(map[ThreadId]*Thread),
 		currentThreadId: nil,
 	}, nil
 }
 
-func MustNewParticipant(id ParticipantId, username string) *Participant {
-	p, err := NewParticipant(id, username)
+func MustNewParticipant(id ParticipantId) *Participant {
+	p, err := NewParticipant(id)
 	if err != nil {
 		panic(err)
 	}
@@ -89,8 +83,4 @@ func (p *Participant) CurrentThread() (*Thread, bool) {
 
 func (p *Participant) Id() ParticipantId {
 	return p.id
-}
-
-func (p *Participant) Username() string {
-	return p.username
 }

@@ -72,7 +72,7 @@ func buildSurveyScript() bots.Script {
 func TestScript_EntryNProcess(t *testing.T) {
 	script := buildSurveyScript()
 	prtId := bots.NewParticipantId(1, "bot")
-	prt := bots.MustNewParticipant(prtId, "username")
+	prt := bots.MustNewParticipant(prtId)
 
 	// Пользователь нажимаем команду /start
 	msgs, err := script.Entry(prt, "start")
@@ -161,7 +161,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 func TestScript_Entry(t *testing.T) {
 	script := buildSurveyScript()
 	prtId := bots.NewParticipantId(bots.UserId(1), "bot")
-	prt := bots.MustNewParticipant(prtId, "username")
+	prt := bots.MustNewParticipant(prtId)
 
 	_, err := script.Entry(prt, "admin")
 	require.ErrorAs(t, err, &bots.EntryNotFoundError{})

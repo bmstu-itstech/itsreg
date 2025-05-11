@@ -103,6 +103,22 @@ func (s Script) Process(prt *Participant, in Message) ([]BotMessage, error) {
 	return next.Messages(), nil
 }
 
+func (s Script) Nodes() []Node {
+	nodes := make([]Node, 0, len(s.nodes))
+	for _, node := range s.nodes {
+		nodes = append(nodes, node)
+	}
+	return nodes
+}
+
+func (s Script) Entries() []Entry {
+	entries := make([]Entry, 0, len(s.entries))
+	for _, entry := range s.entries {
+		entries = append(entries, entry)
+	}
+	return entries
+}
+
 type color int
 
 const (
