@@ -24,8 +24,6 @@ func NewNode(state State, edges []Edge, msgs []BotMessage) (Node, error) {
 		)
 	}
 
-	slices.SortStableFunc(edges, CompareEdges)
-
 	return Node{
 		state: state,
 		edges: edges[:],

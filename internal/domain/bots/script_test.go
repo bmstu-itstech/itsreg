@@ -13,7 +13,7 @@ var (
 	greetingNode = bots.MustNewNode(
 		bots.State(1),
 		[]bots.Edge{
-			bots.NewEdge(bots.MustNewExactMatchPredicate("Далее"), 2, 1, bots.NoOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Далее"), bots.State(2), bots.NoOp{}),
 		},
 		[]bots.BotMessage{
 			bots.MustNewBotMessage("Привет! Это бот-опросник", []bots.Option{"Далее"}),
@@ -22,20 +22,20 @@ var (
 	fullNameNode = bots.MustNewNode(
 		bots.State(2),
 		[]bots.Edge{
-			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), 1, 2, bots.NoOp{}),
-			bots.NewEdge(bots.AlwaysTruePredicate{}, 3, 1, bots.SaveOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), bots.State(1), bots.NoOp{}),
+			bots.NewEdge(bots.AlwaysTruePredicate{}, bots.State(3), bots.SaveOp{}),
 		},
 		[]bots.BotMessage{
-			bots.MustNewBotMessage("Продолжая пользоваться ботом, Вы подтверждаете блаблабла...", []bots.Option{}),
+			bots.MustNewBotMessage("Продолжая пользоваться ботом, Вы подтверждаете...", []bots.Option{}),
 			bots.MustNewBotMessage("Введите своё ФИО", []bots.Option{}),
 		},
 	)
 	choosePillNode = bots.MustNewNode(
 		bots.State(3),
 		[]bots.Edge{
-			bots.NewEdge(bots.MustNewExactMatchPredicate("Красная"), 10, 1, bots.AppendOp{}),
-			bots.NewEdge(bots.MustNewExactMatchPredicate("Синяя"), 11, 1, bots.AppendOp{}),
-			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), 2, 1, bots.NoOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Красная"), bots.State(10), bots.AppendOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Синяя"), bots.State(11), bots.AppendOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), bots.State(2), bots.NoOp{}),
 		},
 		[]bots.BotMessage{
 			bots.MustNewBotMessage("Выбери таблетку:", []bots.Option{"Красная", "Синяя", "Назад"}),
@@ -44,7 +44,7 @@ var (
 	redPillNode = bots.MustNewNode(
 		bots.State(10),
 		[]bots.Edge{
-			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), 3, 1, bots.NoOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), bots.State(3), bots.NoOp{}),
 		},
 		[]bots.BotMessage{
 			bots.MustNewBotMessage("Теперь ты увидел суровую реальность...", []bots.Option{}),
@@ -53,7 +53,7 @@ var (
 	bluePill = bots.MustNewNode(
 		bots.State(11),
 		[]bots.Edge{
-			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), 3, 1, bots.NoOp{}),
+			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), bots.State(3), bots.NoOp{}),
 		},
 		[]bots.BotMessage{
 			bots.MustNewBotMessage("Оставайся в иллюзии...", []bots.Option{}),
@@ -62,7 +62,7 @@ var (
 )
 
 func buildSurveyScript() bots.Script {
-	start := bots.MustNewEntry("start", 1)
+	start := bots.MustNewEntry("start", bots.State(1))
 	return bots.MustNewScript(
 		[]bots.Node{greetingNode, fullNameNode, choosePillNode, redPillNode, bluePill},
 		[]bots.Entry{start},
@@ -160,7 +160,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 
 func TestScript_Entry(t *testing.T) {
 	script := buildSurveyScript()
-	prtId := bots.NewParticipantId(1, "bot")
+	prtId := bots.NewParticipantId(bots.UserId(1), "bot")
 	prt := bots.MustNewParticipant(prtId, "username")
 
 	_, err := script.Entry(prt, "admin")
@@ -169,33 +169,33 @@ func TestScript_Entry(t *testing.T) {
 }
 
 func TestNewScript(t *testing.T) {
-	node1 := bots.MustNewNode(1, []bots.Edge{
-		bots.NewEdge(bots.MustNewExactMatchPredicate("2"), 2, 1, bots.NoOp{}),
-		bots.NewEdge(bots.MustNewExactMatchPredicate("3"), 3, 1, bots.NoOp{}),
+	node1 := bots.MustNewNode(bots.State(1), []bots.Edge{
+		bots.NewEdge(bots.MustNewExactMatchPredicate("2"), bots.State(2), bots.NoOp{}),
+		bots.NewEdge(bots.MustNewExactMatchPredicate("3"), bots.State(3), bots.NoOp{}),
 	}, []bots.BotMessage{
 		bots.NewBotMessageWithoutOptions("1"),
 	})
 
-	node2 := bots.MustNewNode(2, []bots.Edge{
-		bots.NewEdge(bots.MustNewExactMatchPredicate("2"), 2, 1, bots.NoOp{}), // Цикл
-		bots.NewEdge(bots.MustNewExactMatchPredicate("1"), 1, 1, bots.NoOp{}), // Цикл на себя
+	node2 := bots.MustNewNode(bots.State(2), []bots.Edge{
+		bots.NewEdge(bots.MustNewExactMatchPredicate("2"), bots.State(2), bots.NoOp{}), // Цикл
+		bots.NewEdge(bots.MustNewExactMatchPredicate("1"), bots.State(1), bots.NoOp{}), // Цикл на себя
 	}, []bots.BotMessage{
 		bots.NewBotMessageWithoutOptions("2"),
 	})
 
-	node3 := bots.MustNewNode(3, []bots.Edge{}, []bots.BotMessage{
+	node3 := bots.MustNewNode(bots.State(3), []bots.Edge{}, []bots.BotMessage{
 		bots.NewBotMessageWithoutOptions("3"),
 	})
 
 	t.Run("Valid script", func(t *testing.T) {
-		entry := bots.MustNewEntry("start", 1)
+		entry := bots.MustNewEntry("start", bots.State(1))
 		_, err := bots.NewScript([]bots.Node{node1, node2, node3}, []bots.Entry{entry})
 		require.NoError(t, err)
 	})
 
 	t.Run("Non-existent node - invalid script", func(t *testing.T) {
 		// Узел 1 имеет ребро к несуществующему узлу 3.
-		entry := bots.MustNewEntry("start", 1)
+		entry := bots.MustNewEntry("start", bots.State(1))
 		_, err := bots.NewScript([]bots.Node{node1, node2}, []bots.Entry{entry})
 		require.Error(t, err)
 		var ierr bots.InvalidInputError
@@ -209,7 +209,7 @@ func TestNewScript(t *testing.T) {
 		// ошибки здесь нет. Но у нас есть дополнительное условие - обход графа должен начинаться
 		// с вершин, которые указаны в entries. Обходя граф с 3 узла мы остаёмся в 3 узле, а значит
 		// скрипт не является связным.
-		entry := bots.MustNewEntry("start", 3)
+		entry := bots.MustNewEntry("start", bots.State(3))
 		_, err := bots.NewScript([]bots.Node{node1, node2, node3}, []bots.Entry{entry})
 		require.Error(t, err)
 		var ierr bots.InvalidInputError
