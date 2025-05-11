@@ -1,0 +1,141 @@
+package bots_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+)
+
+func TestNewNode(t *testing.T) {
+	edge := bots.MustNewRegexpEdge(".*", bots.State(2), bots.Priority(1), bots.NoOp{})
+
+	tests := []struct {
+		name        string
+		state       bots.State
+		edges       []bots.Edge
+		msgs        []bots.BotMessage
+		wantErr     bool
+		expectedErr string
+	}{
+		{
+			name:    "Valid node with one message",
+			state:   bots.State(1),
+			edges:   []bots.Edge{edge},
+			msgs:    []bots.BotMessage{bots.NewBotMessageWithoutOptions("hello world")},
+			wantErr: false,
+		},
+		{
+			name:    "Valid node with multiple messages and edges",
+			state:   bots.State(1),
+			edges:   []bots.Edge{edge, edge},
+			msgs:    []bots.BotMessage{bots.NewBotMessageWithoutOptions("1"), bots.NewBotMessageWithoutOptions("2")},
+			wantErr: false,
+		},
+		{
+			name:        "Empty messages - error",
+			state:       bots.State(1),
+			edges:       []bots.Edge{},
+			msgs:        []bots.BotMessage{},
+			wantErr:     true,
+			expectedErr: "expected at least one message in node",
+		},
+		{
+			name:    "Nil edges - treated as empty",
+			state:   bots.State(1),
+			edges:   nil,
+			msgs:    []bots.BotMessage{bots.NewBotMessageWithoutOptions("hello world")},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node, err := bots.NewNode(tt.state, tt.edges, tt.msgs)
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.expectedErr)
+				require.ErrorAs(t, err, &bots.InvalidInputError{})
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.state, node.State())
+				require.Equal(t, tt.edges, node.Edges())
+				require.Equal(t, tt.msgs, node.Messages())
+			}
+		})
+	}
+}
+
+func TestNode_IsZero(t *testing.T) {
+	msg := bots.NewBotMessageWithoutOptions("some text")
+	initialized := bots.MustNewNode(1, nil, []bots.BotMessage{msg})
+	require.False(t, initialized.IsZero())
+
+	var uninitialized bots.Node
+	require.True(t, uninitialized.IsZero())
+}
+
+func TestNode_Transition(t *testing.T) {
+	msg := bots.NewBotMessageWithoutOptions("some text")
+
+	t.Run("One edge - match", func(t *testing.T) {
+		edge := bots.MustNewRegexpEdge("a", bots.State(2), bots.Priority(1), bots.NoOp{})
+		node := bots.MustNewNode(bots.State(1), []bots.Edge{edge}, []bots.BotMessage{msg})
+		walked, ok := node.Transition(bots.NewMessage("a"))
+		require.True(t, ok)
+		require.Equal(t, edge, walked)
+	})
+
+	t.Run("One edge - no match", func(t *testing.T) {
+		edge := bots.MustNewRegexpEdge("a", bots.State(2), bots.Priority(1), bots.NoOp{})
+		node := bots.MustNewNode(bots.State(1), []bots.Edge{edge}, []bots.BotMessage{msg})
+		_, ok := node.Transition(bots.NewMessage(""))
+		require.False(t, ok)
+	})
+
+	t.Run("Two edges - unique match", func(t *testing.T) {
+		edgeA := bots.MustNewRegexpEdge("a", bots.State(2), bots.Priority(1), bots.NoOp{})
+		edgeB := bots.MustNewRegexpEdge("b", bots.State(3), bots.Priority(1), bots.NoOp{})
+		node := bots.MustNewNode(bots.State(1), []bots.Edge{edgeA, edgeB}, []bots.BotMessage{msg})
+		walked, ok := node.Transition(bots.NewMessage("b"))
+		require.True(t, ok)
+		require.Equal(t, edgeB, walked)
+	})
+
+	t.Run("Two edges - high priority match", func(t *testing.T) {
+		edgeA1 := bots.MustNewRegexpEdge("a", bots.State(2), bots.Priority(1), bots.NoOp{})
+		edgeA2 := bots.MustNewRegexpEdge("a", bots.State(3), bots.Priority(2), bots.NoOp{})
+		node := bots.MustNewNode(bots.State(1), []bots.Edge{edgeA1, edgeA2}, []bots.BotMessage{msg})
+		walked, ok := node.Transition(bots.NewMessage("a"))
+		require.True(t, ok)
+		require.Equal(t, edgeA2, walked)
+	})
+
+	t.Run("Two edges - first match", func(t *testing.T) {
+		edgeA1 := bots.MustNewRegexpEdge("a", bots.State(2), bots.Priority(1), bots.NoOp{})
+		edgeA2 := bots.MustNewRegexpEdge("a", bots.State(3), bots.Priority(1), bots.NoOp{})
+		node := bots.MustNewNode(bots.State(1), []bots.Edge{edgeA1, edgeA2}, []bots.BotMessage{msg})
+		walked, ok := node.Transition(bots.NewMessage("a"))
+		require.True(t, ok)
+		require.Equal(t, edgeA1, walked)
+	})
+
+	t.Run("No edges - no match", func(t *testing.T) {
+		node := bots.MustNewNode(bots.State(1), nil, []bots.BotMessage{msg})
+		_, ok := node.Transition(bots.NewMessage("a"))
+		require.False(t, ok)
+	})
+}
+
+func TestNode_Children(t *testing.T) {
+	msg := bots.NewBotMessageWithoutOptions("some text")
+
+	edge1 := bots.MustNewRegexpEdge("a", bots.State(2), bots.Priority(2), bots.NoOp{})
+	edge2 := bots.MustNewRegexpEdge("b", bots.State(3), bots.Priority(3), bots.NoOp{})
+	edge3 := bots.MustNewRegexpEdge("b", bots.State(3), bots.Priority(1), bots.NoOp{})
+	node := bots.MustNewNode(bots.State(1), []bots.Edge{edge1, edge2, edge3}, []bots.BotMessage{msg})
+
+	// Упорядочивание происходит в порядке приоритета
+	require.Equal(t, []bots.State{3, 2}, node.Children())
+}

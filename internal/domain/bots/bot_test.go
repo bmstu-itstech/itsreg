@@ -1,0 +1,73 @@
+package bots_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+)
+
+func TestNewBot(t *testing.T) {
+	msg := bots.NewBotMessageWithoutOptions("some text")
+	node := bots.MustNewNode(1, nil, []bots.BotMessage{msg})
+	entry := bots.MustNewEntry("start", 1)
+	validScript := bots.MustNewScript([]bots.Node{node}, []bots.Entry{entry})
+	zeroScript := bots.Script{}
+
+	tests := []struct {
+		name        string
+		id          bots.BotId
+		token       string
+		script      bots.Script
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name:    "Valid bot",
+			id:      "bot",
+			token:   "token",
+			script:  validScript,
+			wantErr: false,
+		},
+		{
+			name:        "Empty bot id",
+			id:          "",
+			token:       "token",
+			script:      validScript,
+			wantErr:     true,
+			errContains: "expected not empty bot id",
+		},
+		{
+			name:        "Empty token",
+			id:          "bot",
+			token:       "",
+			script:      validScript,
+			wantErr:     true,
+			errContains: "expected not empty bot token",
+		},
+		{
+			name:        "Zero script",
+			id:          "bot",
+			token:       "token",
+			script:      zeroScript,
+			wantErr:     true,
+			errContains: "empty script",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bot, err := bots.NewBot(tt.id, tt.token, tt.script)
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errContains)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.id, bot.Id())
+				require.Equal(t, tt.token, bot.Token())
+				require.Equal(t, tt.script, bot.Script())
+			}
+		})
+	}
+}
