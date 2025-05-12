@@ -36,12 +36,12 @@ func TestThread_SaveAnswer(t *testing.T) {
 	entry := bots.MustNewEntry("start", state1)
 	thread := bots.MustNewThread(entry)
 
-	msgA := bots.NewMessage("a")
+	msgA := bots.MustNewMessage("a")
 	thread.SaveAnswer(msgA)
 	require.Len(t, thread.Answers(), 1)
 	require.Equal(t, msgA, thread.Answers()[state1])
 
-	msgB := bots.NewMessage("b")
+	msgB := bots.MustNewMessage("b")
 	thread.SaveAnswer(msgB)
 	require.Len(t, thread.Answers(), 1)
 	require.Equal(t, msgB, thread.Answers()[state1])
@@ -49,7 +49,7 @@ func TestThread_SaveAnswer(t *testing.T) {
 	state2 := bots.State(2)
 	thread.StepTo(state2)
 
-	msgC := bots.NewMessage("c")
+	msgC := bots.MustNewMessage("c")
 	thread.SaveAnswer(msgC)
 	require.Len(t, thread.Answers(), 2)
 	require.Equal(t, msgB, thread.Answers()[state1])
@@ -61,12 +61,12 @@ func TestThread_AppendAnswer(t *testing.T) {
 	entry := bots.MustNewEntry("start", state1)
 	thread := bots.MustNewThread(entry)
 
-	msgA := bots.NewMessage("a")
+	msgA := bots.MustNewMessage("a")
 	thread.AppendAnswer(msgA)
 	require.Len(t, thread.Answers(), 1)
 	require.Equal(t, msgA, thread.Answers()[state1])
 
-	msgB := bots.NewMessage("b")
+	msgB := bots.MustNewMessage("b")
 	thread.AppendAnswer(msgB)
 	require.Len(t, thread.Answers(), 1)
 
@@ -76,7 +76,7 @@ func TestThread_AppendAnswer(t *testing.T) {
 	state2 := bots.State(2)
 	thread.StepTo(state2)
 
-	msgC := bots.NewMessage("c")
+	msgC := bots.MustNewMessage("c")
 	thread.SaveAnswer(msgC)
 	require.Len(t, thread.Answers(), 2)
 	require.Equal(t, composed, thread.Answers()[state1])

@@ -11,7 +11,7 @@ import (
 func TestAlwaysTruePredicate(t *testing.T) {
 	t.Run("always returns true", func(t *testing.T) {
 		p := bots.AlwaysTruePredicate{}
-		msg := bots.NewMessage("any text")
+		msg := bots.MustNewMessage("any text")
 		require.True(t, p.Match(msg))
 	})
 }
@@ -61,7 +61,7 @@ func TestExactMatchPredicate_Match(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := bots.MustNewExactMatchPredicate(tt.pattern)
-			msg := bots.NewMessage(tt.text)
+			msg := bots.MustNewMessage(tt.text)
 			require.Equal(t, tt.expected, p.Match(msg))
 		})
 	}
@@ -112,10 +112,10 @@ func TestRegexMatchPredicate_Match(t *testing.T) {
 	t.Run("Non empty regex match", func(t *testing.T) {
 		p := bots.MustNewRegexMatchPredicate(`^[a-z]+$`)
 
-		msg := bots.NewMessage("hello")
+		msg := bots.MustNewMessage("hello")
 		require.True(t, p.Match(msg))
 
-		msg = bots.NewMessage("Hello")
+		msg = bots.MustNewMessage("Hello")
 		require.False(t, p.Match(msg))
 	})
 }

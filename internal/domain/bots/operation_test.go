@@ -14,7 +14,7 @@ func TestNoOp_Act(t *testing.T) {
 	thread := bots.MustNewThread(entry)
 	op := bots.NoOp{}
 
-	in := bots.NewMessage("op")
+	in := bots.MustNewMessage("op")
 	op.Apply(thread, in)
 	require.Empty(t, thread.Answers())
 }
@@ -25,13 +25,13 @@ func TestSaveOp_Act(t *testing.T) {
 	thread := bots.MustNewThread(entry)
 	op := bots.SaveOp{}
 
-	in1 := bots.NewMessage("op")
+	in1 := bots.MustNewMessage("op")
 	op.Apply(thread, in1)
 	require.Len(t, thread.Answers(), 1)
 	require.Contains(t, thread.Answers(), state)
 	require.Equal(t, in1, thread.Answers()[state])
 
-	in2 := bots.NewMessage("b")
+	in2 := bots.MustNewMessage("b")
 	op.Apply(thread, in2)
 	require.Len(t, thread.Answers(), 1)
 	require.Contains(t, thread.Answers(), state)
@@ -44,8 +44,8 @@ func TestSaveAppendOp_Act(t *testing.T) {
 	thread := bots.MustNewThread(entry)
 	op := bots.AppendOp{}
 
-	in1 := bots.NewMessage("op")
-	in2 := bots.NewMessage("b")
+	in1 := bots.MustNewMessage("op")
+	in2 := bots.MustNewMessage("b")
 	op.Apply(thread, in1)
 	op.Apply(thread, in2)
 

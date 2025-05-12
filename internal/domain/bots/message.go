@@ -6,10 +6,24 @@ type Message struct {
 	text string
 }
 
-func NewMessage(text string) Message {
+func NewMessage(text string) (Message, error) {
+	if text == "" {
+		return Message{}, NewInvalidInputError(
+			"invalid-message",
+			"expected not empty text in message",
+		)
+	}
 	return Message{
 		text: text,
+	}, nil
+}
+
+func MustNewMessage(text string) Message {
+	m, err := NewMessage(text)
+	if err != nil {
+		return Message{}
 	}
+	return m
 }
 
 // Text возвращает строго текст сообщения.

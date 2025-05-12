@@ -169,7 +169,7 @@ func batchEdgesToDto(edges []bots.Edge) []Edge {
 	return res
 }
 
-func messageFromDto(dto Message) bots.Message {
+func messageFromDto(dto Message) (bots.Message, error) {
 	return bots.NewMessage(dto.Text)
 }
 

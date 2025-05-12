@@ -9,16 +9,11 @@ type BotMessage struct {
 	options []Option
 }
 
-func NewBotMessageWithoutOptions(text string) BotMessage {
-	msg := NewMessage(text)
-	return BotMessage{
-		Message: msg,
-		options: []Option{},
-	}
-}
-
 func NewBotMessage(text string, opts []Option) (BotMessage, error) {
-	msg := NewMessage(text)
+	msg, err := NewMessage(text)
+	if err != nil {
+		return BotMessage{}, err
+	}
 
 	for _, opt := range opts {
 		if opt == "" {

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
@@ -20,7 +19,6 @@ func (s *TelegramMessageSender) Send(_ context.Context, token bots.Token, userId
 		return err
 	}
 
-	fmt.Printf("%v\n", msg.Options())
 	m := tgbotapi.NewMessage(int64(userId), msg.Text())
 	m.ParseMode = tgbotapi.ModeHTML
 	if opts := msg.Options(); len(opts) > 0 {

@@ -30,7 +30,10 @@ func (h processHandler) Handle(ctx context.Context, cmd Process) error {
 
 	script := bot.Script()
 	prtId := bots.NewParticipantId(bots.UserId(cmd.UserId), bots.BotId(cmd.BotId))
-	message := messageFromDto(cmd.Message)
+	message, err := messageFromDto(cmd.Message)
+	if err != nil {
+		return err
+	}
 
 	var response []bots.BotMessage
 	err = h.pr.UpdateOrCreate(ctx, prtId, func(

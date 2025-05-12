@@ -143,7 +143,11 @@ func (i *botInstance) handleUpdate(ctx context.Context, upd tgbotapi.Update) {
 		if upd.Message.IsCommand() {
 			err = i.entry.Entry(ctx, i.botId, bots.UserId(upd.Message.Chat.ID), bots.EntryKey(upd.Message.Command()))
 		} else {
-			err = i.process.Process(ctx, i.botId, bots.UserId(upd.Message.Chat.ID), bots.NewMessage(upd.Message.Text))
+			if msg, err := bots.NewMessage(upd.Message.Text); err == nil {
+				err = i.process.Process(ctx, i.botId, bots.UserId(upd.Message.Chat.ID), msg)
+			} else {
+				i.log.Warn("unhandled message", "message", upd.Message)
+			}
 		}
 	}
 

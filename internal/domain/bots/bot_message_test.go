@@ -29,10 +29,11 @@ func TestNewBotMessage(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Empty text message",
-			text:    "",
-			opts:    []bots.Option{},
-			wantErr: false,
+			name:        "Empty text message",
+			text:        "",
+			opts:        []bots.Option{},
+			wantErr:     true,
+			expectedErr: "expected not empty text in message",
 		},
 		{
 			name:        "Single empty option",
