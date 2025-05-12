@@ -2,7 +2,7 @@ package bots
 
 import "fmt"
 
-// BotId есть уникальный идентификатор бота. Совпадает с ником в ТГ (без @).
+// BotId есть уникальный идентификатор бота.
 type BotId string
 
 // Token есть Telegram токен для бота.

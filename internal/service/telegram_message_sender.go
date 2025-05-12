@@ -3,20 +3,24 @@ package service
 import (
 	"context"
 
-	tg "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 )
 
 type TelegramMessageSender struct{}
 
+func NewTelegramMessageSender() *TelegramMessageSender {
+	return &TelegramMessageSender{}
+}
+
 func (s *TelegramMessageSender) Send(_ context.Context, token bots.Token, userId bots.UserId, msg bots.BotMessage) error {
-	api, err := tg.NewBotAPI(string(token))
+	api, err := tgbotapi.NewBotAPI(string(token))
 	if err != nil {
 		return err
 	}
 
-	m := tg.NewMessage(int64(userId), msg.Text())
+	m := tgbotapi.NewMessage(int64(userId), msg.Text())
 	if opts := msg.Options(); opts != nil {
 		m.ReplyMarkup = buildInlineKeyboardMarkup(opts)
 	}
@@ -25,14 +29,14 @@ func (s *TelegramMessageSender) Send(_ context.Context, token bots.Token, userId
 	return err
 }
 
-func buildInlineKeyboardMarkup(opts []bots.Option) tg.ReplyKeyboardMarkup {
-	rows := make([][]tg.KeyboardButton, len(opts))
+func buildInlineKeyboardMarkup(opts []bots.Option) tgbotapi.ReplyKeyboardMarkup {
+	rows := make([][]tgbotapi.KeyboardButton, len(opts))
 	for i, opt := range opts {
-		rows[i] = []tg.KeyboardButton{
-			tg.NewKeyboardButton(string(opt)),
+		rows[i] = []tgbotapi.KeyboardButton{
+			tgbotapi.NewKeyboardButton(string(opt)),
 		}
 	}
-	keyboard := tg.NewReplyKeyboard(rows...)
+	keyboard := tgbotapi.NewReplyKeyboard(rows...)
 	keyboard.OneTimeKeyboard = true
 	keyboard.ResizeKeyboard = true
 	return keyboard

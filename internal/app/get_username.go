@@ -20,7 +20,10 @@ type getUsernameHandler struct {
 
 func (h getUsernameHandler) Handle(ctx context.Context, q GetUsername) (string, error) {
 	username, err := h.up.Username(ctx, bots.UserId(q.UserId))
-	return string(username), err
+	if err != nil {
+		return "", err
+	}
+	return string(username), nil
 }
 
 func NewGetUsernameHandler(up bots.UsernameProvider, l *slog.Logger, mc decorator.MetricsClient) GetUsernameHandler {

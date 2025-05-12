@@ -20,7 +20,10 @@ type getUserBotsHandler struct {
 
 func (h getUserBotsHandler) Handle(ctx context.Context, q GetUserBots) ([]Bot, error) {
 	res, err := h.bp.UserBots(ctx, bots.UserId(q.UserId))
-	return batchBotToDto(res), err
+	if err != nil {
+		return nil, err
+	}
+	return batchBotToDto(res), nil
 }
 
 func NewGetUserBotsHandler(bp bots.BotProvider, l *slog.Logger, mc decorator.MetricsClient) GetUserBotsHandler {

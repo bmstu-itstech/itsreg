@@ -20,7 +20,10 @@ type getThreadsHandler struct {
 
 func (h getThreadsHandler) Handle(ctx context.Context, q GetThreads) ([]Thread, error) {
 	threads, err := h.tp.BotThreads(ctx, bots.BotId(q.BotId))
-	return batchThreadsToDto(threads), err
+	if err != nil {
+		return nil, err
+	}
+	return batchThreadsToDto(threads), nil
 }
 
 func NewGetThreadsHandler(tp bots.ThreadProvider, l *slog.Logger, mc decorator.MetricsClient) GetThreadsHandler {

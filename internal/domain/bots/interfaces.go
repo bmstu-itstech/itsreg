@@ -52,3 +52,26 @@ type ThreadProvider interface {
 type BotMessageSender interface {
 	Send(ctx context.Context, token Token, userId UserId, msg BotMessage) error
 }
+
+var ErrRunningInstanceNotFound = errors.New("running instance not found")
+
+type InstanceManager interface {
+	Start(ctx context.Context, id BotId, token Token) error
+	Stop(ctx context.Context, id BotId) error
+}
+
+type StatusManager interface {
+	UpdateStatus(ctx context.Context, id BotId, status Status) error
+}
+
+type StatusProvider interface {
+	Status(ctx context.Context, id BotId) (Status, error)
+}
+
+type ProcessHandler interface {
+	Process(ctx context.Context, botId BotId, userId UserId, msg Message) error
+}
+
+type EntryHandler interface {
+	Entry(ctx context.Context, botId BotId, userId UserId, key EntryKey) error
+}

@@ -40,3 +40,19 @@ func (r *MockParticipantRepository) UpdateOrCreate(
 	r.m[id] = prt
 	return nil
 }
+
+func (r *MockParticipantRepository) BotThreads(_ context.Context, botId bots.BotId) ([]bots.Thread, error) {
+	r.Lock()
+	defer r.Unlock()
+	threads := make([]bots.Thread, 0)
+	for _, prt := range r.m {
+		if prt.Id().BotId() == botId {
+			thread, ok := prt.CurrentThread()
+			if !ok {
+				continue
+			}
+			threads = append(threads, *thread)
+		}
+	}
+	return threads, nil
+}
