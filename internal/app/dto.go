@@ -12,6 +12,53 @@ type Predicate struct {
 	Data string // Любым образом сериализованные данные о предикате, зависит от Type
 }
 
+type Edge struct {
+	Predicate Predicate
+	To        uint
+	Operation string
+}
+
+type Message struct {
+	Text string
+}
+
+type BotMessage struct {
+	Message Message
+	Options []string
+}
+
+type Node struct {
+	State    uint
+	Title    string
+	Edges    []Edge
+	Messages []BotMessage
+}
+
+type Entry struct {
+	Key   string
+	Start uint
+}
+
+type Script struct {
+	Nodes   []Node
+	Entries []Entry
+}
+
+type Bot struct {
+	Id     string
+	Token  string
+	Author int64
+	Script Script
+}
+
+type Thread struct {
+	Id        string
+	Key       string
+	StartedAt time.Time
+	Username  string
+	Answers   map[uint]Message
+}
+
 func predicateFromDto(dto Predicate) (bots.Predicate, error) {
 	switch dto.Type {
 	case "always":
@@ -33,13 +80,13 @@ func predicateFromDto(dto Predicate) (bots.Predicate, error) {
 
 func predicateToDto(p bots.Predicate) Predicate {
 	switch p := p.(type) {
-	case *bots.AlwaysTruePredicate:
+	case bots.AlwaysTruePredicate:
 		return Predicate{Type: "always", Data: ""}
 
-	case *bots.ExactMatchPredicate:
+	case bots.ExactMatchPredicate:
 		return Predicate{Type: "exact", Data: p.Text()}
 
-	case *bots.RegexMatchPredicate:
+	case bots.RegexMatchPredicate:
 		return Predicate{Type: "regexp", Data: p.Pattern()}
 
 	default:
@@ -78,12 +125,6 @@ func operationToDto(op bots.Operation) string {
 		// - Да Рико, кабум!
 		panic("invalid predicate type")
 	}
-}
-
-type Edge struct {
-	Predicate Predicate
-	To        uint
-	Operation string
 }
 
 func edgeFromDto(dto Edge) (bots.Edge, error) {
@@ -128,10 +169,6 @@ func batchEdgesToDto(edges []bots.Edge) []Edge {
 	return res
 }
 
-type Message struct {
-	Text string
-}
-
 func messageFromDto(dto Message) bots.Message {
 	return bots.NewMessage(dto.Text)
 }
@@ -140,11 +177,6 @@ func messageToDto(m bots.Message) Message {
 	return Message{
 		Text: m.Text(),
 	}
-}
-
-type BotMessage struct {
-	Message Message
-	Options []string
 }
 
 func botMessageFromDto(dto BotMessage) (bots.BotMessage, error) {
@@ -188,12 +220,6 @@ func batchBotMessagesToDto(messages []bots.BotMessage) []BotMessage {
 	return res
 }
 
-type Node struct {
-	State    uint
-	Edges    []Edge
-	Messages []BotMessage
-}
-
 func nodeFromDto(dto Node) (bots.Node, error) {
 	edges, err := batchEdgesFromDto(dto.Edges)
 	if err != nil {
@@ -205,7 +231,7 @@ func nodeFromDto(dto Node) (bots.Node, error) {
 		return bots.Node{}, err
 	}
 
-	return bots.NewNode(bots.State(dto.State), edges, messages)
+	return bots.NewNode(bots.State(dto.State), dto.Title, edges, messages)
 }
 
 func batchNodesFromDto(dto []Node) ([]bots.Node, error) {
@@ -223,6 +249,7 @@ func batchNodesFromDto(dto []Node) ([]bots.Node, error) {
 func nodeToDto(node bots.Node) Node {
 	return Node{
 		State:    uint(node.State()),
+		Title:    node.Title(),
 		Edges:    batchEdgesToDto(node.Edges()),
 		Messages: batchBotMessagesToDto(node.Messages()),
 	}
@@ -234,11 +261,6 @@ func batchNodesToDto(nodes []bots.Node) []Node {
 		res = append(res, nodeToDto(node))
 	}
 	return res
-}
-
-type Entry struct {
-	Key   string
-	Start uint
 }
 
 func entryFromDto(dto Entry) (bots.Entry, error) {
@@ -272,11 +294,6 @@ func batchEntriesToDto(entry []bots.Entry) []Entry {
 	return res
 }
 
-type Script struct {
-	Nodes   []Node
-	Entries []Entry
-}
-
 func scriptFromDto(dto Script) (bots.Script, error) {
 	nodes, err := batchNodesFromDto(dto.Nodes)
 	if err != nil {
@@ -298,13 +315,6 @@ func scriptToDto(script bots.Script) Script {
 	}
 }
 
-type Bot struct {
-	Id     string
-	Token  string
-	Author int64
-	Script Script
-}
-
 func botToDto(bot bots.Bot) Bot {
 	script := scriptToDto(bot.Script())
 	return Bot{
@@ -323,14 +333,7 @@ func batchBotToDto(bs []bots.Bot) []Bot {
 	return res
 }
 
-type Thread struct {
-	Id        string
-	Key       string
-	Answers   map[uint]Message
-	StartedAt time.Time
-}
-
-func threadToDto(thread bots.Thread) Thread {
+func threadToDto(thread bots.Thread, username string) Thread {
 	answers := make(map[uint]Message)
 	for state, msg := range thread.Answers() {
 		answers[uint(state)] = messageToDto(msg)
@@ -339,15 +342,8 @@ func threadToDto(thread bots.Thread) Thread {
 	return Thread{
 		Id:        string(thread.Id()),
 		Key:       string(thread.Key()),
-		Answers:   answers,
 		StartedAt: thread.StartedAt(),
+		Username:  username,
+		Answers:   answers,
 	}
-}
-
-func batchThreadsToDto(threads []bots.Thread) []Thread {
-	res := make([]Thread, 0, len(threads))
-	for _, thread := range threads {
-		res = append(res, threadToDto(thread))
-	}
-	return res
 }

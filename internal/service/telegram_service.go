@@ -63,9 +63,11 @@ func (s *TelegramService) Stop(_ context.Context, id bots.BotId) error {
 	return nil
 }
 
-func NewTelegramService(log *slog.Logger) *TelegramService {
+func NewTelegramService(log *slog.Logger, process bots.ProcessHandler, entry bots.EntryHandler) *TelegramService {
 	return &TelegramService{
-		log: log,
+		log:     log,
+		process: process,
+		entry:   entry,
 	}
 }
 

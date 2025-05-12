@@ -81,3 +81,19 @@ func (t *Thread) Answers() map[State]Message {
 func (t *Thread) StartedAt() time.Time {
 	return t.startedAt
 }
+
+type UserThread struct {
+	Thread
+	userId UserId
+}
+
+func NewUserThread(th Thread, userId UserId) UserThread {
+	return UserThread{
+		Thread: th,
+		userId: userId,
+	}
+}
+
+func (ut *UserThread) UserId() UserId {
+	return ut.userId
+}

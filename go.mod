@@ -6,12 +6,18 @@ require (
 	github.com/ThreeDotsLabs/watermill v1.4.6
 	github.com/fatih/color v1.18.0
 	github.com/go-chi/chi/v5 v5.2.1
+	github.com/go-chi/cors v1.2.1
+	github.com/go-chi/render v1.0.3
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/jaevor/go-nanoid v1.4.0
+	github.com/oapi-codegen/runtime v1.1.1
 	github.com/stretchr/testify v1.9.0
 )
 
 require (
+	github.com/ajg/form v1.5.1 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect

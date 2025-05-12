@@ -11,12 +11,20 @@ type State uint
 // Node есть минимальная структурная единица Script.
 type Node struct {
 	state State        // Собственный State узла.
+	title string       // Заголовок узла
 	edges []Edge       // Отсортированный по приоритету список исходящих рёбер.
 	msgs  []BotMessage // Список сообщений, который будет отправлен пользователю.
 }
 
 // NewNode создаёт Node. msgs должно содержать как минимум одно BotMessage.
-func NewNode(state State, edges []Edge, msgs []BotMessage) (Node, error) {
+func NewNode(state State, title string, edges []Edge, msgs []BotMessage) (Node, error) {
+	if title == "" {
+		return Node{}, NewInvalidInputError(
+			"invalid-node",
+			"expected not empty title",
+		)
+	}
+
 	if len(msgs) == 0 {
 		return Node{}, NewInvalidInputError(
 			"invalid-node",
@@ -31,8 +39,8 @@ func NewNode(state State, edges []Edge, msgs []BotMessage) (Node, error) {
 	}, nil
 }
 
-func MustNewNode(state State, edges []Edge, msgs []BotMessage) Node {
-	n, err := NewNode(state, edges, msgs)
+func MustNewNode(state State, title string, edges []Edge, msgs []BotMessage) Node {
+	n, err := NewNode(state, title, edges, msgs)
 	if err != nil {
 		panic(err)
 	}
@@ -74,6 +82,10 @@ func (n Node) Children() []State {
 
 func (n Node) State() State {
 	return n.state
+}
+
+func (n Node) Title() string {
+	return n.title
 }
 
 func (n Node) Messages() []BotMessage {

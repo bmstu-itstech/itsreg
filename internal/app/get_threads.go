@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
@@ -16,6 +17,7 @@ type GetThreadsHandler decorator.QueryHandler[GetThreads, []Thread]
 
 type getThreadsHandler struct {
 	tp bots.ThreadProvider
+	up bots.UsernameProvider
 }
 
 func (h getThreadsHandler) Handle(ctx context.Context, q GetThreads) ([]Thread, error) {
@@ -23,9 +25,17 @@ func (h getThreadsHandler) Handle(ctx context.Context, q GetThreads) ([]Thread, 
 	if err != nil {
 		return nil, err
 	}
-	return batchThreadsToDto(threads), nil
+	res := make([]Thread, len(threads))
+	for i, thread := range threads {
+		username, err := h.up.Username(ctx, thread.UserId())
+		if err != nil {
+			username = bots.Username(fmt.Sprintf("id%d", thread.UserId()))
+		}
+		res[i] = threadToDto(thread.Thread, string(username))
+	}
+	return res, nil
 }
 
-func NewGetThreadsHandler(tp bots.ThreadProvider, l *slog.Logger, mc decorator.MetricsClient) GetThreadsHandler {
-	return decorator.ApplyQueryDecorators(getThreadsHandler{tp}, l, mc)
+func NewGetThreadsHandler(tp bots.ThreadProvider, up bots.UsernameProvider, l *slog.Logger, mc decorator.MetricsClient) GetThreadsHandler {
+	return decorator.ApplyQueryDecorators(getThreadsHandler{tp, up}, l, mc)
 }
