@@ -26,7 +26,7 @@ func RunHTTPServerOnAddr(addr string, createHandler func(router chi.Router) http
 	setMiddlewares(apiRouter, log)
 
 	rootRouter := chi.NewRouter()
-	rootRouter.Mount("/api", createHandler(apiRouter))
+	rootRouter.Mount("/api/v2", createHandler(apiRouter))
 
 	log.Info("Starting: HTTP server", "addr", addr)
 
