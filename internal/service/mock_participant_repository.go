@@ -47,12 +47,10 @@ func (r *MockParticipantRepository) BotThreads(_ context.Context, botId bots.Bot
 	threads := make([]bots.UserThread, 0)
 	for _, prt := range r.m {
 		if prt.Id().BotId() == botId {
-			thread, ok := prt.CurrentThread()
-			if !ok {
-				continue
+			for _, thread := range prt.Threads() {
+				uth := bots.NewUserThread(thread, prt.Id().UserId())
+				threads = append(threads, uth)
 			}
-			uth := bots.NewUserThread(*thread, prt.Id().UserId())
-			threads = append(threads, uth)
 		}
 	}
 	return threads, nil

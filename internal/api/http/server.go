@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 
 	"github.com/go-chi/render"
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/app"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg-bots/pkg/salad"
 )
 
 type Server struct {
@@ -80,7 +80,7 @@ func (s *Server) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 
-	err = renderCsvAnswers(w, bot.Script, threads)
+	err = renderCsvAnswers(w, bot.Script.Nodes, threads)
 	if err != nil {
 		httpError(w, r, err, http.StatusInternalServerError)
 		return
@@ -146,61 +146,90 @@ func httpSlugError(w http.ResponseWriter, r *http.Request, msg string, slug stri
 	})
 }
 
-func renderCsvAnswers(w http.ResponseWriter, script app.Script, threads []app.Thread) error {
+const offset = 3
+
+func renderCsvAnswers(w http.ResponseWriter, nodes []app.Node, threads []app.Thread) error {
 	writer := csv.NewWriter(w)
 	w.Header().Set("Content-Type", "text/csv")
 
-	thead, stateToIndex := answersTHead(script)
-	tbody := answersTBody(threads, stateToIndex)
+	stateToIndex := makeMapStateToIndex(threads)
+	thead := makeAnswersTHead(nodes, stateToIndex)
+	tbody := makeAnswersTBody(threads, stateToIndex)
 
 	if err := writer.Write(thead); err != nil {
-		return err
+		return fmt.Errorf("failed to write CSV answers table: %w", err)
 	}
 	if err := writer.WriteAll(tbody); err != nil {
-		return err
+		return fmt.Errorf("failed to write CSV answers table: %w", err)
 	}
 
 	return nil
+}
+
+func makeMapStateToIndex(threads []app.Thread) map[uint]int {
+	states := make(map[uint]bool)
+	for _, thread := range threads {
+		for state := range thread.Answers {
+			states[state] = true
+		}
+	}
+
+	sortedStates := make([]uint, 0)
+	for state := range states {
+		sortedStates = salad.InsertSorted(sortedStates, state, func(x, y uint) bool { return x < y })
+	}
+
+	m := make(map[uint]int, len(sortedStates))
+	for idx, state := range sortedStates {
+		m[state] = idx
+	}
+
+	return m
 }
 
 const answerThreadIDHeadName = "#"
 const answerTimestampHeadName = "Отметка времени"
 const answerUsernameHeadName = "Никнейм"
 
-func answersTHead(script app.Script) ([]string, map[uint]int) {
-	nodes := script.Nodes
-	slices.SortFunc(nodes, func(a, b app.Node) int { return int(a.State) - int(b.State) })
+func makeAnswersTHead(nodes []app.Node, stateToIndex map[uint]int) []string {
+	head := make([]string, len(stateToIndex)+offset)
 
-	head := make([]string, 0, len(nodes)+3) // ThreadID + Username + Timestamp
-	stateToIndex := make(map[uint]int)
+	head[0] = answerThreadIDHeadName
+	head[1] = answerTimestampHeadName
+	head[2] = answerUsernameHeadName
 
-	head = append(head, answerThreadIDHeadName, answerTimestampHeadName, answerUsernameHeadName)
-	for i, node := range nodes {
-		head = append(head, node.Title)
-		stateToIndex[node.State] = i + 3 // Смещение на три столбца
+	for _, node := range nodes {
+		idx, ok := stateToIndex[node.State]
+		fmt.Printf("%v\n", node)
+		if ok {
+			head[idx+offset] = node.Title
+		}
 	}
 
-	return head, stateToIndex
+	return head
 }
 
-func answersTRow(thread app.Thread, stateToIndex map[uint]int) []string {
-	row := make([]string, len(stateToIndex)) // Индексы идут подряд
+func makeAnswersTRow(thread app.Thread, stateToIndex map[uint]int) []string {
+	row := make([]string, len(stateToIndex)+offset)
+
 	row[0] = thread.Id
 	row[1] = thread.StartedAt.Format("2006-01-02 15:04:05")
 	row[2] = thread.Username
+
 	for state, ans := range thread.Answers {
-		i, ok := stateToIndex[state]
+		idx, ok := stateToIndex[state]
 		if ok {
-			row[i] = ans.Text
+			row[idx+offset] = ans.Text
 		}
 	}
+
 	return row
 }
 
-func answersTBody(threads []app.Thread, stateToIndex map[uint]int) [][]string {
+func makeAnswersTBody(threads []app.Thread, stateToIndex map[uint]int) [][]string {
 	body := make([][]string, len(threads))
 	for i, thread := range threads {
-		body[i] = answersTRow(thread, stateToIndex)
+		body[i] = makeAnswersTRow(thread, stateToIndex)
 	}
 	return body
 }

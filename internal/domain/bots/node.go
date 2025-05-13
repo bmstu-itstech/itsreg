@@ -34,6 +34,7 @@ func NewNode(state State, title string, edges []Edge, msgs []BotMessage) (Node, 
 
 	return Node{
 		state: state,
+		title: title,
 		edges: edges[:],
 		msgs:  msgs[:],
 	}, nil

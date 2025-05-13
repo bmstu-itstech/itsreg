@@ -74,6 +74,7 @@ func TestNewNode(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.state, node.State())
+				require.Equal(t, tt.title, node.Title())
 				require.Equal(t, tt.edges, node.Edges())
 				require.Equal(t, tt.msgs, node.Messages())
 			}
