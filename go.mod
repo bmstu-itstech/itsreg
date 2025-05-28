@@ -4,6 +4,7 @@ go 1.22.5
 
 require (
 	github.com/ThreeDotsLabs/watermill v1.4.6
+	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/fatih/color v1.18.0
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-chi/cors v1.2.1

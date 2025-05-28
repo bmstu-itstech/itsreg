@@ -48,6 +48,14 @@ func NewBot(id BotId, token Token, author UserId, script Script) (Bot, error) {
 	}, nil
 }
 
+func MustNewBot(id BotId, token Token, author UserId, script Script) Bot {
+	b, err := NewBot(id, token, author, script)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 func (b Bot) Id() BotId {
 	return b.id
 }
