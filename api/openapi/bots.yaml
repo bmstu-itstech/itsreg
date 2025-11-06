@@ -4,12 +4,7 @@ info:
   description: ITS Reg API
   version: 2.0.0
 servers:
-  - url: 'http://{localhost}:{port}/api/v2'
-    variables:
-      hostname:
-        default: localhost
-      port:
-        default: "8400"
+  - url: "{url}"
 security:
   - bearerAuth: []
 
@@ -329,20 +324,6 @@ components:
       required:
         - text
 
-    BotMessage:
-      type: object
-      description: Сообщение от бота. Отличается от базового сообщения наличием опций (кнопок).
-      properties:
-        message:
-          $ref: '#/components/schemas/Message'
-        options:
-          type: array
-          items:
-            type: string
-      required:
-        - message
-        - options
-
     Node:
       type: object
       description: >
@@ -357,12 +338,19 @@ components:
           description: Человеко-читаемое название узла. В таблице ответов будет отображаться как заголовок столбца.
         edges:
           type: array
+          description: Массив исходящих рёбер узла.
           items:
             $ref: '#/components/schemas/Edge'
         messages:
           type: array
+          description: Массив отправляемых ботом сообщений при вхождении в узел.
           items:
-            $ref: '#/components/schemas/BotMessage'
+            $ref: '#/components/schemas/Message'
+        options:
+          type: array
+          description: Массив кнопок (опций) ответа для пользователя.
+          items:
+            type: string
       required:
         - state
         - title

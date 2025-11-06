@@ -31,6 +31,20 @@ func TestNewThread(t *testing.T) {
 	})
 }
 
+func TestThread_Clone(t *testing.T) {
+	state1 := bots.State(1)
+	entry := bots.MustNewEntry("start", state1)
+	thread := bots.MustNewThread(entry)
+	thread.SaveAnswer(bots.MustNewMessage("test"))
+
+	cloned := thread.Clone()
+	require.True(t, thread.Equals(cloned), "cloned thread didn't match original")
+
+	// Проверяем, что произошло глубокое копирование
+	thread.SaveAnswer(bots.MustNewMessage("updated"))
+	require.NotEqual(t, thread.Answers(), cloned.Answers())
+}
+
 func TestThread_SaveAnswer(t *testing.T) {
 	state1 := bots.State(1)
 	entry := bots.MustNewEntry("start", state1)

@@ -67,7 +67,7 @@ func (s Script) Entry(prt *Participant, key EntryKey) ([]BotMessage, error) {
 		return nil, fmt.Errorf("no bot node with state %d", thread.State())
 	}
 
-	return current.Messages(), nil
+	return current.BotMessages(), nil
 }
 
 func (s Script) Process(prt *Participant, in Message) ([]BotMessage, error) {
@@ -100,7 +100,7 @@ func (s Script) Process(prt *Participant, in Message) ([]BotMessage, error) {
 
 	thread.StepTo(nextState)
 
-	return next.Messages(), nil
+	return next.BotMessages(), nil
 }
 
 func (s Script) Nodes() []Node {

@@ -22,16 +22,12 @@ type Message struct {
 	Text string
 }
 
-type BotMessage struct {
-	Message Message
-	Options []string
-}
-
 type Node struct {
 	State    uint
 	Title    string
 	Edges    []Edge
-	Messages []BotMessage
+	Messages []Message
+	Options  []string
 }
 
 type Entry struct {
@@ -141,9 +137,9 @@ func edgeFromDto(dto Edge) (bots.Edge, error) {
 	return bots.NewEdge(pred, bots.State(dto.To), op), nil
 }
 
-func batchEdgesFromDto(dtos []Edge) ([]bots.Edge, error) {
-	res := make([]bots.Edge, 0, len(dtos))
-	for _, edge := range dtos {
+func batchEdgesFromDto(dto []Edge) ([]bots.Edge, error) {
+	res := make([]bots.Edge, 0, len(dto))
+	for _, edge := range dto {
 		e, err := edgeFromDto(edge)
 		if err != nil {
 			return nil, err
@@ -179,18 +175,10 @@ func messageToDto(m bots.Message) Message {
 	}
 }
 
-func botMessageFromDto(dto BotMessage) (bots.BotMessage, error) {
-	opts := make([]bots.Option, 0, len(dto.Options))
-	for _, option := range dto.Options {
-		opts = append(opts, bots.Option(option))
-	}
-	return bots.NewBotMessage(dto.Message.Text, opts)
-}
-
-func batchBotMessagesFromDto(dto []BotMessage) ([]bots.BotMessage, error) {
-	res := make([]bots.BotMessage, 0, len(dto))
+func batchMessagesFromDto(dto []Message) ([]bots.Message, error) {
+	res := make([]bots.Message, 0, len(dto))
 	for _, message := range dto {
-		m, err := botMessageFromDto(message)
+		m, err := messageFromDto(message)
 		if err != nil {
 			return nil, err
 		}
@@ -199,23 +187,26 @@ func batchBotMessagesFromDto(dto []BotMessage) ([]bots.BotMessage, error) {
 	return res, nil
 }
 
-func botMessageToDto(m bots.BotMessage) BotMessage {
-	opts := make([]string, 0, len(m.Options()))
-	for _, opt := range m.Options() {
-		opts = append(opts, string(opt))
+func batchMessagesToDto(dto []bots.Message) []Message {
+	res := make([]Message, len(dto))
+	for i, message := range dto {
+		res[i] = messageToDto(message)
 	}
-	return BotMessage{
-		Message: Message{
-			Text: m.Text(),
-		},
-		Options: opts,
-	}
+	return res
 }
 
-func batchBotMessagesToDto(messages []bots.BotMessage) []BotMessage {
-	res := make([]BotMessage, 0, len(messages))
-	for _, message := range messages {
-		res = append(res, botMessageToDto(message))
+func batchOptionsFromDto(dto []string) []bots.Option {
+	res := make([]bots.Option, len(dto))
+	for i, option := range dto {
+		res[i] = bots.Option(option)
+	}
+	return res
+}
+
+func batchOptionsToDto(dto []bots.Option) []string {
+	res := make([]string, len(dto))
+	for i, option := range dto {
+		res[i] = string(option)
 	}
 	return res
 }
@@ -226,12 +217,14 @@ func nodeFromDto(dto Node) (bots.Node, error) {
 		return bots.Node{}, err
 	}
 
-	messages, err := batchBotMessagesFromDto(dto.Messages)
+	messages, err := batchMessagesFromDto(dto.Messages)
 	if err != nil {
 		return bots.Node{}, err
 	}
 
-	return bots.NewNode(bots.State(dto.State), dto.Title, edges, messages)
+	options := batchOptionsFromDto(dto.Options)
+
+	return bots.NewNode(bots.State(dto.State), dto.Title, edges, messages, options)
 }
 
 func batchNodesFromDto(dto []Node) ([]bots.Node, error) {
@@ -251,7 +244,8 @@ func nodeToDto(node bots.Node) Node {
 		State:    uint(node.State()),
 		Title:    node.Title(),
 		Edges:    batchEdgesToDto(node.Edges()),
-		Messages: batchBotMessagesToDto(node.Messages()),
+		Messages: batchMessagesToDto(node.Messages()),
+		Options:  batchOptionsToDto(node.Options()),
 	}
 }
 
@@ -333,7 +327,7 @@ func batchBotToDto(bs []bots.Bot) []Bot {
 	return res
 }
 
-func threadToDto(thread bots.Thread, username string) Thread {
+func threadToDto(thread *bots.Thread, username string) Thread {
 	answers := make(map[uint]Message)
 	for state, msg := range thread.Answers() {
 		answers[uint(state)] = messageToDto(msg)

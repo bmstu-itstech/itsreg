@@ -82,16 +82,18 @@ func nodeToApp(node Node) (app.Node, error) {
 		State:    uint(node.State),
 		Title:    node.Title,
 		Edges:    edges,
-		Messages: batchBotMessageToApp(node.Messages),
+		Messages: batchMessageToApp(node.Messages),
+		Options:  emptyOnNil(node.Options),
 	}, nil
 }
 
 func nodeFromApp(node app.Node) Node {
 	return Node{
 		Edges:    nilOnEmpty(batchEdgesFromApp(node.Edges)),
-		Messages: batchBotMessagesFromApp(node.Messages),
+		Messages: batchMessagesFromApp(node.Messages),
 		State:    int(node.State),
 		Title:    node.Title,
+		Options:  nilOnEmpty(node.Options),
 	}
 }
 
@@ -152,6 +154,22 @@ func batchEdgesFromApp(edges []app.Edge) []Edge {
 	res := make([]Edge, len(edges))
 	for i, edge := range edges {
 		res[i] = edgeFromApp(edge)
+	}
+	return res
+}
+
+func batchMessageToApp(msgs []Message) []app.Message {
+	res := make([]app.Message, len(msgs))
+	for i, msg := range msgs {
+		res[i] = messageToApp(msg)
+	}
+	return res
+}
+
+func batchMessagesFromApp(msgs []app.Message) []Message {
+	res := make([]Message, len(msgs))
+	for i, msg := range msgs {
+		res[i] = messageFromApp(msg)
 	}
 	return res
 }
@@ -219,36 +237,6 @@ func predicateFromApp(pred app.Predicate) Predicate {
 	default:
 		return Predicate{}
 	}
-}
-
-func botMessageToApp(botMessage BotMessage) app.BotMessage {
-	return app.BotMessage{
-		Message: messageToApp(botMessage.Message),
-		Options: botMessage.Options,
-	}
-}
-
-func botMessageFromApp(botMessage app.BotMessage) BotMessage {
-	return BotMessage{
-		Message: messageFromApp(botMessage.Message),
-		Options: botMessage.Options,
-	}
-}
-
-func batchBotMessageToApp(botMessages []BotMessage) []app.BotMessage {
-	res := make([]app.BotMessage, len(botMessages))
-	for i, botMessage := range botMessages {
-		res[i] = botMessageToApp(botMessage)
-	}
-	return res
-}
-
-func batchBotMessagesFromApp(botMessages []app.BotMessage) []BotMessage {
-	res := make([]BotMessage, len(botMessages))
-	for i, botMessage := range botMessages {
-		res[i] = botMessageFromApp(botMessage)
-	}
-	return res
 }
 
 func messageToApp(message Message) app.Message {

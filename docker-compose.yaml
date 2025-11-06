@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:15.3-alpine3.18
+    command: postgres
+    ports:
+      - "${POSTGRES_EXTERNAL_PORT:-5432}:5432"
+    env_file: .env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      interval: 5s
+      retries: 5
+      start_period: 10s
+      timeout: 10s
+    volumes:
+      - ${POSTGRES_VOLUME:-.postgres/}:/var/lib/postgresql/data
+    networks:
+      internal:
+        aliases:
+          - db
+
+  migrate:
+    image: migrate/migrate
+    command: [
+      "-path",
+      "/migrations",
+      "-database",
+      "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable",
+      "up"
+    ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    networks:
+      internal:
+
+networks:
+  internal:
+    driver: bridge

@@ -21,7 +21,7 @@ func NewMessage(text string) (Message, error) {
 func MustNewMessage(text string) Message {
 	m, err := NewMessage(text)
 	if err != nil {
-		return Message{}
+		panic(err)
 	}
 	return m
 }
@@ -44,5 +44,13 @@ func (m Message) String() string {
 func (m Message) Merge(o Message) Message {
 	return Message{
 		text: m.text + messageMergeDelim + o.text,
+	}
+}
+
+// PromoteToBotMessage модифицирует сообщение для отправки его ботом.
+func (m Message) PromoteToBotMessage(opts []Option) BotMessage {
+	return BotMessage{
+		Message: m,
+		opts:    opts,
 	}
 }

@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmoiron/sqlx"
 
 	httpapi "github.com/bmstu-itstech/itsreg-bots/internal/api/http"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app"
@@ -15,13 +19,26 @@ import (
 	"github.com/bmstu-itstech/itsreg-bots/pkg/server"
 )
 
+func connectDb() (*sqlx.DB, error) {
+	uri := os.Getenv("DATABASE_URI")
+	if uri == "" {
+		return nil, fmt.Errorf("DATABASE_URI must be set")
+	}
+	return sqlx.Connect("postgres", uri)
+}
+
 func main() {
 	l := logs.DefaultLogger()
 	mc := metrics.NoOp{}
 
-	botRepository := service.NewMockBotRepository()
-	participantRepository := service.NewMockParticipantRepository()
-	usernameRepository := service.NewMockUsernameRepository()
+	db, err := connectDb()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	botRepository := service.NewPostgresBotRepository(db)
+	participantRepository := service.NewPostgresParticipantRepository(db, l)
+	usernameRepository := service.NewPostgresUsernameRepository(db)
 	botMessageSender := service.NewTelegramMessageSender()
 
 	process := ProcessHandlerAdapter{app.NewProcessHandler(botRepository, participantRepository, botMessageSender, l, mc)}

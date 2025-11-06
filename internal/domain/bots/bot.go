@@ -1,6 +1,10 @@
 package bots
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"time"
+)
 
 // BotId есть уникальный идентификатор бота.
 type BotId string
@@ -9,10 +13,11 @@ type BotId string
 type Token string
 
 type Bot struct {
-	id     BotId
-	token  Token
-	author UserId
-	script Script
+	id        BotId
+	token     Token
+	author    UserId
+	script    Script
+	createdAt time.Time
 }
 
 func NewBot(id BotId, token Token, author UserId, script Script) (Bot, error) {
@@ -42,9 +47,11 @@ func NewBot(id BotId, token Token, author UserId, script Script) (Bot, error) {
 	}
 
 	return Bot{
-		id:     id,
-		token:  token,
-		script: script,
+		id:        id,
+		token:     token,
+		author:    author,
+		script:    script,
+		createdAt: time.Now().Truncate(time.Second),
 	}, nil
 }
 
@@ -70,4 +77,44 @@ func (b Bot) Author() UserId {
 
 func (b Bot) Script() Script {
 	return b.script
+}
+
+func (b Bot) CreatedAt() time.Time {
+	return b.createdAt
+}
+
+func UnmarshallBot(
+	id string,
+	token string,
+	author int64,
+	script Script,
+	createdAt time.Time,
+) (Bot, error) {
+	if id == "" {
+		return Bot{}, errors.New("id is empty")
+	}
+
+	if token == "" {
+		return Bot{}, errors.New("token is empty")
+	}
+
+	if author == 0 {
+		return Bot{}, errors.New("author id is empty")
+	}
+
+	if script.IsZero() {
+		return Bot{}, errors.New("script is empty")
+	}
+
+	if createdAt.IsZero() {
+		return Bot{}, errors.New("createdAt is empty")
+	}
+
+	return Bot{
+		id:        BotId(id),
+		token:     Token(token),
+		author:    UserId(author),
+		script:    script,
+		createdAt: createdAt,
+	}, nil
 }

@@ -46,7 +46,7 @@ type UsernameProvider interface {
 
 type ThreadProvider interface {
 	// BotThreads возвращает все цепочки ответов (треды) заданному боту.
-	BotThreads(ctx context.Context, botId BotId) ([]UserThread, error)
+	BotThreads(ctx context.Context, botId BotId) ([]BotThread, error)
 }
 
 type BotMessageSender interface {

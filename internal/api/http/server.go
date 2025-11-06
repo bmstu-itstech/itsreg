@@ -149,8 +149,12 @@ func httpSlugError(w http.ResponseWriter, r *http.Request, msg string, slug stri
 const offset = 3
 
 func renderCsvAnswers(w http.ResponseWriter, nodes []app.Node, threads []app.Thread) error {
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+
+	utf8bom := []byte{0xEF, 0xBB, 0xBF}
+	_, _ = w.Write(utf8bom)
+
 	writer := csv.NewWriter(w)
-	w.Header().Set("Content-Type", "text/csv")
 
 	stateToIndex := makeMapStateToIndex(threads)
 	thead := makeAnswersTHead(nodes, stateToIndex)

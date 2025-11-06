@@ -9,10 +9,18 @@ import (
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/internal/service"
+	"github.com/bmstu-itstech/itsreg-bots/pkg/tests"
 )
 
 func setupMockBotRepository() *service.MockBotRepository {
 	return service.NewMockBotRepository()
+}
+
+func setupPostgresBotRepository() (*service.PostgresBotRepository, func()) {
+	db := tests.ConnectPostgresDB()
+	return service.NewPostgresBotRepository(db), func() {
+		_ = db.Close()
+	}
 }
 
 func TestMockBotRepository_CreateNew(t *testing.T) {
@@ -75,15 +83,87 @@ func TestMockBotRepository_UpdateNodeAndEntry(t *testing.T) {
 	testBotRepositoryUpdateNodeAndEntry(t, r, r)
 }
 
+func TestPostgresBotRepository_CreateNew(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryCreateNew(t, r, r)
+}
+
+func TestPostgresBotRepository_ErrorIfNotExists(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryErrorIfNotExists(t, r)
+}
+
+func TestPostgresBotRepository_AddNode(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryAddNode(t, r, r)
+}
+
+func TestPostgresBotRepository_RemoveNode(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryRemoveNode(t, r, r)
+}
+
+func TestPostgresBotRepository_AddEntry(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryAddEntry(t, r, r)
+}
+
+func TestPostgresBotRepository_RemoveEntry(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryRemoveEntry(t, r, r)
+}
+
+func TestPostgresBotRepository_AddEdge(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryAddEdge(t, r, r)
+}
+
+func TestPostgresBotRepository_RemoveEdge(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryRemoveEdge(t, r, r)
+}
+
+func TestPostgresBotRepository_AddMessage(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryAddMessage(t, r, r)
+}
+
+func TestPostgresBotRepository_RemoveMessage(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryRemoveMessage(t, r, r)
+}
+
+func TestPostgresBotRepository_UpdateBotData(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryUpdateBotData(t, r, r)
+}
+
+func TestPostgresBotRepository_UpdateNodeAndEntry(t *testing.T) {
+	r, closeFn := setupPostgresBotRepository()
+	t.Cleanup(closeFn)
+	testBotRepositoryUpdateNodeAndEntry(t, r, r)
+}
+
 func testBotRepositoryCreateNew(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
 	id := bots.BotId(gofakeit.AppName())
 	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -104,9 +184,9 @@ func testBotRepositoryAddNode(t *testing.T, m bots.BotManager, p bots.BotProvide
 	id := bots.BotId(gofakeit.AppName())
 	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -124,13 +204,14 @@ func testBotRepositoryAddNode(t *testing.T, m bots.BotManager, p bots.BotProvide
 				[]bots.Edge{
 					bots.NewEdge(bots.AlwaysTruePredicate{}, bots.State(2), bots.NoOp{}),
 				},
-				[]bots.BotMessage{
-					bots.MustNewBotMessage("Hello, world!", nil),
+				[]bots.Message{
+					bots.MustNewMessage("Hello, world!"),
 				},
+				nil,
 			),
-			bots.MustNewNode(bots.State(2), "Goodbye", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Goodbye!", nil),
-			}),
+			bots.MustNewNode(bots.State(2), "Goodbye", nil, []bots.Message{
+				bots.MustNewMessage("Goodbye!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -156,13 +237,14 @@ func testBotRepositoryRemoveNode(t *testing.T, m bots.BotManager, p bots.BotProv
 				[]bots.Edge{
 					bots.NewEdge(bots.AlwaysTruePredicate{}, bots.State(2), bots.NoOp{}),
 				},
-				[]bots.BotMessage{
-					bots.MustNewBotMessage("Hello, world!", nil),
+				[]bots.Message{
+					bots.MustNewMessage("Hello, world!"),
 				},
+				nil,
 			),
-			bots.MustNewNode(bots.State(2), "Goodbye", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Goodbye!", nil),
-			}),
+			bots.MustNewNode(bots.State(2), "Goodbye", nil, []bots.Message{
+				bots.MustNewMessage("Goodbye!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -174,9 +256,9 @@ func testBotRepositoryRemoveNode(t *testing.T, m bots.BotManager, p bots.BotProv
 
 	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -196,9 +278,9 @@ func testBotRepositoryAddEntry(t *testing.T, m bots.BotManager, p bots.BotProvid
 	id := bots.BotId(gofakeit.AppName())
 	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -210,9 +292,9 @@ func testBotRepositoryAddEntry(t *testing.T, m bots.BotManager, p bots.BotProvid
 
 	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -233,9 +315,9 @@ func testBotRepositoryRemoveEntry(t *testing.T, m bots.BotManager, p bots.BotPro
 	id := bots.BotId(gofakeit.AppName())
 	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -248,9 +330,9 @@ func testBotRepositoryRemoveEntry(t *testing.T, m bots.BotManager, p bots.BotPro
 
 	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -270,9 +352,9 @@ func testBotRepositoryAddEdge(t *testing.T, m bots.BotManager, p bots.BotProvide
 	id := bots.BotId(gofakeit.AppName())
 	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -288,9 +370,10 @@ func testBotRepositoryAddEdge(t *testing.T, m bots.BotManager, p bots.BotProvide
 				[]bots.Edge{
 					bots.NewEdge(bots.MustNewRegexMatchPredicate("repeat"), bots.State(1), bots.NoOp{}),
 				},
-				[]bots.BotMessage{
-					bots.MustNewBotMessage("Hello, world!", nil),
+				[]bots.Message{
+					bots.MustNewMessage("Hello, world!"),
 				},
+				nil,
 			),
 		},
 		[]bots.Entry{
@@ -315,9 +398,10 @@ func testBotRepositoryRemoveEdge(t *testing.T, m bots.BotManager, p bots.BotProv
 				[]bots.Edge{
 					bots.NewEdge(bots.MustNewRegexMatchPredicate("repeat"), bots.State(1), bots.NoOp{}),
 				},
-				[]bots.BotMessage{
-					bots.MustNewBotMessage("Hello, world!", nil),
+				[]bots.Message{
+					bots.MustNewMessage("Hello, world!"),
 				},
+				nil,
 			),
 		},
 		[]bots.Entry{
@@ -327,9 +411,9 @@ func testBotRepositoryRemoveEdge(t *testing.T, m bots.BotManager, p bots.BotProv
 
 	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -352,9 +436,9 @@ func testBotRepositoryAddMessage(t *testing.T, m bots.BotManager, p bots.BotProv
 	id := bots.BotId(gofakeit.AppName())
 	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -366,10 +450,10 @@ func testBotRepositoryAddMessage(t *testing.T, m bots.BotManager, p bots.BotProv
 
 	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-				bots.MustNewBotMessage("Hello, world x2!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+				bots.MustNewMessage("Hello, world x2!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -389,10 +473,10 @@ func testBotRepositoryRemoveMessage(t *testing.T, m bots.BotManager, p bots.BotP
 	id := bots.BotId(gofakeit.AppName())
 	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-				bots.MustNewBotMessage("Hello, world x2!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+				bots.MustNewMessage("Hello, world x2!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -404,9 +488,9 @@ func testBotRepositoryRemoveMessage(t *testing.T, m bots.BotManager, p bots.BotP
 
 	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -426,9 +510,9 @@ func testBotRepositoryUpdateBotData(t *testing.T, m bots.BotManager, p bots.BotP
 	id := bots.BotId(gofakeit.AppName())
 	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -440,9 +524,9 @@ func testBotRepositoryUpdateBotData(t *testing.T, m bots.BotManager, p bots.BotP
 
 	updatedBot := bots.MustNewBot(id, "token2", bots.UserId(2), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -462,9 +546,9 @@ func testBotRepositoryUpdateNodeAndEntry(t *testing.T, m bots.BotManager, p bots
 	id := bots.BotId(gofakeit.AppName())
 	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start", bots.State(1)),
@@ -476,9 +560,9 @@ func testBotRepositoryUpdateNodeAndEntry(t *testing.T, m bots.BotManager, p bots
 
 	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
 		[]bots.Node{
-			bots.MustNewNode(bots.State(2), "Greeting 2", nil, []bots.BotMessage{
-				bots.MustNewBotMessage("Hello, world!", nil),
-			}),
+			bots.MustNewNode(bots.State(2), "Greeting 2", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
 		},
 		[]bots.Entry{
 			bots.MustNewEntry("start2", bots.State(2)),

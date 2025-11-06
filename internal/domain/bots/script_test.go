@@ -16,9 +16,10 @@ var (
 		[]bots.Edge{
 			bots.NewEdge(bots.MustNewExactMatchPredicate("Далее"), bots.State(2), bots.NoOp{}),
 		},
-		[]bots.BotMessage{
-			bots.MustNewBotMessage("Привет! Это бот-опросник", []bots.Option{"Далее"}),
+		[]bots.Message{
+			bots.MustNewMessage("Привет! Это бот-опросник"),
 		},
+		[]bots.Option{"Далее"},
 	)
 	fullNameNode = bots.MustNewNode(
 		bots.State(2),
@@ -27,10 +28,11 @@ var (
 			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), bots.State(1), bots.NoOp{}),
 			bots.NewEdge(bots.AlwaysTruePredicate{}, bots.State(3), bots.SaveOp{}),
 		},
-		[]bots.BotMessage{
-			bots.MustNewBotMessage("Продолжая пользоваться ботом, Вы подтверждаете...", []bots.Option{}),
-			bots.MustNewBotMessage("Введите своё ФИО", []bots.Option{}),
+		[]bots.Message{
+			bots.MustNewMessage("Продолжая пользоваться ботом, Вы подтверждаете..."),
+			bots.MustNewMessage("Введите своё ФИО"),
 		},
+		nil,
 	)
 	choosePillNode = bots.MustNewNode(
 		bots.State(3),
@@ -40,9 +42,10 @@ var (
 			bots.NewEdge(bots.MustNewExactMatchPredicate("Синяя"), bots.State(11), bots.AppendOp{}),
 			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), bots.State(2), bots.NoOp{}),
 		},
-		[]bots.BotMessage{
-			bots.MustNewBotMessage("Выбери таблетку:", []bots.Option{"Красная", "Синяя", "Назад"}),
+		[]bots.Message{
+			bots.MustNewMessage("Выбери таблетку:"),
 		},
+		[]bots.Option{"Красная", "Синяя", "Назад"},
 	)
 	redPillNode = bots.MustNewNode(
 		bots.State(10),
@@ -50,9 +53,10 @@ var (
 		[]bots.Edge{
 			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), bots.State(3), bots.NoOp{}),
 		},
-		[]bots.BotMessage{
-			bots.MustNewBotMessage("Теперь ты увидел суровую реальность...", []bots.Option{}),
+		[]bots.Message{
+			bots.MustNewMessage("Теперь ты увидел суровую реальность..."),
 		},
+		nil,
 	)
 	bluePill = bots.MustNewNode(
 		bots.State(11),
@@ -60,9 +64,10 @@ var (
 		[]bots.Edge{
 			bots.NewEdge(bots.MustNewExactMatchPredicate("Назад"), bots.State(3), bots.NoOp{}),
 		},
-		[]bots.BotMessage{
-			bots.MustNewBotMessage("Оставайся в иллюзии...", []bots.Option{}),
+		[]bots.Message{
+			bots.MustNewMessage("Оставайся в иллюзии..."),
 		},
+		nil,
 	)
 )
 
@@ -82,7 +87,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	// Пользователь нажимаем команду /start
 	msgs, err := script.Entry(prt, "start")
 	require.NoError(t, err)
-	require.Equal(t, greetingNode.Messages(), msgs)
+	require.Equal(t, greetingNode.BotMessages(), msgs)
 	thread, ok := prt.CurrentThread()
 	require.True(t, ok)
 	require.NotNil(t, thread)
@@ -99,7 +104,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	// Пользователь вводит то, что от него всё-таки ожидают
 	msgs, err = script.Process(prt, bots.MustNewMessage("Далее"))
 	require.NoError(t, err)
-	require.Equal(t, fullNameNode.Messages(), msgs)
+	require.Equal(t, fullNameNode.BotMessages(), msgs)
 	thread, ok = prt.CurrentThread()
 	require.Equal(t, thread.State(), bots.State(2))
 	require.Empty(t, thread.Answers())
@@ -107,7 +112,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	// Пользователь вводит Назад
 	msgs, err = script.Process(prt, bots.MustNewMessage("Назад"))
 	require.NoError(t, err)
-	require.Equal(t, greetingNode.Messages(), msgs)
+	require.Equal(t, greetingNode.BotMessages(), msgs)
 	thread, ok = prt.CurrentThread()
 	require.Equal(t, thread.State(), bots.State(1))
 	require.Empty(t, thread.Answers())
@@ -115,14 +120,14 @@ func TestScript_EntryNProcess(t *testing.T) {
 	// Шагаем обратно
 	msgs, err = script.Process(prt, bots.MustNewMessage("Далее"))
 	require.NoError(t, err)
-	require.Equal(t, fullNameNode.Messages(), msgs)
+	require.Equal(t, fullNameNode.BotMessages(), msgs)
 	thread, ok = prt.CurrentThread()
 	require.Equal(t, thread.State(), bots.State(2))
 
 	// Пользователь вводит своё ФИО
 	msgs, err = script.Process(prt, bots.MustNewMessage("Иванов Иван Иванович"))
 	require.NoError(t, err)
-	require.Equal(t, choosePillNode.Messages(), msgs)
+	require.Equal(t, choosePillNode.BotMessages(), msgs)
 	thread, ok = prt.CurrentThread()
 	require.Equal(t, thread.State(), bots.State(3))
 	require.Equal(t, map[bots.State]bots.Message{
@@ -132,7 +137,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	// Пользователь выбирает красную таблетку
 	msgs, err = script.Process(prt, bots.MustNewMessage("Красная"))
 	require.NoError(t, err)
-	require.Equal(t, redPillNode.Messages(), msgs)
+	require.Equal(t, redPillNode.BotMessages(), msgs)
 	thread, ok = prt.CurrentThread()
 	require.Equal(t, thread.State(), bots.State(10))
 	require.Equal(t, map[bots.State]bots.Message{
@@ -143,7 +148,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	// Пользователь увидел реальность и передумал
 	msgs, err = script.Process(prt, bots.MustNewMessage("Назад"))
 	require.NoError(t, err)
-	require.Equal(t, choosePillNode.Messages(), msgs)
+	require.Equal(t, choosePillNode.BotMessages(), msgs)
 	thread, ok = prt.CurrentThread()
 	require.Equal(t, thread.State(), bots.State(3))
 	require.Equal(t, map[bots.State]bots.Message{
@@ -154,7 +159,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	// ... и выбрал синюю таблетку
 	msgs, err = script.Process(prt, bots.MustNewMessage("Синяя"))
 	require.NoError(t, err)
-	require.Equal(t, bluePill.Messages(), msgs)
+	require.Equal(t, bluePill.BotMessages(), msgs)
 	thread, ok = prt.CurrentThread()
 	require.Equal(t, thread.State(), bots.State(11))
 	require.Equal(t, map[bots.State]bots.Message{
@@ -177,20 +182,20 @@ func TestNewScript(t *testing.T) {
 	node1 := bots.MustNewNode(bots.State(1), "node1", []bots.Edge{
 		bots.NewEdge(bots.MustNewExactMatchPredicate("2"), bots.State(2), bots.NoOp{}),
 		bots.NewEdge(bots.MustNewExactMatchPredicate("3"), bots.State(3), bots.NoOp{}),
-	}, []bots.BotMessage{
-		bots.MustNewBotMessage("1", nil),
-	})
+	}, []bots.Message{
+		bots.MustNewMessage("1"),
+	}, nil)
 
 	node2 := bots.MustNewNode(bots.State(2), "node2", []bots.Edge{
 		bots.NewEdge(bots.MustNewExactMatchPredicate("2"), bots.State(2), bots.NoOp{}), // Цикл
 		bots.NewEdge(bots.MustNewExactMatchPredicate("1"), bots.State(1), bots.NoOp{}), // Цикл на себя
-	}, []bots.BotMessage{
-		bots.MustNewBotMessage("2", nil),
-	})
+	}, []bots.Message{
+		bots.MustNewMessage("2"),
+	}, nil)
 
-	node3 := bots.MustNewNode(bots.State(3), "node3", []bots.Edge{}, []bots.BotMessage{
-		bots.MustNewBotMessage("3", nil),
-	})
+	node3 := bots.MustNewNode(bots.State(3), "node3", []bots.Edge{}, []bots.Message{
+		bots.MustNewMessage("3"),
+	}, nil)
 
 	t.Run("Valid script", func(t *testing.T) {
 		entry := bots.MustNewEntry("start", bots.State(1))

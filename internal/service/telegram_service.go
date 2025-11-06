@@ -29,7 +29,6 @@ func (s *TelegramService) Status(_ context.Context, id bots.BotId) (bots.Status,
 		return bots.Dead, nil
 	}
 	return bots.Running, nil
-
 }
 
 func (s *TelegramService) Start(ctx context.Context, id bots.BotId, token bots.Token) error {

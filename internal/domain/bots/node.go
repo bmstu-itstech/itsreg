@@ -10,19 +10,24 @@ type State uint
 
 // Node есть минимальная структурная единица Script.
 type Node struct {
-	state State        // Собственный State узла.
-	title string       // Заголовок узла
-	edges []Edge       // Отсортированный по приоритету список исходящих рёбер.
-	msgs  []BotMessage // Список сообщений, который будет отправлен пользователю.
+	state State     // Собственный State узла.
+	title string    // Заголовок узла
+	edges []Edge    // Отсортированный по приоритету список исходящих рёбер.
+	msgs  []Message // Список сообщений, который будет отправлен пользователю.
+	opts  []Option  // Список кнопок-клавиатуры, которые будут отправлены с последним сообщением
 }
 
 // NewNode создаёт Node. msgs должно содержать как минимум одно BotMessage.
-func NewNode(state State, title string, edges []Edge, msgs []BotMessage) (Node, error) {
+func NewNode(state State, title string, edges []Edge, msgs []Message, opts []Option) (Node, error) {
 	if title == "" {
 		return Node{}, NewInvalidInputError(
 			"invalid-node",
 			"expected not empty title",
 		)
+	}
+
+	if edges == nil {
+		edges = make([]Edge, 0)
 	}
 
 	if len(msgs) == 0 {
@@ -32,16 +37,21 @@ func NewNode(state State, title string, edges []Edge, msgs []BotMessage) (Node, 
 		)
 	}
 
+	if opts == nil {
+		opts = make([]Option, 0)
+	}
+
 	return Node{
 		state: state,
 		title: title,
 		edges: edges[:],
 		msgs:  msgs[:],
+		opts:  opts,
 	}, nil
 }
 
-func MustNewNode(state State, title string, edges []Edge, msgs []BotMessage) Node {
-	n, err := NewNode(state, title, edges, msgs)
+func MustNewNode(state State, title string, edges []Edge, msgs []Message, opts []Option) Node {
+	n, err := NewNode(state, title, edges, msgs, opts)
 	if err != nil {
 		panic(err)
 	}
@@ -89,10 +99,29 @@ func (n Node) Title() string {
 	return n.title
 }
 
-func (n Node) Messages() []BotMessage {
+// Messages возвращает сообщения в том виде, в котором они хранятся в узле.
+func (n Node) Messages() []Message {
 	return n.msgs[:]
+}
+
+// BotMessages возвращает сообщения в том виде, в котором они будут отправлены пользователю.
+// Если для узла заданы опции, последнее сообщение будет их содержать.
+func (n Node) BotMessages() []BotMessage {
+	res := make([]BotMessage, len(n.msgs))
+	for i, msg := range n.msgs[:len(n.msgs)-1] {
+		// Промежуточные сообщения не могут иметь опций ответа.
+		res[i] = msg.PromoteToBotMessage(nil)
+	}
+	// Последнее сообщение гарантировано существует, т.к. len(n.msgs) > 0.
+	// Добавляем к нему опции.
+	res[len(res)-1] = n.msgs[len(n.msgs)-1].PromoteToBotMessage(n.opts)
+	return res
 }
 
 func (n Node) Edges() []Edge {
 	return n.edges[:]
+}
+
+func (n Node) Options() []Option {
+	return n.opts[:]
 }

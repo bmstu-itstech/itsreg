@@ -31,7 +31,7 @@ func (h getThreadsHandler) Handle(ctx context.Context, q GetThreads) ([]Thread, 
 		if err != nil {
 			username = bots.Username(fmt.Sprintf("id%d", thread.UserId()))
 		}
-		res[i] = threadToDto(thread.Thread, string(username))
+		res[i] = threadToDto(thread.Thread(), string(username))
 	}
 	return res, nil
 }

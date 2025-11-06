@@ -9,8 +9,8 @@ import (
 )
 
 func TestNewBot(t *testing.T) {
-	msg := bots.MustNewBotMessage("some text", nil)
-	node := bots.MustNewNode(1, "test", nil, []bots.BotMessage{msg})
+	msg := bots.MustNewMessage("some text")
+	node := bots.MustNewNode(1, "test", nil, []bots.Message{msg}, nil)
 	entry := bots.MustNewEntry("start", 1)
 	validScript := bots.MustNewScript([]bots.Node{node}, []bots.Entry{entry})
 	zeroScript := bots.Script{}

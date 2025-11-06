@@ -12,8 +12,11 @@ require (
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/jaevor/go-nanoid v1.4.0
+	github.com/jmoiron/sqlx v1.4.0
+	github.com/lib/pq v1.10.9
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/stretchr/testify v1.9.0
+	github.com/zhikh23/pgutils v1.1.3
 )
 
 require (
