@@ -9,7 +9,7 @@ import (
 )
 
 type UpdateBot struct {
-	BotId  string
+	BotID  string
 	Author int64
 	Token  string
 	Script Script
@@ -27,7 +27,7 @@ func (h updateBotHandler) Handle(ctx context.Context, cmd UpdateBot) error {
 		return err
 	}
 
-	bot, err := bots.NewBot(bots.BotId(cmd.BotId), bots.Token(cmd.Token), bots.UserId(cmd.Author), script)
+	bot, err := bots.NewBot(bots.BotID(cmd.BotID), bots.Token(cmd.Token), bots.UserID(cmd.Author), script)
 	if err != nil {
 		return err
 	}

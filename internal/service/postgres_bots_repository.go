@@ -24,7 +24,7 @@ func NewPostgresBotRepository(db *sqlx.DB) *PostgresBotRepository {
 	}
 }
 
-func (r *PostgresBotRepository) Bot(ctx context.Context, id bots.BotId) (bots.Bot, error) {
+func (r *PostgresBotRepository) Bot(ctx context.Context, id bots.BotID) (bots.Bot, error) {
 	var bot bots.Bot
 	err := pgutils.RunTx(ctx, r.db, func(tx *sqlx.Tx) error {
 		var err error
@@ -34,7 +34,7 @@ func (r *PostgresBotRepository) Bot(ctx context.Context, id bots.BotId) (bots.Bo
 	return bot, err
 }
 
-func (r *PostgresBotRepository) UserBots(ctx context.Context, author bots.UserId) ([]bots.Bot, error) {
+func (r *PostgresBotRepository) UserBots(ctx context.Context, author bots.UserID) ([]bots.Bot, error) {
 	var _bots []bots.Bot
 	err := pgutils.RunTx(ctx, r.db, func(tx *sqlx.Tx) error {
 		var err error
@@ -42,36 +42,35 @@ func (r *PostgresBotRepository) UserBots(ctx context.Context, author bots.UserId
 		return err
 	})
 	return _bots, err
-
 }
 
 func (r *PostgresBotRepository) Upsert(ctx context.Context, bot bots.Bot) error {
-	botRow_ := botToRow(bot)
-	entryRows := entriesToRows(bot.Id(), bot.Script().Entries())
+	_botRow := botToRow(bot)
+	entryRows := entriesToRows(bot.ID(), bot.Script().Entries())
 	nodes := bot.Script().Nodes()
-	nodeRows := nodesToRows(bot.Id(), nodes)
+	nodeRows := nodesToRows(bot.ID(), nodes)
 
 	return pgutils.RunTx(ctx, r.db, func(tx *sqlx.Tx) error {
-		if err := r.upsertBotRow(ctx, tx, botRow_); err != nil {
+		if err := r.upsertBotRow(ctx, tx, _botRow); err != nil {
 			return err
 		}
-		if err := r.syncNodeRows(ctx, tx, bot.Id(), nodeRows); err != nil {
+		if err := r.syncNodeRows(ctx, tx, bot.ID(), nodeRows); err != nil {
 			return err
 		}
-		if err := r.syncEntryRows(ctx, tx, bot.Id(), entryRows); err != nil {
+		if err := r.syncEntryRows(ctx, tx, bot.ID(), entryRows); err != nil {
 			return err
 		}
 		for _, node := range nodes {
-			edgeRows := edgesToRows(bot.Id(), node.State(), node.Edges())
-			if err := r.syncEdgeRows(ctx, tx, bot.Id(), node.State(), edgeRows); err != nil {
+			edgeRows := edgesToRows(bot.ID(), node.State(), node.Edges())
+			if err := r.syncEdgeRows(ctx, tx, bot.ID(), node.State(), edgeRows); err != nil {
 				return err
 			}
-			messageRows := messagesToRows(bot.Id(), node.State(), node.Messages())
-			if err := r.syncMessageRows(ctx, tx, bot.Id(), node.State(), messageRows); err != nil {
+			messageRows := messagesToRows(bot.ID(), node.State(), node.Messages())
+			if err := r.syncMessageRows(ctx, tx, bot.ID(), node.State(), messageRows); err != nil {
 				return err
 			}
-			optionRows := optionsToRows(bot.Id(), node.State(), node.Options())
-			if err := r.syncOptionRows(ctx, tx, bot.Id(), node.State(), optionRows); err != nil {
+			optionRows := optionsToRows(bot.ID(), node.State(), node.Options())
+			if err := r.syncOptionRows(ctx, tx, bot.ID(), node.State(), optionRows); err != nil {
 				return err
 			}
 		}
@@ -122,7 +121,7 @@ func (r *PostgresBotRepository) Upsert(ctx context.Context, bot bots.Bot) error 
 func (r *PostgresBotRepository) selectBotsByAuthor(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	author bots.UserId,
+	author bots.UserID,
 ) ([]bots.Bot, error) {
 	rows, err := r.selectBotRowsByAuthor(ctx, qc, int64(author))
 	if err != nil {
@@ -130,21 +129,21 @@ func (r *PostgresBotRepository) selectBotsByAuthor(
 	}
 	res := make([]bots.Bot, len(rows))
 	for i, row := range rows {
-		entries, err := r.selectEntries(ctx, qc, bots.BotId(row.Id))
-		if err != nil {
-			return nil, err
+		entries, err2 := r.selectEntries(ctx, qc, bots.BotID(row.ID))
+		if err2 != nil {
+			return nil, err2
 		}
-		nodes, err := r.selectNodes(ctx, qc, bots.BotId(row.Id))
-		if err != nil {
-			return nil, err
+		nodes, err2 := r.selectNodes(ctx, qc, bots.BotID(row.ID))
+		if err2 != nil {
+			return nil, err2
 		}
-		script, err := bots.NewScript(nodes, entries)
-		if err != nil {
-			return nil, err
+		script, err2 := bots.NewScript(nodes, entries)
+		if err2 != nil {
+			return nil, err2
 		}
-		bot, err := bots.UnmarshallBot(row.Id, row.Token, row.Author, script, row.CreatedAt.In(time.Local))
-		if err != nil {
-			return nil, err
+		bot, err2 := bots.UnmarshallBot(row.ID, row.Token, row.Author, script, row.CreatedAt.In(time.Local))
+		if err2 != nil {
+			return nil, err2
 		}
 		res[i] = bot
 	}
@@ -154,7 +153,7 @@ func (r *PostgresBotRepository) selectBotsByAuthor(
 func (r *PostgresBotRepository) getBot(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	id bots.BotId,
+	id bots.BotID,
 ) (bots.Bot, error) {
 	row, err := r.getBotRow(ctx, qc, string(id))
 	if errors.Is(err, sql.ErrNoRows) {
@@ -174,23 +173,23 @@ func (r *PostgresBotRepository) getBot(
 	if err != nil {
 		return bots.Bot{}, err
 	}
-	return bots.UnmarshallBot(row.Id, row.Token, row.Author, script, row.CreatedAt.In(time.Local))
+	return bots.UnmarshallBot(row.ID, row.Token, row.Author, script, row.CreatedAt.In(time.Local))
 }
 
 func (r *PostgresBotRepository) selectEntries(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId bots.BotId,
+	botID bots.BotID,
 ) ([]bots.Entry, error) {
-	rows, err := r.selectEntryRows(ctx, qc, string(botId))
+	rows, err := r.selectEntryRows(ctx, qc, string(botID))
 	if err != nil {
 		return nil, err
 	}
 	res := make([]bots.Entry, len(rows))
 	for i, row := range rows {
-		entry, err := bots.NewEntry(bots.EntryKey(row.Key), bots.State(row.Start))
-		if err != nil {
-			return nil, err
+		entry, err2 := bots.NewEntry(bots.EntryKey(row.Key), bots.State(row.Start))
+		if err2 != nil {
+			return nil, err2
 		}
 		res[i] = entry
 	}
@@ -200,29 +199,29 @@ func (r *PostgresBotRepository) selectEntries(
 func (r *PostgresBotRepository) selectNodes(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId bots.BotId,
+	botID bots.BotID,
 ) ([]bots.Node, error) {
-	rows, err := r.selectNodeRows(ctx, qc, string(botId))
+	rows, err := r.selectNodeRows(ctx, qc, string(botID))
 	if err != nil {
 		return nil, err
 	}
 	res := make([]bots.Node, len(rows))
 	for i, row := range rows {
-		edges, err := r.selectEdges(ctx, qc, botId, bots.State(row.State))
-		if err != nil {
-			return nil, err
+		edges, err2 := r.selectEdges(ctx, qc, botID, bots.State(row.State))
+		if err2 != nil {
+			return nil, err2
 		}
-		msgs, err := r.selectMessages(ctx, qc, botId, bots.State(row.State))
-		if err != nil {
-			return nil, err
+		msgs, err2 := r.selectMessages(ctx, qc, botID, bots.State(row.State))
+		if err2 != nil {
+			return nil, err2
 		}
-		opts, err := r.selectOptions(ctx, qc, botId, bots.State(row.State))
-		if err != nil {
-			return nil, err
+		opts, err2 := r.selectOptions(ctx, qc, botID, bots.State(row.State))
+		if err2 != nil {
+			return nil, err2
 		}
-		node, err := bots.NewNode(bots.State(row.State), row.Title, edges, msgs, opts)
-		if err != nil {
-			return nil, err
+		node, err2 := bots.NewNode(bots.State(row.State), row.Title, edges, msgs, opts)
+		if err2 != nil {
+			return nil, err2
 		}
 		res[i] = node
 	}
@@ -232,22 +231,22 @@ func (r *PostgresBotRepository) selectNodes(
 func (r *PostgresBotRepository) selectEdges(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId bots.BotId,
+	botID bots.BotID,
 	state bots.State,
 ) ([]bots.Edge, error) {
-	rows, err := r.selectEdgeRows(ctx, qc, string(botId), int(state))
+	rows, err := r.selectEdgeRows(ctx, qc, string(botID), int(state))
 	if err != nil {
 		return nil, err
 	}
 	res := make([]bots.Edge, len(rows))
 	for i, row := range rows {
-		pred, err := predicateFromStrings(row.PredType, row.PredData)
-		if err != nil {
-			return nil, err
+		pred, err2 := predicateFromStrings(row.PredType, row.PredData)
+		if err2 != nil {
+			return nil, err2
 		}
-		oper, err := operationFromString(row.Operation)
-		if err != nil {
-			return nil, err
+		oper, err2 := operationFromString(row.Operation)
+		if err2 != nil {
+			return nil, err2
 		}
 		edge := bots.NewEdge(pred, bots.State(row.ToState), oper)
 		res[i] = edge
@@ -258,10 +257,10 @@ func (r *PostgresBotRepository) selectEdges(
 func (r *PostgresBotRepository) selectMessages(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId bots.BotId,
+	botID bots.BotID,
 	state bots.State,
 ) ([]bots.Message, error) {
-	rows, err := r.selectMessageRows(ctx, qc, string(botId), int(state))
+	rows, err := r.selectMessageRows(ctx, qc, string(botID), int(state))
 	if err != nil {
 		return nil, err
 	}
@@ -278,10 +277,10 @@ func (r *PostgresBotRepository) selectMessages(
 func (r *PostgresBotRepository) selectOptions(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId bots.BotId,
+	botID bots.BotID,
 	state bots.State,
 ) ([]bots.Option, error) {
-	rows, err := r.selectOptionRows(ctx, qc, string(botId), int(state))
+	rows, err := r.selectOptionRows(ctx, qc, string(botID), int(state))
 	if err != nil {
 		return nil, err
 	}
@@ -295,10 +294,10 @@ func (r *PostgresBotRepository) selectOptions(
 func (r *PostgresBotRepository) syncEntryRows(
 	ctx context.Context,
 	ec sqlx.ExtContext,
-	botId bots.BotId,
+	botID bots.BotID,
 	rows []entryRow,
 ) error {
-	dbRows, err := r.selectEntryRows(ctx, ec, string(botId))
+	dbRows, err := r.selectEntryRows(ctx, ec, string(botID))
 	if err != nil {
 		return err
 	}
@@ -332,10 +331,10 @@ func (r *PostgresBotRepository) syncEntryRows(
 func (r *PostgresBotRepository) syncNodeRows(
 	ctx context.Context,
 	ec sqlx.ExtContext,
-	botId bots.BotId,
+	botID bots.BotID,
 	rows []nodeRow,
 ) error {
-	dbRows, err := r.selectNodeRows(ctx, ec, string(botId))
+	dbRows, err := r.selectNodeRows(ctx, ec, string(botID))
 	if err != nil {
 		return err
 	}
@@ -369,30 +368,32 @@ func (r *PostgresBotRepository) syncNodeRows(
 func (r *PostgresBotRepository) syncEdgeRows(
 	ctx context.Context,
 	ec sqlx.ExtContext,
-	botId bots.BotId,
+	botID bots.BotID,
 	state bots.State,
 	rows []edgeRow,
 ) error {
-	dbRows, err := r.selectEdgeRows(ctx, ec, string(botId), int(state))
+	dbRows, err := r.selectEdgeRows(ctx, ec, string(botID), int(state))
 	if err != nil {
 		return err
 	}
 
 	changes := diffcalc.Changes(dbRows, rows, diffcalc.Equal[edgeRow], diffcalc.Equal[edgeRow])
 
-	if !changes.IsZero() {
-		if len(dbRows) > 0 {
-			err = r.deleteEdgeRows(ctx, ec, string(botId), int(state))
-			if err != nil {
-				return err
-			}
-		}
+	if changes.IsZero() {
+		return nil
+	}
 
-		if len(rows) > 0 {
-			err = r.insertEdgeRows(ctx, ec, rows)
-			if err != nil {
-				return err
-			}
+	if len(dbRows) > 0 {
+		err = r.deleteEdgeRows(ctx, ec, string(botID), int(state))
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(rows) > 0 {
+		err = r.insertEdgeRows(ctx, ec, rows)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -402,30 +403,32 @@ func (r *PostgresBotRepository) syncEdgeRows(
 func (r *PostgresBotRepository) syncMessageRows(
 	ctx context.Context,
 	ec sqlx.ExtContext,
-	botId bots.BotId,
+	botID bots.BotID,
 	state bots.State,
 	rows []messageRow,
 ) error {
-	dbRows, err := r.selectMessageRows(ctx, ec, string(botId), int(state))
+	dbRows, err := r.selectMessageRows(ctx, ec, string(botID), int(state))
 	if err != nil {
 		return err
 	}
 
 	changes := diffcalc.Changes(dbRows, rows, diffcalc.Equal[messageRow], diffcalc.Equal[messageRow])
 
-	if !changes.IsZero() {
-		if len(dbRows) > 0 {
-			err = r.deleteMessageRows(ctx, ec, string(botId), int(state))
-			if err != nil {
-				return err
-			}
-		}
+	if changes.IsZero() {
+		return nil
+	}
 
-		if len(rows) > 0 {
-			err = r.insertMessageRows(ctx, ec, rows)
-			if err != nil {
-				return err
-			}
+	if len(dbRows) > 0 {
+		err = r.deleteMessageRows(ctx, ec, string(botID), int(state))
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(rows) > 0 {
+		err = r.insertMessageRows(ctx, ec, rows)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -435,30 +438,32 @@ func (r *PostgresBotRepository) syncMessageRows(
 func (r *PostgresBotRepository) syncOptionRows(
 	ctx context.Context,
 	ec sqlx.ExtContext,
-	botId bots.BotId,
+	botID bots.BotID,
 	state bots.State,
 	rows []optionRow,
 ) error {
-	dbRows, err := r.selectOptionRows(ctx, ec, string(botId), int(state))
+	dbRows, err := r.selectOptionRows(ctx, ec, string(botID), int(state))
 	if err != nil {
 		return err
 	}
 
 	changes := diffcalc.Changes(dbRows, rows, diffcalc.Equal[optionRow], diffcalc.Equal[optionRow])
 
-	if !changes.IsZero() {
-		if len(changes.Deleted) > 0 {
-			err = r.deleteOptionRows(ctx, ec, string(botId), int(state))
-			if err != nil {
-				return err
-			}
-		}
+	if changes.IsZero() {
+		return nil
+	}
 
-		if len(rows) > 0 {
-			err = r.insertOptionRows(ctx, ec, rows)
-			if err != nil {
-				return err
-			}
+	if len(changes.Deleted) > 0 {
+		err = r.deleteOptionRows(ctx, ec, string(botID), int(state))
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(rows) > 0 {
+		err = r.insertOptionRows(ctx, ec, rows)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -476,7 +481,7 @@ func (r *PostgresBotRepository) syncOptionRows(
 func (r *PostgresBotRepository) getBotRow(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId string,
+	botID string,
 ) (botRow, error) {
 	var row botRow
 	err := pgutils.Get(ctx, qc, &row, `
@@ -489,7 +494,7 @@ func (r *PostgresBotRepository) getBotRow(
 		WHERE
 			id = $1
 		`,
-		botId,
+		botID,
 	)
 	if err != nil {
 		return row, fmt.Errorf("selecting bot row: %w", err)
@@ -556,28 +561,10 @@ func (r *PostgresBotRepository) upsertBotRow(
 	return nil
 }
 
-func (r *PostgresBotRepository) deleteBotRow(
-	ctx context.Context,
-	ec sqlx.ExtContext,
-	id string,
-) error {
-	err := pgutils.RequireAffected(pgutils.Exec(ctx, ec, `
-		DELETE FROM bots
-		WHERE
-			id = $1
-		`,
-		id,
-	))
-	if err != nil {
-		return fmt.Errorf("deleting bot row: %w", err)
-	}
-	return nil
-}
-
 func (r *PostgresBotRepository) selectEntryRows(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId string,
+	botID string,
 ) ([]entryRow, error) {
 	var rows []entryRow
 	err := pgutils.Select(ctx, qc, &rows, `
@@ -589,7 +576,7 @@ func (r *PostgresBotRepository) selectEntryRows(
 		WHERE
 			bot_id = $1
 		`,
-		botId,
+		botID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("selecting entry rows: %w", err)
@@ -668,7 +655,7 @@ func (r *PostgresBotRepository) deleteEntryRows(
 func (r *PostgresBotRepository) selectNodeRows(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId string,
+	botID string,
 ) ([]nodeRow, error) {
 	var rows []nodeRow
 	err := pgutils.Select(ctx, qc, &rows, `
@@ -680,7 +667,7 @@ func (r *PostgresBotRepository) selectNodeRows(
 		WHERE
 			bot_id = $1
 		`,
-		botId,
+		botID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("selecting node rows: %w", err)
@@ -759,7 +746,7 @@ func (r *PostgresBotRepository) deleteNodeRows(
 func (r *PostgresBotRepository) selectEdgeRows(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId string,
+	botID string,
 	state int,
 ) ([]edgeRow, error) {
 	var rows []edgeRow
@@ -776,7 +763,7 @@ func (r *PostgresBotRepository) selectEdgeRows(
 			bot_id = $1
 			AND state = $2
 		`,
-		botId,
+		botID,
 		state,
 	)
 	if err != nil {
@@ -817,34 +804,10 @@ func (r *PostgresBotRepository) insertEdgeRows(
 	return nil
 }
 
-func (r *PostgresBotRepository) updateEdgeRow(
-	ctx context.Context,
-	ec sqlx.ExtContext,
-	row edgeRow,
-) error {
-	err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
-		UPDATE edges
-		SET
-			to_state  = :to_state,
-			operation = :operation,
-			pred_type = :pred_type,
-			pred_data = :pred_data
-		WHERE 
-			bot_id = :bot_id
-			AND state = :state
-		`,
-		row,
-	))
-	if err != nil {
-		return fmt.Errorf("updating edge rows: %w", err)
-	}
-	return nil
-}
-
 func (r *PostgresBotRepository) deleteEdgeRows(
 	ctx context.Context,
 	ec sqlx.ExtContext,
-	botId string,
+	botID string,
 	state int,
 ) error {
 	err := pgutils.RequireAffected(pgutils.Exec(ctx, ec, `
@@ -853,7 +816,7 @@ func (r *PostgresBotRepository) deleteEdgeRows(
 				bot_id = $1
 				AND state = $2
 			`,
-		botId,
+		botID,
 		state,
 	))
 	if err != nil {
@@ -865,7 +828,7 @@ func (r *PostgresBotRepository) deleteEdgeRows(
 func (r *PostgresBotRepository) selectMessageRows(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId string,
+	botID string,
 	state int,
 ) ([]messageRow, error) {
 	var rows []messageRow
@@ -879,7 +842,7 @@ func (r *PostgresBotRepository) selectMessageRows(
 			bot_id = $1
 			AND state = $2
 		`,
-		botId,
+		botID,
 		state,
 	)
 	if err != nil {
@@ -917,7 +880,7 @@ func (r *PostgresBotRepository) insertMessageRows(
 func (r *PostgresBotRepository) deleteMessageRows(
 	ctx context.Context,
 	ec sqlx.ExtContext,
-	botId string,
+	botID string,
 	state int,
 ) error {
 	err := pgutils.RequireAffected(pgutils.Exec(ctx, ec, `
@@ -926,7 +889,7 @@ func (r *PostgresBotRepository) deleteMessageRows(
 		    bot_id = $1
 			AND state = $2
 		`,
-		botId,
+		botID,
 		state,
 	))
 	if err != nil {
@@ -938,7 +901,7 @@ func (r *PostgresBotRepository) deleteMessageRows(
 func (r *PostgresBotRepository) selectOptionRows(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId string,
+	botID string,
 	state int,
 ) ([]optionRow, error) {
 	var rows []optionRow
@@ -952,7 +915,7 @@ func (r *PostgresBotRepository) selectOptionRows(
 		    bot_id = $1
 			AND state = $2
 		`,
-		botId,
+		botID,
 		state,
 	)
 	if err != nil {
@@ -990,7 +953,7 @@ func (r *PostgresBotRepository) insertOptionRows(
 func (r *PostgresBotRepository) deleteOptionRows(
 	ctx context.Context,
 	ec sqlx.ExtContext,
-	botId string,
+	botID string,
 	state int,
 ) error {
 	err := pgutils.RequireAffected(pgutils.Exec(ctx, ec, `
@@ -999,7 +962,7 @@ func (r *PostgresBotRepository) deleteOptionRows(
 		    bot_id = $1
 			AND state = $2
 		`,
-		botId,
+		botID,
 		state,
 	))
 	if err != nil {
@@ -1015,37 +978,37 @@ func (r *PostgresBotRepository) deleteOptionRows(
 //
 
 type botRow struct {
-	// PK (Id)
-	Id        string    `db:"id"`
+	// PK (ID)
+	ID        string    `db:"id"`
 	Token     string    `db:"token"`
 	Author    int64     `db:"author"`
 	CreatedAt time.Time `db:"created_at"`
 }
 
 type entryRow struct {
-	// PK (BotId, Key)
-	BotId string `db:"bot_id"`
+	// PK (BotID, Key)
+	BotID string `db:"bot_id"`
 	Key   string `db:"key"`
 	Start int    `db:"start"`
 }
 
 func entryIdentity(lhs, rhs entryRow) bool {
-	return lhs.BotId == rhs.BotId && lhs.Key == rhs.Key
+	return lhs.BotID == rhs.BotID && lhs.Key == rhs.Key
 }
 
 type nodeRow struct {
-	// PK (BotId, State)
-	BotId string `db:"bot_id"`
+	// PK (BotID, State)
+	BotID string `db:"bot_id"`
 	State int    `db:"state"`
 	Title string `db:"title"`
 }
 
 func nodeIdentity(lhs, rhs nodeRow) bool {
-	return lhs.BotId == rhs.BotId && lhs.State == rhs.State
+	return lhs.BotID == rhs.BotID && lhs.State == rhs.State
 }
 
 type edgeRow struct {
-	BotId     string `db:"bot_id"`
+	BotID     string `db:"bot_id"`
 	State     int    `db:"state"`
 	ToState   int    `db:"to_state"`
 	Operation string `db:"operation"`
@@ -1054,13 +1017,13 @@ type edgeRow struct {
 }
 
 type messageRow struct {
-	BotId string `db:"bot_id"`
+	BotID string `db:"bot_id"`
 	State int    `db:"state"`
 	Text  string `db:"text"`
 }
 
 type optionRow struct {
-	BotId string `db:"bot_id"`
+	BotID string `db:"bot_id"`
 	State int    `db:"state"`
 	Text  string `db:"text"`
 }
@@ -1123,49 +1086,49 @@ func predicateFromStrings(ptype string, pdata string) (bots.Predicate, error) {
 
 func botToRow(bot bots.Bot) botRow {
 	return botRow{
-		Id:        string(bot.Id()),
+		ID:        string(bot.ID()),
 		Token:     string(bot.Token()),
 		Author:    int64(bot.Author()),
 		CreatedAt: bot.CreatedAt().In(time.UTC),
 	}
 }
 
-func entryToRow(botId bots.BotId, entry bots.Entry) entryRow {
+func entryToRow(botID bots.BotID, entry bots.Entry) entryRow {
 	return entryRow{
-		BotId: string(botId),
+		BotID: string(botID),
 		Key:   string(entry.Key()),
 		Start: int(entry.Start()),
 	}
 }
 
-func entriesToRows(botId bots.BotId, entries []bots.Entry) []entryRow {
+func entriesToRows(botID bots.BotID, entries []bots.Entry) []entryRow {
 	res := make([]entryRow, len(entries))
 	for i, entry := range entries {
-		res[i] = entryToRow(botId, entry)
+		res[i] = entryToRow(botID, entry)
 	}
 	return res
 }
 
-func nodeToRow(botId bots.BotId, node bots.Node) nodeRow {
+func nodeToRow(botID bots.BotID, node bots.Node) nodeRow {
 	return nodeRow{
-		BotId: string(botId),
+		BotID: string(botID),
 		State: int(node.State()),
 		Title: node.Title(),
 	}
 }
 
-func nodesToRows(botId bots.BotId, nodes []bots.Node) []nodeRow {
+func nodesToRows(botID bots.BotID, nodes []bots.Node) []nodeRow {
 	res := make([]nodeRow, len(nodes))
 	for i, node := range nodes {
-		res[i] = nodeToRow(botId, node)
+		res[i] = nodeToRow(botID, node)
 	}
 	return res
 }
 
-func edgeToRow(botId bots.BotId, state bots.State, edge bots.Edge) edgeRow {
+func edgeToRow(botID bots.BotID, state bots.State, edge bots.Edge) edgeRow {
 	ptype, pdata := predicateToStrings(edge.Predicate)
 	return edgeRow{
-		BotId:     string(botId),
+		BotID:     string(botID),
 		State:     int(state),
 		ToState:   int(edge.To()),
 		Operation: operationToString(edge.Operation()),
@@ -1174,42 +1137,42 @@ func edgeToRow(botId bots.BotId, state bots.State, edge bots.Edge) edgeRow {
 	}
 }
 
-func edgesToRows(botId bots.BotId, state bots.State, edges []bots.Edge) []edgeRow {
+func edgesToRows(botID bots.BotID, state bots.State, edges []bots.Edge) []edgeRow {
 	res := make([]edgeRow, len(edges))
 	for i, edge := range edges {
-		res[i] = edgeToRow(botId, state, edge)
+		res[i] = edgeToRow(botID, state, edge)
 	}
 	return res
 }
 
-func messageToRow(botId bots.BotId, state bots.State, msg bots.Message) messageRow {
+func messageToRow(botID bots.BotID, state bots.State, msg bots.Message) messageRow {
 	return messageRow{
-		BotId: string(botId),
+		BotID: string(botID),
 		State: int(state),
 		Text:  msg.Text(),
 	}
 }
 
-func messagesToRows(botId bots.BotId, state bots.State, msgs []bots.Message) []messageRow {
+func messagesToRows(botID bots.BotID, state bots.State, msgs []bots.Message) []messageRow {
 	res := make([]messageRow, len(msgs))
 	for i, msg := range msgs {
-		res[i] = messageToRow(botId, state, msg)
+		res[i] = messageToRow(botID, state, msg)
 	}
 	return res
 }
 
-func optionToRow(botId bots.BotId, state bots.State, opt bots.Option) optionRow {
+func optionToRow(botID bots.BotID, state bots.State, opt bots.Option) optionRow {
 	return optionRow{
-		BotId: string(botId),
+		BotID: string(botID),
 		State: int(state),
 		Text:  string(opt),
 	}
 }
 
-func optionsToRows(botId bots.BotId, state bots.State, opts []bots.Option) []optionRow {
+func optionsToRows(botID bots.BotID, state bots.State, opts []bots.Option) []optionRow {
 	res := make([]optionRow, len(opts))
 	for i, opt := range opts {
-		res[i] = optionToRow(botId, state, opt)
+		res[i] = optionToRow(botID, state, opt)
 	}
 	return res
 }

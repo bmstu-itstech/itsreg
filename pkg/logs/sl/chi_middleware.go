@@ -9,6 +9,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+const elapsedPrecision = time.Millisecond / 100
+
 type chiLoggerMiddleware struct {
 	log *slog.Logger
 }
@@ -24,13 +26,13 @@ func (m *chiLoggerMiddleware) NewLogEntry(r *http.Request) middleware.LogEntry {
 		slog.String("remote_addr", r.RemoteAddr),
 		slog.String("uri", r.RequestURI),
 	)
-	log.Info("Request started")
+	log.InfoContext(r.Context(), "request started")
 
 	return &chiLoggerEntry{log: log}
 }
 
 func (m *chiLoggerMiddleware) GetLogEntry(r *http.Request) middleware.LogEntry {
-	entry := middleware.GetLogEntry(r).(*chiLoggerEntry)
+	entry, _ := middleware.GetLogEntry(r).(*chiLoggerEntry)
 	return entry
 }
 
@@ -42,10 +44,10 @@ func (l *chiLoggerEntry) Write(status, bytes int, _ http.Header, elapsed time.Du
 	l.log = l.log.With(
 		slog.Int("resp_status", status),
 		slog.Int("resp_bytes_length", bytes),
-		slog.String("resp_elapsed", elapsed.Round(time.Millisecond/100).String()),
+		slog.String("resp_elapsed", elapsed.Round(elapsedPrecision).String()),
 	)
 
-	l.log.Info("Request completed")
+	l.log.Info("request completed")
 }
 
 func (l *chiLoggerEntry) Panic(v interface{}, stack []byte) {

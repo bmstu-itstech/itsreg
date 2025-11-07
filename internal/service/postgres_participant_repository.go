@@ -30,14 +30,14 @@ func NewPostgresParticipantRepository(db *sqlx.DB, log *slog.Logger) *PostgresPa
 
 func (r *PostgresParticipantRepository) UpdateOrCreate(
 	ctx context.Context,
-	id bots.ParticipantId,
+	id bots.ParticipantID,
 	updateFn func(context.Context, *bots.Participant) error,
 ) error {
 	const op = "PostgresParticipantRepository.UpdateOrCreate"
 	l := r.log.With(
 		slog.String("op", op),
-		slog.String("bot_id", string(id.BotId())),
-		slog.Int64("user_id", int64(id.UserId())),
+		slog.String("bot_id", string(id.BotID())),
+		slog.Int64("user_id", int64(id.UserID())),
 	)
 
 	return pgutils.RunTx(ctx, r.db, func(tx *sqlx.Tx) error {
@@ -46,13 +46,13 @@ func (r *PostgresParticipantRepository) UpdateOrCreate(
 			return err
 		}
 		if !found {
-			l.Info("participant not found, creating a new one")
+			l.InfoContext(ctx, "participant not found, creating a new one")
 			prt, err = bots.NewParticipant(id)
 			if err != nil {
 				return err
 			}
 		} else {
-			l.Debug("participant found")
+			l.DebugContext(ctx, "participant found")
 		}
 
 		err = updateFn(ctx, prt)
@@ -64,11 +64,11 @@ func (r *PostgresParticipantRepository) UpdateOrCreate(
 	})
 }
 
-func (r *PostgresParticipantRepository) BotThreads(ctx context.Context, botId bots.BotId) ([]bots.BotThread, error) {
+func (r *PostgresParticipantRepository) BotThreads(ctx context.Context, botID bots.BotID) ([]bots.BotThread, error) {
 	var res []bots.BotThread
 	err := pgutils.RunTx(ctx, r.db, func(tx *sqlx.Tx) error {
 		var err error
-		res, err = r.selectBotThreads(ctx, tx, botId)
+		res, err = r.selectBotThreads(ctx, tx, botID)
 		return err
 	})
 	return res, err
@@ -83,12 +83,12 @@ func (r *PostgresParticipantRepository) BotThreads(ctx context.Context, botId bo
 func (r *PostgresParticipantRepository) findParticipant(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	id bots.ParticipantId,
+	id bots.ParticipantID,
 ) (*bots.Participant, bool, error) {
-	botId := string(id.BotId())
-	userId := int64(id.UserId())
+	botID := string(id.BotID())
+	userID := int64(id.UserID())
 
-	row, err := r.getParticipantRow(ctx, qc, botId, userId)
+	row, err := r.getParticipantRow(ctx, qc, botID, userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, false, nil
 	} else if err != nil {
@@ -100,7 +100,7 @@ func (r *PostgresParticipantRepository) findParticipant(
 		return nil, false, err
 	}
 
-	prt, err := bots.UnmarshallParticipant(row.BotId, row.UserId, threads, row.CThread)
+	prt, err := bots.UnmarshallParticipant(row.BotID, row.UserID, threads, row.CThread)
 	if err != nil {
 		return nil, false, err
 	}
@@ -111,23 +111,23 @@ func (r *PostgresParticipantRepository) findParticipant(
 func (r *PostgresParticipantRepository) selectBotThreads(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId bots.BotId,
+	botID bots.BotID,
 ) ([]bots.BotThread, error) {
-	rows, err := r.selectBotThreadsRows(ctx, qc, string(botId))
+	rows, err := r.selectBotThreadsRows(ctx, qc, string(botID))
 	if err != nil {
 		return nil, err
 	}
 	res := make([]bots.BotThread, len(rows))
 	for i, row := range rows {
-		answers, err := r.selectAnswers(ctx, qc, bots.ThreadId(row.Id))
-		if err != nil {
-			return nil, err
+		answers, err2 := r.selectAnswers(ctx, qc, bots.ThreadID(row.ID))
+		if err2 != nil {
+			return nil, err2
 		}
-		thread, err := bots.UnmarshallThread(row.Id, row.Key, row.State, answers, row.StartedAt)
-		if err != nil {
-			return nil, err
+		thread, err2 := bots.UnmarshallThread(row.ID, row.Key, row.State, answers, row.StartedAt)
+		if err2 != nil {
+			return nil, err2
 		}
-		res[i] = bots.NewUserThread(thread, bots.UserId(row.UserId))
+		res[i] = bots.NewUserThread(thread, bots.UserID(row.UserID))
 	}
 	return res, nil
 }
@@ -135,24 +135,24 @@ func (r *PostgresParticipantRepository) selectBotThreads(
 func (r *PostgresParticipantRepository) selectThreads(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	prtId bots.ParticipantId,
+	prtID bots.ParticipantID,
 ) ([]*bots.Thread, error) {
-	botId := string(prtId.BotId())
-	userId := int64(prtId.UserId())
+	botID := string(prtID.BotID())
+	userID := int64(prtID.UserID())
 
-	rows, err := r.selectThreadRows(ctx, qc, botId, userId)
+	rows, err := r.selectThreadRows(ctx, qc, botID, userID)
 	if err != nil {
 		return nil, err
 	}
 	res := make([]*bots.Thread, len(rows))
 	for i, row := range rows {
-		answers, err := r.selectAnswers(ctx, qc, bots.ThreadId(row.Id))
-		if err != nil {
-			return nil, err
+		answers, err2 := r.selectAnswers(ctx, qc, bots.ThreadID(row.ID))
+		if err2 != nil {
+			return nil, err2
 		}
-		thread, err := bots.UnmarshallThread(row.Id, row.Key, row.State, answers, row.StartedAt)
-		if err != nil {
-			return nil, err
+		thread, err2 := bots.UnmarshallThread(row.ID, row.Key, row.State, answers, row.StartedAt)
+		if err2 != nil {
+			return nil, err2
 		}
 		res[i] = thread
 	}
@@ -162,17 +162,17 @@ func (r *PostgresParticipantRepository) selectThreads(
 func (r *PostgresParticipantRepository) selectAnswers(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	threadId bots.ThreadId,
+	threadID bots.ThreadID,
 ) (map[bots.State]bots.Message, error) {
-	rows, err := r.selectAnswerRows(ctx, qc, string(threadId))
+	rows, err := r.selectAnswerRows(ctx, qc, string(threadID))
 	if err != nil {
 		return nil, err
 	}
 	res := make(map[bots.State]bots.Message)
 	for _, row := range rows {
-		msg, err := bots.NewMessage(row.Text)
-		if err != nil {
-			return nil, err
+		msg, err2 := bots.NewMessage(row.Text)
+		if err2 != nil {
+			return nil, err2
 		}
 		res[bots.State(row.State)] = msg
 	}
@@ -184,24 +184,24 @@ func (r *PostgresParticipantRepository) upsertParticipant(
 	ec sqlx.ExtContext,
 	prt *bots.Participant,
 ) error {
-	botId := prt.Id().BotId()
-	userId := prt.Id().UserId()
+	botID := prt.ID().BotID()
+	userID := prt.ID().UserID()
 	prtRow := participantToRow(prt)
 	threads := prt.Threads()
-	threadRows := threadsToRows(botId, userId, threads)
+	threadRows := threadsToRows(botID, userID, threads)
 
 	if err := r.upsertParticipantRow(ctx, ec, prtRow); err != nil {
 		return err
 	}
 
-	if err := r.syncThreadRows(ctx, ec, botId, userId, threadRows); err != nil {
+	if err := r.syncThreadRows(ctx, ec, botID, userID, threadRows); err != nil {
 		return err
 	}
 
 	for _, thread := range threads {
-		threadId := thread.Id()
-		answerRows := answersToRows(threadId, thread.Answers())
-		if err := r.syncAnswerRows(ctx, ec, threadId, answerRows); err != nil {
+		threadID := thread.ID()
+		answerRows := answersToRows(threadID, thread.Answers())
+		if err := r.syncAnswerRows(ctx, ec, threadID, answerRows); err != nil {
 			return err
 		}
 	}
@@ -212,25 +212,25 @@ func (r *PostgresParticipantRepository) upsertParticipant(
 func (r *PostgresParticipantRepository) syncThreadRows(
 	ctx context.Context,
 	ec sqlx.ExtContext,
-	botId bots.BotId,
-	userId bots.UserId,
+	botID bots.BotID,
+	userID bots.UserID,
 	rows []threadRow,
 ) error {
 	const op = "PostgresParticipantRepository.syncThreadRows"
 	l := r.log.With(
 		slog.String("op", op),
-		slog.String("bot_id", string(botId)),
-		slog.Int64("user_id", int64(userId)),
+		slog.String("bot_id", string(botID)),
+		slog.Int64("user_id", int64(userID)),
 	)
-	l.Debug("syncing thread rows")
+	l.DebugContext(ctx, "syncing thread rows")
 
-	dbRows, err := r.selectThreadRows(ctx, ec, string(botId), int64(userId))
+	dbRows, err := r.selectThreadRows(ctx, ec, string(botID), int64(userID))
 	if err != nil {
 		return err
 	}
 
-	changes := diffcalc.Changes(dbRows, rows, threadIdentity, diffcalc.Equal)
-	l.Debug("calculated thread changes",
+	changes := diffcalc.Changes(dbRows, rows, ThreadIDentity, diffcalc.Equal)
+	l.DebugContext(ctx, "calculated thread changes",
 		slog.String("added", fmt.Sprintf("%v", changes.Added)),
 		slog.String("updated", fmt.Sprintf("%v", changes.Updated)),
 		slog.String("deleted", fmt.Sprintf("%v", changes.Deleted)),
@@ -263,23 +263,23 @@ func (r *PostgresParticipantRepository) syncThreadRows(
 func (r *PostgresParticipantRepository) syncAnswerRows(
 	ctx context.Context,
 	ec sqlx.ExtContext,
-	threadId bots.ThreadId,
+	threadID bots.ThreadID,
 	rows []answerRow,
 ) error {
 	const op = "PostgresParticipantRepository.syncAnswerRows"
 	l := r.log.With(
 		slog.String("op", op),
-		slog.String("thread_id", string(threadId)),
+		slog.String("thread_id", string(threadID)),
 	)
-	l.Debug("syncing answer rows")
+	l.DebugContext(ctx, "syncing answer rows")
 
-	dbRows, err := r.selectAnswerRows(ctx, ec, string(threadId))
+	dbRows, err := r.selectAnswerRows(ctx, ec, string(threadID))
 	if err != nil {
 		return err
 	}
 
 	changes := diffcalc.Changes(dbRows, rows, answerIdentity, diffcalc.Equal)
-	l.Debug("calculated answer changes",
+	l.DebugContext(ctx, "calculated answer changes",
 		slog.String("added", fmt.Sprintf("%v", changes.Added)),
 		slog.String("updated", fmt.Sprintf("%v", changes.Updated)),
 		slog.String("deleted", fmt.Sprintf("%v", changes.Deleted)),
@@ -318,17 +318,17 @@ func (r *PostgresParticipantRepository) syncAnswerRows(
 func (r *PostgresParticipantRepository) getParticipantRow(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId string,
-	userId int64,
+	botID string,
+	userID int64,
 ) (participantRow, error) {
 	const op = "PostgresParticipantRepository.getParticipantRow"
 	l := r.log.With(
 		slog.String("op", op),
-		slog.String("bot_id", botId),
-		slog.Int64("user_id", userId),
+		slog.String("bot_id", botID),
+		slog.Int64("user_id", userID),
 	)
 
-	l.Debug("querying participant row")
+	l.DebugContext(ctx, "querying participant row")
 	var row participantRow
 	err := pgutils.Get(ctx, qc, &row, `
 		SELECT
@@ -340,11 +340,11 @@ func (r *PostgresParticipantRepository) getParticipantRow(
 			bot_id = $1
 			AND user_id = $2
 		`,
-		botId,
-		userId,
+		botID,
+		userID,
 	)
 	if err != nil {
-		l.Error("failed to get participant row", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to get participant row", slog.String("error", err.Error()))
 		return participantRow{}, fmt.Errorf("getting participant row: %w", err)
 	}
 	return row, nil
@@ -358,11 +358,11 @@ func (r *PostgresParticipantRepository) upsertParticipantRow(
 	const op = "PostgresParticipantRepository.upsertParticipantRow"
 	l := r.log.With(
 		slog.String("op", op),
-		slog.String("bot_id", row.BotId),
-		slog.Int64("user_id", row.UserId),
+		slog.String("bot_id", row.BotID),
+		slog.Int64("user_id", row.UserID),
 	)
 
-	l.Debug("upserting participant row")
+	l.DebugContext(ctx, "upserting participant row")
 	err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		INSERT INTO
 			participants (
@@ -384,7 +384,7 @@ func (r *PostgresParticipantRepository) upsertParticipantRow(
 		row,
 	))
 	if err != nil {
-		l.Error("failed to upsert participant row", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to upsert participant row", slog.String("error", err.Error()))
 		return fmt.Errorf("upserting participant row: %w", err)
 	}
 	return nil
@@ -393,17 +393,17 @@ func (r *PostgresParticipantRepository) upsertParticipantRow(
 func (r *PostgresParticipantRepository) selectThreadRows(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId string,
-	userId int64,
+	botID string,
+	userID int64,
 ) ([]threadRow, error) {
 	const op = "PostgresParticipantRepository.selectThreadRows"
 	l := r.log.With(
 		slog.String("op", op),
-		slog.String("bot_id", botId),
-		slog.Int64("user_id", userId),
+		slog.String("bot_id", botID),
+		slog.Int64("user_id", userID),
 	)
 
-	l.Debug("querying thread rows")
+	l.DebugContext(ctx, "querying thread rows")
 	var rows []threadRow
 	err := pgutils.Select(ctx, qc, &rows, `
 		SELECT
@@ -418,11 +418,11 @@ func (r *PostgresParticipantRepository) selectThreadRows(
 			bot_id = $1
 			AND user_id = $2
 		`,
-		botId,
-		userId,
+		botID,
+		userID,
 	)
 	if err != nil {
-		l.Error("failed to query thread rows", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to query thread rows", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("selecting thread rows: %w", err)
 	}
 	return rows, nil
@@ -431,15 +431,15 @@ func (r *PostgresParticipantRepository) selectThreadRows(
 func (r *PostgresParticipantRepository) selectBotThreadsRows(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	botId string,
+	botID string,
 ) ([]threadRow, error) {
 	const op = "PostgresParticipantRepository.selectBotThreadsRows"
 	l := r.log.With(
 		slog.String("op", op),
-		slog.String("bot_id", botId),
+		slog.String("bot_id", botID),
 	)
 
-	l.Debug("querying bot thread rows")
+	l.DebugContext(ctx, "querying bot thread rows")
 	var rows []threadRow
 	err := pgutils.Select(ctx, qc, &rows, `
 		SELECT
@@ -453,10 +453,10 @@ func (r *PostgresParticipantRepository) selectBotThreadsRows(
 		WHERE
 			bot_id = $1
 		`,
-		botId,
+		botID,
 	)
 	if err != nil {
-		l.Error("failed to query bot thread rows", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to query bot thread rows", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("selecting bot thread rows: %w", err)
 	}
 	return rows, nil
@@ -473,7 +473,7 @@ func (r *PostgresParticipantRepository) insertThreadRows(
 		slog.Int("rows", len(rows)),
 	)
 
-	l.Debug("inserting thread rows")
+	l.DebugContext(ctx, "inserting thread rows")
 	err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		INSERT INTO
 			threads (
@@ -496,7 +496,7 @@ func (r *PostgresParticipantRepository) insertThreadRows(
 		rows,
 	))
 	if err != nil {
-		l.Error("failed to insert thread rows", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to insert thread rows", slog.String("error", err.Error()))
 		return fmt.Errorf("inserting thread rows: %w", err)
 	}
 	return nil
@@ -510,10 +510,10 @@ func (r *PostgresParticipantRepository) updateThreadRow(
 	const op = "PostgresParticipantRepository.updateThreadRow"
 	l := r.log.With(
 		slog.String("op", op),
-		slog.String("id", row.Id),
+		slog.String("id", row.ID),
 	)
 
-	l.Debug("updating thread row")
+	l.DebugContext(ctx, "updating thread row")
 	err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		UPDATE threads
 		SET
@@ -528,7 +528,7 @@ func (r *PostgresParticipantRepository) updateThreadRow(
 		row,
 	))
 	if err != nil {
-		l.Error("failed to update thread row", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to update thread row", slog.String("error", err.Error()))
 		return fmt.Errorf("updating thread row: %w", err)
 	}
 	return nil
@@ -545,16 +545,16 @@ func (r *PostgresParticipantRepository) deleteThreadRows(
 		slog.Int("rows", len(rows)),
 	)
 
-	l.Debug("deleting answer rows")
-	threadIds := threadRowsToIds(rows)
+	l.DebugContext(ctx, "deleting answer rows")
+	threadIDs := threadRowsToIDs(rows)
 	err := pgutils.RequireAffected(pgutils.Exec(ctx, ec, `
 		DELETE FROM threads
 		WHERE
 			id = ANY($1)`,
-		pq.Array(threadIds),
+		pq.Array(threadIDs),
 	))
 	if err != nil {
-		l.Error("failed to delete thread rows", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to delete thread rows", slog.String("error", err.Error()))
 		return fmt.Errorf("deleting thread rows: %w", err)
 	}
 	return nil
@@ -563,15 +563,15 @@ func (r *PostgresParticipantRepository) deleteThreadRows(
 func (r *PostgresParticipantRepository) selectAnswerRows(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	threadId string,
+	threadID string,
 ) ([]answerRow, error) {
 	const op = "PostgresParticipantRepository.selectAnswerRows"
 	l := r.log.With(
 		slog.String("op", op),
-		slog.String("thread_id", threadId),
+		slog.String("thread_id", threadID),
 	)
 
-	l.Debug("querying answer rows")
+	l.DebugContext(ctx, "querying answer rows")
 	var rows []answerRow
 	err := pgutils.Select(ctx, qc, &rows, `
 		SELECT
@@ -582,10 +582,10 @@ func (r *PostgresParticipantRepository) selectAnswerRows(
 		WHERE
 			thread_id = $1
 		`,
-		threadId,
+		threadID,
 	)
 	if err != nil {
-		l.Error("failed to query answer rows", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to query answer rows", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("selecting answer rows: %w", err)
 	}
 	return rows, nil
@@ -602,7 +602,7 @@ func (r *PostgresParticipantRepository) insertAnswerRows(
 		slog.Int("rows", len(rows)),
 	)
 
-	l.Debug("inserting answer rows")
+	l.DebugContext(ctx, "inserting answer rows")
 	err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		INSERT INTO
 			answers (
@@ -619,7 +619,7 @@ func (r *PostgresParticipantRepository) insertAnswerRows(
 		rows,
 	))
 	if err != nil {
-		l.Error("failed to insert answer rows", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to insert answer rows", slog.String("error", err.Error()))
 		return fmt.Errorf("inserting answer rows: %w", err)
 	}
 	return nil
@@ -633,11 +633,11 @@ func (r *PostgresParticipantRepository) updateAnswerRow(
 	const op = "PostgresParticipantRepository.updateAnswerRow"
 	l := r.log.With(
 		slog.String("op", op),
-		slog.String("thread_id", row.ThreadId),
+		slog.String("thread_id", row.ThreadID),
 		slog.Int("state", row.State),
 	)
 
-	l.Debug("updating answer row")
+	l.DebugContext(ctx, "updating answer row")
 	err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		UPDATE answers
 		SET
@@ -649,7 +649,7 @@ func (r *PostgresParticipantRepository) updateAnswerRow(
 		row,
 	))
 	if err != nil {
-		l.Error("failed to update answer row", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to update answer row", slog.String("error", err.Error()))
 		return fmt.Errorf("updating answer rows: %w", err)
 	}
 	return nil
@@ -666,7 +666,7 @@ func (r *PostgresParticipantRepository) deleteAnswerRows(
 		slog.Int("rows", len(rows)),
 	)
 
-	l.Debug("deleting answer rows")
+	l.DebugContext(ctx, "deleting answer rows")
 	for _, row := range rows {
 		err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 			DELETE FROM answers
@@ -677,7 +677,7 @@ func (r *PostgresParticipantRepository) deleteAnswerRows(
 			row,
 		))
 		if err != nil {
-			l.Error("failed to delete answer rows", slog.String("error", err.Error()))
+			l.ErrorContext(ctx, "failed to delete answer rows", slog.String("error", err.Error()))
 			return fmt.Errorf("deleting answer rows: %w", err)
 		}
 	}
@@ -691,89 +691,89 @@ func (r *PostgresParticipantRepository) deleteAnswerRows(
 //
 
 type participantRow struct {
-	// PK(BotId, UserId)
-	BotId   string  `db:"bot_id"`
-	UserId  int64   `db:"user_id"`
+	// PK(BotID, UserID)
+	BotID   string  `db:"bot_id"`
+	UserID  int64   `db:"user_id"`
 	CThread *string `db:"cthread"`
 }
 
 type threadRow struct {
-	// PK(Id)
-	Id        string    `db:"id"`
-	BotId     string    `db:"bot_id"`
-	UserId    int64     `db:"user_id"`
+	// PK(ID)
+	ID        string    `db:"id"`
+	BotID     string    `db:"bot_id"`
+	UserID    int64     `db:"user_id"`
 	Key       string    `db:"key"`
 	State     int       `db:"state"`
 	StartedAt time.Time `db:"started_at"`
 }
 
-func threadIdentity(lhs, rhs threadRow) bool {
-	return lhs.Id == rhs.Id
+func ThreadIDentity(lhs, rhs threadRow) bool {
+	return lhs.ID == rhs.ID
 }
 
 type answerRow struct {
-	// PK(ThreadId)
-	ThreadId string `db:"thread_id"`
+	// PK(ThreadID)
+	ThreadID string `db:"thread_id"`
 	State    int    `db:"state"`
 	Text     string `db:"text"`
 }
 
 func answerIdentity(lhs, rhs answerRow) bool {
-	return lhs.ThreadId == rhs.ThreadId && lhs.State == rhs.State
+	return lhs.ThreadID == rhs.ThreadID && lhs.State == rhs.State
 }
 
 func participantToRow(prt *bots.Participant) participantRow {
 	var cthread *string
 	if ct, ok := prt.CurrentThread(); ok {
-		s := string(ct.Id())
+		s := string(ct.ID())
 		cthread = &s
 	}
 	return participantRow{
-		BotId:   string(prt.Id().BotId()),
-		UserId:  int64(prt.Id().UserId()),
+		BotID:   string(prt.ID().BotID()),
+		UserID:  int64(prt.ID().UserID()),
 		CThread: cthread,
 	}
 }
 
-func threadToRow(botId bots.BotId, userId bots.UserId, thread *bots.Thread) threadRow {
+func threadToRow(botID bots.BotID, userID bots.UserID, thread *bots.Thread) threadRow {
 	return threadRow{
-		Id:        string(thread.Id()),
-		BotId:     string(botId),
-		UserId:    int64(userId),
+		ID:        string(thread.ID()),
+		BotID:     string(botID),
+		UserID:    int64(userID),
 		Key:       string(thread.Key()),
 		State:     int(thread.State()),
 		StartedAt: thread.StartedAt(),
 	}
 }
 
-func threadsToRows(botId bots.BotId, id bots.UserId, threads []*bots.Thread) []threadRow {
+func threadsToRows(botID bots.BotID, id bots.UserID, threads []*bots.Thread) []threadRow {
 	res := make([]threadRow, len(threads))
 	for i, thread := range threads {
-		res[i] = threadToRow(botId, id, thread)
+		res[i] = threadToRow(botID, id, thread)
 	}
 	return res
 }
 
-func answerToRow(threadId bots.ThreadId, state bots.State, msg bots.Message) answerRow {
+func answerToRow(threadID bots.ThreadID, state bots.State, msg bots.Message) answerRow {
 	return answerRow{
-		ThreadId: string(threadId),
+		ThreadID: string(threadID),
 		State:    int(state),
 		Text:     msg.Text(),
 	}
 }
 
-func answersToRows(threadId bots.ThreadId, answers map[bots.State]bots.Message) []answerRow {
+func answersToRows(threadID bots.ThreadID, answers map[bots.State]bots.Message) []answerRow {
 	res := make([]answerRow, 0, len(answers))
 	for state, answer := range answers {
-		res = append(res, answerToRow(threadId, state, answer))
+		res = append(res, answerToRow(threadID, state, answer))
 	}
 	return res
 }
 
-func threadRowsToIds(rows []threadRow) []string {
+func threadRowsToIDs(rows []threadRow) []string {
 	res := make([]string, len(rows))
 	for i, row := range rows {
-		res[i] = row.Id
+		res[i] = row.ID
 	}
 	return res
 }

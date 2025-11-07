@@ -16,6 +16,7 @@ type commandMetricsDecorator[C any] struct {
 	client MetricsClient
 }
 
+//nolint:nonamedreturns // так как err используется в defer
 func (d commandMetricsDecorator[C]) Handle(ctx context.Context, cmd C) (err error) {
 	start := time.Now()
 
@@ -41,7 +42,8 @@ type queryMetricsDecorator[C any, R any] struct {
 	client MetricsClient
 }
 
-func (d queryMetricsDecorator[C, R]) Handle(ctx context.Context, query C) (result R, err error) {
+//nolint:nonamedreturns // так как err используется в defer
+func (d queryMetricsDecorator[C, R]) Handle(ctx context.Context, query C) (_ R, err error) {
 	start := time.Now()
 
 	actionName := strings.ToLower(generateActionName(query))

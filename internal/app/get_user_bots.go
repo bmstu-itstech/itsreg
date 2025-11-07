@@ -9,7 +9,7 @@ import (
 )
 
 type GetUserBots struct {
-	UserId int64
+	UserID int64
 }
 
 type GetUserBotsHandler decorator.QueryHandler[GetUserBots, []Bot]
@@ -19,7 +19,7 @@ type getUserBotsHandler struct {
 }
 
 func (h getUserBotsHandler) Handle(ctx context.Context, q GetUserBots) ([]Bot, error) {
-	res, err := h.bp.UserBots(ctx, bots.UserId(q.UserId))
+	res, err := h.bp.UserBots(ctx, bots.UserID(q.UserID))
 	if err != nil {
 		return nil, err
 	}

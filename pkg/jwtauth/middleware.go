@@ -18,7 +18,7 @@ func HTTPMiddleware(next http.Handler) http.Handler {
 				request.AuthorizationHeaderExtractor,
 				request.ArgumentExtractor{"jwtToken"},
 			},
-			func(token *jwt.Token) (i interface{}, e error) {
+			func(_ *jwt.Token) (_ interface{}, _ error) {
 				return []byte(secret), nil
 			},
 			request.WithClaims(&claims),

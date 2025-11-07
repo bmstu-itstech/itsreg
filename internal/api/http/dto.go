@@ -17,7 +17,7 @@ func batchBotsFromApp(bots []app.Bot) []Bot {
 func botFromApp(bot app.Bot) Bot {
 	return Bot{
 		Author: bot.Author,
-		Id:     bot.Id,
+		Id:     bot.ID,
 		Script: scriptFromApp(bot.Script),
 		Token:  bot.Token,
 	}
@@ -45,14 +45,14 @@ func scriptFromApp(bot app.Script) Script {
 func entryToApp(entry Entry) app.Entry {
 	return app.Entry{
 		Key:   entry.Key,
-		Start: uint(entry.Start),
+		Start: entry.Start,
 	}
 }
 
 func entryFromApp(entry app.Entry) Entry {
 	return Entry{
 		Key:   entry.Key,
-		Start: int(entry.Start),
+		Start: entry.Start,
 	}
 }
 
@@ -79,7 +79,7 @@ func nodeToApp(node Node) (app.Node, error) {
 	}
 
 	return app.Node{
-		State:    uint(node.State),
+		State:    node.State,
 		Title:    node.Title,
 		Edges:    edges,
 		Messages: batchMessageToApp(node.Messages),
@@ -91,7 +91,7 @@ func nodeFromApp(node app.Node) Node {
 	return Node{
 		Edges:    nilOnEmpty(batchEdgesFromApp(node.Edges)),
 		Messages: batchMessagesFromApp(node.Messages),
-		State:    int(node.State),
+		State:    node.State,
 		Title:    node.Title,
 		Options:  nilOnEmpty(node.Options),
 	}
@@ -125,7 +125,7 @@ func edgeToApp(edge Edge) (app.Edge, error) {
 
 	return app.Edge{
 		Predicate: pred,
-		To:        uint(edge.To),
+		To:        edge.To,
 		Operation: string(edge.Operation),
 	}, nil
 }
@@ -134,7 +134,7 @@ func edgeFromApp(edge app.Edge) Edge {
 	return Edge{
 		Operation: EdgeOperation(edge.Operation),
 		Predicate: predicateFromApp(edge.Predicate),
-		To:        int(edge.To),
+		To:        edge.To,
 	}
 }
 
@@ -187,27 +187,29 @@ func predicateToApp(pred Predicate) (app.Predicate, error) {
 		}, nil
 
 	case string(Exact):
-		exact, err := pred.AsExactPredicate()
-		if err != nil {
-			return app.Predicate{}, err
+		exact, err2 := pred.AsExactPredicate()
+		if err2 != nil {
+			return app.Predicate{}, err2
 		}
 		return app.Predicate{
 			Type: string(Exact),
 			Data: exact.Text,
-		}, err
+		}, err2
 
 	case string(Regexp):
-		regexp, err := pred.AsRegexpPredicate()
-		if err != nil {
-			return app.Predicate{}, err
+		regexp, err2 := pred.AsRegexpPredicate()
+		if err2 != nil {
+			return app.Predicate{}, err2
 		}
 		return app.Predicate{
 			Type: string(Regexp),
 			Data: regexp.Pattern,
-		}, err
+		}, err2
 
 	default:
-		return app.Predicate{}, fmt.Errorf("invalid predicate type %s, expected one of ['always', 'exact', 'regexp']", d)
+		return app.Predicate{}, fmt.Errorf(
+			"invalid predicate type %s, expected one of ['always', 'exact', 'regexp']", d,
+		)
 	}
 }
 
@@ -254,15 +256,13 @@ func messageFromApp(message app.Message) Message {
 func emptyOnNil[T any](ts *[]T) []T {
 	if ts == nil {
 		return []T{}
-	} else {
-		return *ts
 	}
+	return *ts
 }
 
 func nilOnEmpty[T any](ts []T) *[]T {
 	if ts == nil {
 		return nil
-	} else {
-		return &ts
 	}
+	return &ts
 }

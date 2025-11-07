@@ -21,7 +21,7 @@ func NewPostgresUsernameRepository(db *sqlx.DB) *PostgresUsernameRepository {
 	}
 }
 
-func (r *PostgresUsernameRepository) Upsert(ctx context.Context, id bots.UserId, username bots.Username) error {
+func (r *PostgresUsernameRepository) Upsert(ctx context.Context, id bots.UserID, username bots.Username) error {
 	return pgutils.RequireAffected(pgutils.Exec(ctx, r.db,
 		`INSERT INTO
 			usernames (
@@ -40,7 +40,7 @@ func (r *PostgresUsernameRepository) Upsert(ctx context.Context, id bots.UserId,
 	))
 }
 
-func (r *PostgresUsernameRepository) Username(ctx context.Context, id bots.UserId) (bots.Username, error) {
+func (r *PostgresUsernameRepository) Username(ctx context.Context, id bots.UserID) (bots.Username, error) {
 	var row usernameRow
 	err := pgutils.Get(ctx, r.db, &row,
 		`SELECT 
@@ -60,6 +60,6 @@ func (r *PostgresUsernameRepository) Username(ctx context.Context, id bots.UserI
 }
 
 type usernameRow struct {
-	UserId   int64  `db:"user_id"`
+	UserID   int64  `db:"user_id"`
 	Username string `db:"username"`
 }

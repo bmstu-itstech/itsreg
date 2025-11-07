@@ -2,25 +2,24 @@ package bots
 
 import (
 	"errors"
-	"fmt"
 	"time"
 )
 
-// BotId есть уникальный идентификатор бота.
-type BotId string
+// BotID есть уникальный идентификатор бота.
+type BotID string
 
 // Token есть Telegram токен для бота.
 type Token string
 
 type Bot struct {
-	id        BotId
+	id        BotID
 	token     Token
-	author    UserId
+	author    UserID
 	script    Script
 	createdAt time.Time
 }
 
-func NewBot(id BotId, token Token, author UserId, script Script) (Bot, error) {
+func NewBot(id BotID, token Token, author UserID, script Script) (Bot, error) {
 	if id == "" {
 		return Bot{}, NewInvalidInputError(
 			"invalid-bot",
@@ -43,7 +42,7 @@ func NewBot(id BotId, token Token, author UserId, script Script) (Bot, error) {
 	}
 
 	if script.IsZero() {
-		return Bot{}, fmt.Errorf("empty script")
+		return Bot{}, errors.New("empty script")
 	}
 
 	return Bot{
@@ -55,7 +54,7 @@ func NewBot(id BotId, token Token, author UserId, script Script) (Bot, error) {
 	}, nil
 }
 
-func MustNewBot(id BotId, token Token, author UserId, script Script) Bot {
+func MustNewBot(id BotID, token Token, author UserID, script Script) Bot {
 	b, err := NewBot(id, token, author, script)
 	if err != nil {
 		panic(err)
@@ -63,7 +62,7 @@ func MustNewBot(id BotId, token Token, author UserId, script Script) Bot {
 	return b
 }
 
-func (b Bot) Id() BotId {
+func (b Bot) ID() BotID {
 	return b.id
 }
 
@@ -71,7 +70,7 @@ func (b Bot) Token() Token {
 	return b.token
 }
 
-func (b Bot) Author() UserId {
+func (b Bot) Author() UserID {
 	return b.author
 }
 
@@ -111,9 +110,9 @@ func UnmarshallBot(
 	}
 
 	return Bot{
-		id:        BotId(id),
+		id:        BotID(id),
 		token:     Token(token),
-		author:    UserId(author),
+		author:    UserID(author),
 		script:    script,
 		createdAt: createdAt,
 	}, nil

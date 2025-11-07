@@ -9,7 +9,7 @@ import (
 )
 
 type Start struct {
-	BotId string
+	BotID string
 }
 
 type StartHandler decorator.CommandHandler[Start]
@@ -20,11 +20,11 @@ type startHandler struct {
 }
 
 func (h startHandler) Handle(ctx context.Context, cmd Start) error {
-	bot, err := h.bp.Bot(ctx, bots.BotId(cmd.BotId))
+	bot, err := h.bp.Bot(ctx, bots.BotID(cmd.BotID))
 	if err != nil {
 		return err
 	}
-	return h.im.Start(ctx, bots.BotId(cmd.BotId), bot.Token())
+	return h.im.Start(ctx, bots.BotID(cmd.BotID), bot.Token())
 }
 
 func NewStartHandler(

@@ -8,6 +8,13 @@ type Entry struct {
 }
 
 func NewEntry(key EntryKey, start State) (Entry, error) {
+	if start < 0 {
+		return Entry{}, NewInvalidInputError(
+			"invalid-entry",
+			"expected non-negative start state",
+		)
+	}
+
 	if key == "" {
 		return Entry{}, NewInvalidInputError(
 			"invalid-entry-key",

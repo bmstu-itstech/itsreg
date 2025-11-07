@@ -9,7 +9,7 @@ import (
 )
 
 type GetUsername struct {
-	UserId int64
+	UserID int64
 }
 
 type GetUsernameHandler decorator.QueryHandler[GetUsername, string]
@@ -19,7 +19,7 @@ type getUsernameHandler struct {
 }
 
 func (h getUsernameHandler) Handle(ctx context.Context, q GetUsername) (string, error) {
-	username, err := h.up.Username(ctx, bots.UserId(q.UserId))
+	username, err := h.up.Username(ctx, bots.UserID(q.UserID))
 	if err != nil {
 		return "", err
 	}

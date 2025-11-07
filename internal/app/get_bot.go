@@ -9,7 +9,7 @@ import (
 )
 
 type GetBot struct {
-	Id string
+	ID string
 }
 
 type GetBotHandler decorator.QueryHandler[GetBot, Bot]
@@ -19,7 +19,7 @@ type getBotHandler struct {
 }
 
 func (h getBotHandler) Handle(ctx context.Context, q GetBot) (Bot, error) {
-	bot, err := h.bp.Bot(ctx, bots.BotId(q.Id))
+	bot, err := h.bp.Bot(ctx, bots.BotID(q.ID))
 	return botToDto(bot), err
 }
 

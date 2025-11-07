@@ -158,8 +158,8 @@ func TestPostgresBotRepository_UpdateNodeAndEntry(t *testing.T) {
 func testBotRepositoryCreateNew(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -181,8 +181,8 @@ func testBotRepositoryCreateNew(t *testing.T, m bots.BotManager, p bots.BotProvi
 func testBotRepositoryAddNode(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -196,7 +196,7 @@ func testBotRepositoryAddNode(t *testing.T, m bots.BotManager, p bots.BotProvide
 	err := m.Upsert(ctx, bot)
 	require.NoError(t, err)
 
-	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	updatedBot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(
 				bots.State(1),
@@ -228,8 +228,8 @@ func testBotRepositoryAddNode(t *testing.T, m bots.BotManager, p bots.BotProvide
 func testBotRepositoryRemoveNode(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(
 				bots.State(1),
@@ -254,7 +254,7 @@ func testBotRepositoryRemoveNode(t *testing.T, m bots.BotManager, p bots.BotProv
 	err := m.Upsert(ctx, bot)
 	require.NoError(t, err)
 
-	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	updatedBot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -275,8 +275,8 @@ func testBotRepositoryRemoveNode(t *testing.T, m bots.BotManager, p bots.BotProv
 func testBotRepositoryAddEntry(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -290,7 +290,7 @@ func testBotRepositoryAddEntry(t *testing.T, m bots.BotManager, p bots.BotProvid
 	err := m.Upsert(ctx, bot)
 	require.NoError(t, err)
 
-	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	updatedBot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -312,8 +312,8 @@ func testBotRepositoryAddEntry(t *testing.T, m bots.BotManager, p bots.BotProvid
 func testBotRepositoryRemoveEntry(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -328,7 +328,7 @@ func testBotRepositoryRemoveEntry(t *testing.T, m bots.BotManager, p bots.BotPro
 	err := m.Upsert(ctx, bot)
 	require.NoError(t, err)
 
-	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	updatedBot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -349,8 +349,8 @@ func testBotRepositoryRemoveEntry(t *testing.T, m bots.BotManager, p bots.BotPro
 func testBotRepositoryAddEdge(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -364,7 +364,7 @@ func testBotRepositoryAddEdge(t *testing.T, m bots.BotManager, p bots.BotProvide
 	err := m.Upsert(ctx, bot)
 	require.NoError(t, err)
 
-	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	updatedBot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting",
 				[]bots.Edge{
@@ -391,8 +391,8 @@ func testBotRepositoryAddEdge(t *testing.T, m bots.BotManager, p bots.BotProvide
 func testBotRepositoryRemoveEdge(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting",
 				[]bots.Edge{
@@ -409,7 +409,7 @@ func testBotRepositoryRemoveEdge(t *testing.T, m bots.BotManager, p bots.BotProv
 		},
 	))
 
-	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	updatedBot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -433,8 +433,8 @@ func testBotRepositoryRemoveEdge(t *testing.T, m bots.BotManager, p bots.BotProv
 func testBotRepositoryAddMessage(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -448,7 +448,7 @@ func testBotRepositoryAddMessage(t *testing.T, m bots.BotManager, p bots.BotProv
 	err := m.Upsert(ctx, bot)
 	require.NoError(t, err)
 
-	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	updatedBot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -470,8 +470,8 @@ func testBotRepositoryAddMessage(t *testing.T, m bots.BotManager, p bots.BotProv
 func testBotRepositoryRemoveMessage(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -486,7 +486,7 @@ func testBotRepositoryRemoveMessage(t *testing.T, m bots.BotManager, p bots.BotP
 	err := m.Upsert(ctx, bot)
 	require.NoError(t, err)
 
-	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	updatedBot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -507,8 +507,8 @@ func testBotRepositoryRemoveMessage(t *testing.T, m bots.BotManager, p bots.BotP
 func testBotRepositoryUpdateBotData(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -522,7 +522,7 @@ func testBotRepositoryUpdateBotData(t *testing.T, m bots.BotManager, p bots.BotP
 	err := m.Upsert(ctx, bot)
 	require.NoError(t, err)
 
-	updatedBot := bots.MustNewBot(id, "token2", bots.UserId(2), bots.MustNewScript(
+	updatedBot := bots.MustNewBot(id, "token2", bots.UserID(2), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -543,8 +543,8 @@ func testBotRepositoryUpdateBotData(t *testing.T, m bots.BotManager, p bots.BotP
 func testBotRepositoryUpdateNodeAndEntry(t *testing.T, m bots.BotManager, p bots.BotProvider) {
 	ctx := context.Background()
 
-	id := bots.BotId(gofakeit.AppName())
-	bot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(1), "Greeting", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -558,7 +558,7 @@ func testBotRepositoryUpdateNodeAndEntry(t *testing.T, m bots.BotManager, p bots
 	err := m.Upsert(ctx, bot)
 	require.NoError(t, err)
 
-	updatedBot := bots.MustNewBot(id, "token", bots.UserId(1), bots.MustNewScript(
+	updatedBot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
 		[]bots.Node{
 			bots.MustNewNode(bots.State(2), "Greeting 2", nil, []bots.Message{
 				bots.MustNewMessage("Hello, world!"),
@@ -578,7 +578,7 @@ func testBotRepositoryUpdateNodeAndEntry(t *testing.T, m bots.BotManager, p bots
 
 func testBotRepositoryErrorIfNotExists(t *testing.T, p bots.BotProvider) {
 	ctx := context.Background()
-	id := bots.BotId(gofakeit.AppName())
+	id := bots.BotID(gofakeit.AppName())
 	_, err := p.Bot(ctx, id)
 	require.ErrorIs(t, err, bots.ErrBotNotFound)
 }

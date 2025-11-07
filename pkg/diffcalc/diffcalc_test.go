@@ -1,10 +1,11 @@
 package diffcalc_test
 
 import (
-	"github.com/bmstu-itstech/itsreg-bots/pkg/diffcalc"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bmstu-itstech/itsreg-bots/pkg/diffcalc"
 )
 
 type TestEntity struct {

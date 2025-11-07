@@ -129,6 +129,7 @@ const (
 
 type coloredNode struct {
 	Node
+
 	Color color
 }
 
@@ -195,8 +196,8 @@ func colorize(currentState State, nodes map[State]coloredNode) error {
 	dye(nodes, currentState, grey)
 
 	for _, nextState := range current.Children() {
-		next, ok := nodes[nextState]
-		if !ok {
+		next, o := nodes[nextState]
+		if !o {
 			return newNodeNotFoundError(nextState)
 		}
 

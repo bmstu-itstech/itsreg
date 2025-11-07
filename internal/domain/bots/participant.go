@@ -6,51 +6,51 @@ import (
 	"maps"
 )
 
-type UserId int64
+type UserID int64
 
-type ParticipantId struct {
-	userId UserId
-	botId  BotId
+type ParticipantID struct {
+	userID UserID
+	botID  BotID
 }
 
-func NewParticipantId(userId UserId, botId BotId) ParticipantId {
-	return ParticipantId{
-		userId: userId,
-		botId:  botId,
+func NewParticipantID(userID UserID, botID BotID) ParticipantID {
+	return ParticipantID{
+		userID: userID,
+		botID:  botID,
 	}
 }
 
-func (id ParticipantId) IsZero() bool {
-	return id.botId == ""
+func (id ParticipantID) IsZero() bool {
+	return id.botID == ""
 }
 
-func (id ParticipantId) UserId() UserId {
-	return id.userId
+func (id ParticipantID) UserID() UserID {
+	return id.userID
 }
 
-func (id ParticipantId) BotId() BotId {
-	return id.botId
+func (id ParticipantID) BotID() BotID {
+	return id.botID
 }
 
 type Participant struct {
-	id              ParticipantId
-	threads         map[ThreadId]*Thread
-	currentThreadId *ThreadId
+	id              ParticipantID
+	threads         map[ThreadID]*Thread
+	currentThreadID *ThreadID
 }
 
-func NewParticipant(id ParticipantId) (*Participant, error) {
+func NewParticipant(id ParticipantID) (*Participant, error) {
 	if id.IsZero() {
-		return nil, fmt.Errorf("id is zero")
+		return nil, errors.New("id is zero")
 	}
 
 	return &Participant{
 		id:              id,
-		threads:         make(map[ThreadId]*Thread),
-		currentThreadId: nil,
+		threads:         make(map[ThreadID]*Thread),
+		currentThreadID: nil,
 	}, nil
 }
 
-func MustNewParticipant(id ParticipantId) *Participant {
+func MustNewParticipant(id ParticipantID) *Participant {
 	p, err := NewParticipant(id)
 	if err != nil {
 		panic(err)
@@ -59,14 +59,14 @@ func MustNewParticipant(id ParticipantId) *Participant {
 }
 
 func (p *Participant) Clone() *Participant {
-	threads := make(map[ThreadId]*Thread)
+	threads := make(map[ThreadID]*Thread)
 	for k, v := range p.threads {
 		threads[k] = v.Clone()
 	}
 	return &Participant{
 		id:              p.id,
 		threads:         threads,
-		currentThreadId: p.currentThreadId, // Значение по указателю не изменяется - аналог Optional; поэтому можно
+		currentThreadID: p.currentThreadID, // Значение по указателю не изменяется - аналог Optional; поэтому можно
 		// не копировать значение по адресу
 	}
 }
@@ -74,17 +74,17 @@ func (p *Participant) Clone() *Participant {
 func (p *Participant) Equals(other *Participant) bool {
 	return p.id == other.id &&
 		equalThreadMaps(p.threads, other.threads) &&
-		equalThreadIds(p.currentThreadId, other.currentThreadId)
+		equalThreadIDs(p.currentThreadID, other.currentThreadID)
 }
 
-func equalThreadIds(a, b *ThreadId) bool {
+func equalThreadIDs(a, b *ThreadID) bool {
 	if a != nil && b != nil {
 		return *a == *b
 	}
 	return a == b
 }
 
-func equalThreadMaps(a, b map[ThreadId]*Thread) bool {
+func equalThreadMaps(a, b map[ThreadID]*Thread) bool {
 	return maps.EqualFunc(a, b, func(t1 *Thread, t2 *Thread) bool {
 		return t1.Equals(t2)
 	})
@@ -103,61 +103,61 @@ func (p *Participant) StartThread(entry Entry) (*Thread, error) {
 	if err != nil {
 		return nil, err
 	}
-	id := thread.Id()
+	id := thread.ID()
 	p.threads[id] = thread
-	p.currentThreadId = &id
+	p.currentThreadID = &id
 	return thread, nil
 }
 
 func (p *Participant) CurrentThread() (*Thread, bool) {
-	if p.currentThreadId == nil {
+	if p.currentThreadID == nil {
 		return nil, false
 	}
-	thread := p.threads[*p.currentThreadId] // Гарантировано есть
+	thread := p.threads[*p.currentThreadID] // Гарантировано есть
 	return thread, true
 }
 
-func (p *Participant) Id() ParticipantId {
+func (p *Participant) ID() ParticipantID {
 	return p.id
 }
 
 func UnmarshallParticipant(
-	botId string,
-	userId int64,
+	botID string,
+	userID int64,
 	_threads []*Thread,
-	_currentThreadId *string,
+	_currentThreadID *string,
 ) (*Participant, error) {
-	if botId == "" {
-		return nil, errors.New("botId is empty")
+	if botID == "" {
+		return nil, errors.New("BotID is empty")
 	}
 
-	if userId == 0 {
-		return nil, errors.New("userId is empty")
+	if userID == 0 {
+		return nil, errors.New("UserID is empty")
 	}
 
-	threads := make(map[ThreadId]*Thread, len(_threads))
+	threads := make(map[ThreadID]*Thread, len(_threads))
 	for _, thread := range _threads {
-		threads[thread.Id()] = thread
+		threads[thread.ID()] = thread
 	}
 
-	if _currentThreadId != nil && *_currentThreadId == "" {
-		return nil, errors.New("currentThreadId is not null and empty")
+	if _currentThreadID != nil && *_currentThreadID == "" {
+		return nil, errors.New("currentThreadID is not null and empty")
 	}
 
-	id := NewParticipantId(UserId(userId), BotId(botId))
+	id := NewParticipantID(UserID(userID), BotID(botID))
 
-	var currentThreadId *ThreadId
-	if _currentThreadId != nil {
-		t := ThreadId(*_currentThreadId)
+	var currentThreadID *ThreadID
+	if _currentThreadID != nil {
+		t := ThreadID(*_currentThreadID)
 		if _, ok := threads[t]; !ok {
 			return nil, fmt.Errorf("unknown thread: %s", t)
 		}
-		currentThreadId = &t
+		currentThreadID = &t
 	}
 
 	return &Participant{
 		id:              id,
 		threads:         threads,
-		currentThreadId: currentThreadId,
+		currentThreadID: currentThreadID,
 	}, nil
 }

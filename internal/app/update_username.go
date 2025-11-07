@@ -9,7 +9,7 @@ import (
 )
 
 type UpdateUsername struct {
-	UserId   int64
+	UserID   int64
 	Username string
 }
 
@@ -20,7 +20,7 @@ type updateUsernameHandler struct {
 }
 
 func (h updateUsernameHandler) Handle(ctx context.Context, cmd UpdateUsername) error {
-	return h.um.Upsert(ctx, bots.UserId(cmd.UserId), bots.Username(cmd.Username))
+	return h.um.Upsert(ctx, bots.UserID(cmd.UserID), bots.Username(cmd.Username))
 }
 
 func NewUpdateUsernameHandler(

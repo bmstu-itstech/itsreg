@@ -6,7 +6,7 @@ import (
 
 // State есть состояние в контексте FSM и уникальный номер узла
 // в пределах скрипта.
-type State uint
+type State int
 
 // Node есть минимальная структурная единица Script.
 type Node struct {
@@ -19,6 +19,13 @@ type Node struct {
 
 // NewNode создаёт Node. msgs должно содержать как минимум одно BotMessage.
 func NewNode(state State, title string, edges []Edge, msgs []Message, opts []Option) (Node, error) {
+	if state < 0 {
+		return Node{}, NewInvalidInputError(
+			"invalid-node",
+			"expected non-negative state",
+		)
+	}
+
 	if title == "" {
 		return Node{}, NewInvalidInputError(
 			"invalid-node",
@@ -44,8 +51,8 @@ func NewNode(state State, title string, edges []Edge, msgs []Message, opts []Opt
 	return Node{
 		state: state,
 		title: title,
-		edges: edges[:],
-		msgs:  msgs[:],
+		edges: edges,
+		msgs:  msgs,
 		opts:  opts,
 	}, nil
 }
@@ -101,7 +108,7 @@ func (n Node) Title() string {
 
 // Messages возвращает сообщения в том виде, в котором они хранятся в узле.
 func (n Node) Messages() []Message {
-	return n.msgs[:]
+	return n.msgs
 }
 
 // BotMessages возвращает сообщения в том виде, в котором они будут отправлены пользователю.
@@ -119,9 +126,9 @@ func (n Node) BotMessages() []BotMessage {
 }
 
 func (n Node) Edges() []Edge {
-	return n.edges[:]
+	return n.edges
 }
 
 func (n Node) Options() []Option {
-	return n.opts[:]
+	return n.opts
 }

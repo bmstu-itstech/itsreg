@@ -39,7 +39,7 @@ func TestMessage_PromoteToBotMessage(t *testing.T) {
 		got := msg.PromoteToBotMessage(nil)
 		require.Equal(t, msg.Text(), got.Text())
 		require.Equal(t, msg.String(), got.String())
-		require.Len(t, got.Options(), 0)
+		require.Empty(t, got.Options())
 	})
 
 	t.Run("promote with empty options", func(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMessage_PromoteToBotMessage(t *testing.T) {
 		got := msg.PromoteToBotMessage(make([]bots.Option, 0))
 		require.Equal(t, msg.Text(), got.Text())
 		require.Equal(t, msg.String(), got.String())
-		require.Len(t, got.Options(), 0)
+		require.Empty(t, got.Options())
 	})
 
 	t.Run("promote with not nil options", func(t *testing.T) {

@@ -10,12 +10,12 @@ import (
 
 func TestNewParticipant(t *testing.T) {
 	// Вспомогательные функции для создания тестовых данных
-	validID := func() bots.ParticipantId { return bots.NewParticipantId(1, "bot") }
-	zeroID := func() bots.ParticipantId { return bots.ParticipantId{} }
+	validID := func() bots.ParticipantID { return bots.NewParticipantID(1, "bot") }
+	zeroID := func() bots.ParticipantID { return bots.ParticipantID{} }
 
 	tests := []struct {
 		name        string
-		id          bots.ParticipantId
+		id          bots.ParticipantID
 		wantErr     bool
 		expectedErr string
 	}{
@@ -40,7 +40,7 @@ func TestNewParticipant(t *testing.T) {
 				require.EqualError(t, err, tt.expectedErr)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.id, got.Id())
+				require.Equal(t, tt.id, got.ID())
 				require.Empty(t, got.Threads())
 				_, ok := got.CurrentThread()
 				require.False(t, ok)
@@ -50,7 +50,7 @@ func TestNewParticipant(t *testing.T) {
 }
 
 func TestParticipant_Clone(t *testing.T) {
-	id := bots.NewParticipantId(1, "bot")
+	id := bots.NewParticipantID(1, "bot")
 	prt := bots.MustNewParticipant(id)
 
 	startState := bots.State(1)
@@ -60,7 +60,7 @@ func TestParticipant_Clone(t *testing.T) {
 	require.NoError(t, err)
 
 	cloned := prt.Clone()
-	require.Equal(t, prt.Id(), cloned.Id())
+	require.Equal(t, prt.ID(), cloned.ID())
 	require.Equal(t, prt.Threads(), cloned.Threads())
 	c1, ok1 := prt.CurrentThread()
 	c2, ok2 := cloned.CurrentThread()
@@ -77,7 +77,7 @@ func TestParticipant_Clone(t *testing.T) {
 }
 
 func TestParticipant_StartThread(t *testing.T) {
-	id := bots.NewParticipantId(1, "bot")
+	id := bots.NewParticipantID(1, "bot")
 	prt := bots.MustNewParticipant(id)
 
 	startState := bots.State(1)

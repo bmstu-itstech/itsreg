@@ -18,50 +18,6 @@ type TelegramService struct {
 	entry   bots.EntryHandler
 }
 
-func (s *TelegramService) Status(_ context.Context, id bots.BotId) (bots.Status, error) {
-	r, ok := s.m.Load(id)
-	if !ok {
-		return bots.Idle, nil
-	}
-
-	ins := r.(*botInstance)
-	if ins.IsDead() {
-		return bots.Dead, nil
-	}
-	return bots.Running, nil
-}
-
-func (s *TelegramService) Start(ctx context.Context, id bots.BotId, token bots.Token) error {
-	_, ok := s.m.Load(id)
-	if ok {
-		// Перезапускаем бота, если он уже запущен
-		s.log.Info("bot already exists; stopping instance...", "botId", id)
-		err := s.Stop(ctx, id)
-		if err != nil {
-			s.log.Error("failed to stop previous instance while starting", "botId", id, "error", err.Error())
-		}
-	}
-
-	ins, err := startBotInstance(id, token, s.process, s.entry, s.log)
-	s.m.Store(id, ins) // В любом случае сохраняем, чтобы иметь status = dead
-	if err != nil {
-		return fmt.Errorf("failed to start bot instance %s: %w", id, err)
-	}
-
-	return nil
-}
-
-func (s *TelegramService) Stop(_ context.Context, id bots.BotId) error {
-	r, ok := s.m.Load(id)
-	ins := r.(*botInstance)
-	if !ok {
-		return fmt.Errorf("%w: %s", bots.ErrRunningInstanceNotFound, id)
-	}
-	ins.Stop()
-	s.m.Delete(id)
-	return nil
-}
-
 func NewTelegramService(log *slog.Logger, process bots.ProcessHandler, entry bots.EntryHandler) *TelegramService {
 	return &TelegramService{
 		log:     log,
@@ -70,8 +26,59 @@ func NewTelegramService(log *slog.Logger, process bots.ProcessHandler, entry bot
 	}
 }
 
+func (s *TelegramService) Status(_ context.Context, id bots.BotID) (bots.Status, error) {
+	r, ok := s.m.Load(id)
+	if !ok {
+		return bots.Idle, nil
+	}
+
+	ins, _ := r.(*botInstance)
+	if ins.IsDead() {
+		return bots.Dead, nil
+	}
+	return bots.Running, nil
+}
+
+func (s *TelegramService) Start(ctx context.Context, id bots.BotID, token bots.Token) error {
+	const op = "TelegramService.Start"
+	l := s.log.With(
+		slog.String("op", op),
+		slog.String("bot_id", string(id)),
+	)
+
+	_, ok := s.m.Load(id)
+	if ok {
+		// Перезапускаем бота, если он уже запущен
+		l.InfoContext(ctx, "bot already exists; stopping instance...")
+		err := s.Stop(ctx, id)
+		if err != nil {
+			l.ErrorContext(ctx, "failed to stop previous instance while starting", slog.String("error", err.Error()))
+		}
+	}
+
+	ins, err := startBotInstance(id, token, s.process, s.entry, s.log)
+	s.m.Store(id, ins) // В любом случае сохраняем, чтобы иметь status = dead
+	if err != nil {
+		l.ErrorContext(ctx, "failed to start bot", slog.String("error", err.Error()))
+		return fmt.Errorf("failed to start bot instance %s: %w", id, err)
+	}
+
+	return nil
+}
+
+func (s *TelegramService) Stop(_ context.Context, id bots.BotID) error {
+	r, ok := s.m.Load(id)
+	ins, _ := r.(*botInstance)
+	if !ok {
+		return fmt.Errorf("%w: %s", bots.ErrRunningInstanceNotFound, id)
+	}
+	ins.Stop()
+	s.m.Delete(id)
+	return nil
+}
+
 type botInstance struct {
-	botId   bots.BotId
+	BotID   bots.BotID
 	api     *tgbotapi.BotAPI
 	stopCh  chan struct{}
 	process bots.ProcessHandler
@@ -81,7 +88,7 @@ type botInstance struct {
 }
 
 func startBotInstance(
-	botId bots.BotId,
+	botID bots.BotID,
 	token bots.Token,
 	process bots.ProcessHandler,
 	entry bots.EntryHandler,
@@ -93,7 +100,7 @@ func startBotInstance(
 	}
 
 	i := &botInstance{
-		botId:   botId,
+		BotID:   botID,
 		api:     api,
 		stopCh:  make(chan struct{}),
 		process: process,
@@ -137,20 +144,28 @@ func (i *botInstance) run(updates tgbotapi.UpdatesChannel) {
 }
 
 func (i *botInstance) handleUpdate(ctx context.Context, upd tgbotapi.Update) {
+	const op = "botInstance.handleUpdate"
+	l := i.log.With(
+		slog.String("op", op),
+		slog.String("bot_id", string(i.BotID)),
+	)
+
+	if upd.Message == nil {
+		return
+	}
+
 	var err error
-	if upd.Message != nil {
-		if upd.Message.IsCommand() {
-			err = i.entry.Entry(ctx, i.botId, bots.UserId(upd.Message.Chat.ID), bots.EntryKey(upd.Message.Command()))
+	if upd.Message.IsCommand() {
+		err = i.entry.Entry(ctx, i.BotID, bots.UserID(upd.Message.Chat.ID), bots.EntryKey(upd.Message.Command()))
+	} else {
+		if msg, err2 := bots.NewMessage(upd.Message.Text); err2 == nil {
+			err = i.process.Process(ctx, i.BotID, bots.UserID(upd.Message.Chat.ID), msg)
 		} else {
-			if msg, err := bots.NewMessage(upd.Message.Text); err == nil {
-				err = i.process.Process(ctx, i.botId, bots.UserId(upd.Message.Chat.ID), msg)
-			} else {
-				i.log.Warn("unhandled message", "message", upd.Message)
-			}
+			l.WarnContext(ctx, "unhandled message", slog.String("message", fmt.Sprintf("%v", upd.Message)))
 		}
 	}
 
 	if err != nil {
-		i.log.Error("failed to handle upd", "botId", i.botId, "error", err.Error())
+		l.ErrorContext(ctx, "failed to handle update", slog.String("error", err.Error()))
 	}
 }

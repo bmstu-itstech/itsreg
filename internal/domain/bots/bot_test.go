@@ -17,9 +17,9 @@ func TestNewBot(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		id          bots.BotId
+		id          bots.BotID
 		token       bots.Token
-		author      bots.UserId
+		author      bots.UserID
 		script      bots.Script
 		wantErr     bool
 		errContains string
@@ -78,7 +78,7 @@ func TestNewBot(t *testing.T) {
 				require.Contains(t, err.Error(), tt.errContains)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.id, bot.Id())
+				require.Equal(t, tt.id, bot.ID())
 				require.Equal(t, tt.token, bot.Token())
 				require.Equal(t, tt.script, bot.Script())
 			}

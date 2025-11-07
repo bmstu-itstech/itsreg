@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	testBotId      = "test"
+	testBotID      = "test"
 	testEntryKey   = "start"
 	testStartState = 1
 )
@@ -29,19 +29,19 @@ func setupPostgresParticipantRepository() (*service.PostgresParticipantRepositor
 	db.MustExecContext(
 		context.Background(),
 		`INSERT INTO bots (id, token, author) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-		testBotId, "token", 1,
+		testBotID, "token", 1,
 	)
 
 	db.MustExecContext(
 		context.Background(),
 		`INSERT INTO nodes (bot_id, state, title) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-		testBotId, 1, "Test",
+		testBotID, 1, "Test",
 	)
 
 	db.MustExecContext(
 		context.Background(),
 		`INSERT INTO entries (bot_id, key, start) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-		testBotId, testEntryKey, testStartState,
+		testBotID, testEntryKey, testStartState,
 	)
 
 	return service.NewPostgresParticipantRepository(db, slog.Default()), func() {
@@ -84,10 +84,10 @@ func TestPostgresParticipantRepository_CreateMultiplyParticipants(t *testing.T) 
 
 func testParticipantRepositoryCreateNew(t *testing.T, repo bots.ParticipantRepository) {
 	ctx := context.Background()
-	id := bots.NewParticipantId(bots.UserId(gofakeit.Int64()), testBotId)
+	id := bots.NewParticipantID(bots.UserID(gofakeit.Int64()), testBotID)
 
 	executed := false
-	err := repo.UpdateOrCreate(ctx, id, func(_ context.Context, prt *bots.Participant) error {
+	err := repo.UpdateOrCreate(ctx, id, func(_ context.Context, _ *bots.Participant) error {
 		executed = true
 		return nil
 	})
@@ -97,7 +97,7 @@ func testParticipantRepositoryCreateNew(t *testing.T, repo bots.ParticipantRepos
 
 func testParticipantRepositoryUpdateExisting(t *testing.T, repo bots.ParticipantRepository) {
 	ctx := context.Background()
-	id := bots.NewParticipantId(bots.UserId(gofakeit.Int64()), testBotId)
+	id := bots.NewParticipantID(bots.UserID(gofakeit.Int64()), testBotID)
 	entry := bots.MustNewEntry(testEntryKey, testStartState)
 
 	msg := bots.MustNewMessage("hello")
@@ -122,15 +122,15 @@ func testParticipantRepositoryUpdateExisting(t *testing.T, repo bots.Participant
 
 func testParticipantRepositoryCreateMultiplyParticipants(t *testing.T, repo bots.ParticipantRepository) {
 	ctx := context.Background()
-	id1 := bots.NewParticipantId(bots.UserId(gofakeit.Int64()), testBotId)
-	id2 := bots.NewParticipantId(bots.UserId(gofakeit.Int64()), testBotId)
+	id1 := bots.NewParticipantID(bots.UserID(gofakeit.Int64()), testBotID)
+	id2 := bots.NewParticipantID(bots.UserID(gofakeit.Int64()), testBotID)
 
-	err := repo.UpdateOrCreate(ctx, id1, func(ctx context.Context, _ *bots.Participant) error {
+	err := repo.UpdateOrCreate(ctx, id1, func(_ context.Context, _ *bots.Participant) error {
 		return nil
 	})
 	require.NoError(t, err)
 
-	err = repo.UpdateOrCreate(ctx, id2, func(ctx context.Context, _ *bots.Participant) error {
+	err = repo.UpdateOrCreate(ctx, id2, func(_ context.Context, _ *bots.Participant) error {
 		return nil
 	})
 	require.NoError(t, err)

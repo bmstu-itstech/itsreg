@@ -9,7 +9,7 @@ import (
 )
 
 type Stop struct {
-	BotId string
+	BotID string
 }
 
 type StopHandler decorator.CommandHandler[Stop]
@@ -19,7 +19,7 @@ type stopHandler struct {
 }
 
 func (h stopHandler) Handle(ctx context.Context, cmd Stop) error {
-	return h.im.Stop(ctx, bots.BotId(cmd.BotId))
+	return h.im.Stop(ctx, bots.BotID(cmd.BotID))
 }
 
 func NewStopHandler(

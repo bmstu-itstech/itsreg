@@ -15,12 +15,11 @@ const (
 
 var defaultLogger *slog.Logger
 
-func init() {
-	env := os.Getenv("APP_ENV")
-	defaultLogger = NewLogger(env)
-}
-
 func DefaultLogger() *slog.Logger {
+	if defaultLogger == nil {
+		env := os.Getenv("APP_ENV")
+		defaultLogger = NewLogger(env)
+	}
 	return defaultLogger
 }
 

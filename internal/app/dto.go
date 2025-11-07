@@ -14,7 +14,7 @@ type Predicate struct {
 
 type Edge struct {
 	Predicate Predicate
-	To        uint
+	To        int
 	Operation string
 }
 
@@ -23,7 +23,7 @@ type Message struct {
 }
 
 type Node struct {
-	State    uint
+	State    int
 	Title    string
 	Edges    []Edge
 	Messages []Message
@@ -32,7 +32,7 @@ type Node struct {
 
 type Entry struct {
 	Key   string
-	Start uint
+	Start int
 }
 
 type Script struct {
@@ -41,18 +41,18 @@ type Script struct {
 }
 
 type Bot struct {
-	Id     string
+	ID     string
 	Token  string
 	Author int64
 	Script Script
 }
 
 type Thread struct {
-	Id        string
+	ID        string
 	Key       string
 	StartedAt time.Time
 	Username  string
-	Answers   map[uint]Message
+	Answers   map[int]Message
 }
 
 func predicateFromDto(dto Predicate) (bots.Predicate, error) {
@@ -152,7 +152,7 @@ func batchEdgesFromDto(dto []Edge) ([]bots.Edge, error) {
 func edgeToDto(e bots.Edge) Edge {
 	return Edge{
 		Predicate: predicateToDto(e.Predicate),
-		To:        uint(e.To()),
+		To:        int(e.To()),
 		Operation: operationToDto(e.Operation()),
 	}
 }
@@ -241,7 +241,7 @@ func batchNodesFromDto(dto []Node) ([]bots.Node, error) {
 
 func nodeToDto(node bots.Node) Node {
 	return Node{
-		State:    uint(node.State()),
+		State:    int(node.State()),
 		Title:    node.Title(),
 		Edges:    batchEdgesToDto(node.Edges()),
 		Messages: batchMessagesToDto(node.Messages()),
@@ -276,7 +276,7 @@ func batchEntriesFromDto(dto []Entry) ([]bots.Entry, error) {
 func entryToDto(entry bots.Entry) Entry {
 	return Entry{
 		Key:   string(entry.Key()),
-		Start: uint(entry.Start()),
+		Start: int(entry.Start()),
 	}
 }
 
@@ -312,7 +312,7 @@ func scriptToDto(script bots.Script) Script {
 func botToDto(bot bots.Bot) Bot {
 	script := scriptToDto(bot.Script())
 	return Bot{
-		Id:     string(bot.Id()),
+		ID:     string(bot.ID()),
 		Token:  string(bot.Token()),
 		Author: int64(bot.Author()),
 		Script: script,
@@ -328,13 +328,13 @@ func batchBotToDto(bs []bots.Bot) []Bot {
 }
 
 func threadToDto(thread *bots.Thread, username string) Thread {
-	answers := make(map[uint]Message)
+	answers := make(map[int]Message)
 	for state, msg := range thread.Answers() {
-		answers[uint(state)] = messageToDto(msg)
+		answers[int(state)] = messageToDto(msg)
 	}
 
 	return Thread{
-		Id:        string(thread.Id()),
+		ID:        string(thread.ID()),
 		Key:       string(thread.Key()),
 		StartedAt: thread.StartedAt(),
 		Username:  username,

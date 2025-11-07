@@ -67,7 +67,7 @@ func TestPostgresUsernameRepository_ErrorIfNotExists(t *testing.T) {
 
 func testUsernameRepositoryCreateNew(t *testing.T, m bots.UsernameManager, p bots.UsernameProvider) {
 	ctx := context.Background()
-	uid := bots.UserId(gofakeit.Int64())
+	uid := bots.UserID(gofakeit.Int64())
 
 	username := bots.Username(gofakeit.Username())
 	err := m.Upsert(ctx, uid, username)
@@ -80,7 +80,7 @@ func testUsernameRepositoryCreateNew(t *testing.T, m bots.UsernameManager, p bot
 
 func testUsernameRepositoryUpdateExisting(t *testing.T, m bots.UsernameManager, p bots.UsernameProvider) {
 	ctx := context.Background()
-	uid := bots.UserId(gofakeit.Int64())
+	uid := bots.UserID(gofakeit.Int64())
 
 	username1 := bots.Username(gofakeit.Username())
 	err := m.Upsert(ctx, uid, username1)
@@ -97,7 +97,7 @@ func testUsernameRepositoryUpdateExisting(t *testing.T, m bots.UsernameManager, 
 
 func testUsernameRepositoryErrorIfNotExists(t *testing.T, p bots.UsernameProvider) {
 	ctx := context.Background()
-	uid := bots.UserId(gofakeit.Int64())
+	uid := bots.UserID(gofakeit.Int64())
 	_, err := p.Username(ctx, uid)
 	require.ErrorIs(t, err, bots.ErrUsernameNotFound)
 }

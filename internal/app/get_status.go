@@ -9,7 +9,7 @@ import (
 )
 
 type GetStatus struct {
-	BotId string
+	BotID string
 }
 
 type GetStatusHandler decorator.QueryHandler[GetStatus, string]
@@ -19,7 +19,7 @@ type getStatusHandler struct {
 }
 
 func (h getStatusHandler) Handle(ctx context.Context, q GetStatus) (string, error) {
-	status, err := h.sp.Status(ctx, bots.BotId(q.BotId))
+	status, err := h.sp.Status(ctx, bots.BotID(q.BotID))
 	if err != nil {
 		return "", err
 	}

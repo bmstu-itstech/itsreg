@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
@@ -13,13 +14,15 @@ func NewTelegramMessageSender() *TelegramMessageSender {
 	return &TelegramMessageSender{}
 }
 
-func (s *TelegramMessageSender) Send(_ context.Context, token bots.Token, userId bots.UserId, msg bots.BotMessage) error {
+func (s *TelegramMessageSender) Send(
+	_ context.Context, token bots.Token, userID bots.UserID, msg bots.BotMessage,
+) error {
 	api, err := tgbotapi.NewBotAPI(string(token))
 	if err != nil {
 		return err
 	}
 
-	m := tgbotapi.NewMessage(int64(userId), msg.Text())
+	m := tgbotapi.NewMessage(int64(userID), msg.Text())
 	m.ParseMode = tgbotapi.ModeHTML
 	if opts := msg.Options(); len(opts) > 0 {
 		m.ReplyMarkup = buildInlineKeyboardMarkup(opts)

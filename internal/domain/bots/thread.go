@@ -2,19 +2,18 @@ package bots
 
 import (
 	"errors"
-	"fmt"
 	"maps"
 	"time"
 
 	"github.com/bmstu-itstech/itsreg-bots/pkg/uuid"
 )
 
-type ThreadId string
+type ThreadID string
 
 // Thread есть цепочка ответов Participant от Entry до конечного State или
 // до следующего Entry.
 type Thread struct {
-	id        ThreadId
+	id        ThreadID
 	key       EntryKey
 	state     State
 	answers   map[State]Message
@@ -23,11 +22,11 @@ type Thread struct {
 
 func NewThread(entry Entry) (*Thread, error) {
 	if entry.IsZero() {
-		return nil, fmt.Errorf("entry is empty")
+		return nil, errors.New("entry is empty")
 	}
 
 	return &Thread{
-		id:        ThreadId(uuid.Generate()),
+		id:        ThreadID(uuid.Generate()),
 		key:       entry.Key(),
 		state:     entry.Start(),
 		answers:   make(map[State]Message),
@@ -82,7 +81,7 @@ func (t *Thread) AppendAnswer(ans Message) {
 	}
 }
 
-func (t *Thread) Id() ThreadId {
+func (t *Thread) ID() ThreadID {
 	return t.id
 }
 
@@ -104,18 +103,18 @@ func (t *Thread) StartedAt() time.Time {
 
 type BotThread struct {
 	thread *Thread
-	userId UserId
+	userID UserID
 }
 
-func NewUserThread(thread *Thread, userId UserId) BotThread {
+func NewUserThread(thread *Thread, userID UserID) BotThread {
 	return BotThread{
 		thread: thread,
-		userId: userId,
+		userID: userID,
 	}
 }
 
-func (ut *BotThread) UserId() UserId {
-	return ut.userId
+func (ut *BotThread) UserID() UserID {
+	return ut.userID
 }
 
 func (ut *BotThread) Thread() *Thread {
@@ -146,7 +145,7 @@ func UnmarshallThread(
 	}
 
 	return &Thread{
-		id:        ThreadId(id),
+		id:        ThreadID(id),
 		key:       EntryKey(key),
 		state:     State(state),
 		answers:   answers,

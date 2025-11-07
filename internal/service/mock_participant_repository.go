@@ -8,23 +8,23 @@ import (
 )
 
 type MockParticipantRepository struct {
-	sync.RWMutex
-	m map[bots.ParticipantId]bots.Participant
+	m     map[bots.ParticipantID]bots.Participant
+	mutex sync.RWMutex
 }
 
 func NewMockParticipantRepository() *MockParticipantRepository {
 	return &MockParticipantRepository{
-		m: make(map[bots.ParticipantId]bots.Participant),
+		m: make(map[bots.ParticipantID]bots.Participant),
 	}
 }
 
 func (r *MockParticipantRepository) UpdateOrCreate(
 	ctx context.Context,
-	id bots.ParticipantId,
+	id bots.ParticipantID,
 	updateFn func(context.Context, *bots.Participant) error,
 ) error {
-	r.Lock()
-	defer r.Unlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	prt, ok := r.m[id]
 	if !ok {
 		newPrt, err := bots.NewParticipant(id)
@@ -41,14 +41,14 @@ func (r *MockParticipantRepository) UpdateOrCreate(
 	return nil
 }
 
-func (r *MockParticipantRepository) BotThreads(_ context.Context, botId bots.BotId) ([]bots.BotThread, error) {
-	r.Lock()
-	defer r.Unlock()
+func (r *MockParticipantRepository) BotThreads(_ context.Context, botID bots.BotID) ([]bots.BotThread, error) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	threads := make([]bots.BotThread, 0)
 	for _, prt := range r.m {
-		if prt.Id().BotId() == botId {
+		if prt.ID().BotID() == botID {
 			for _, thread := range prt.Threads() {
-				uth := bots.NewUserThread(thread, prt.Id().UserId())
+				uth := bots.NewUserThread(thread, prt.ID().UserID())
 				threads = append(threads, uth)
 			}
 		}

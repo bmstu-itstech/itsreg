@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	stdLog "log"
+	stdLog "log" //nolint:depguard // так как используется обёртка slog над стандартным log
 	"log/slog"
 
 	"github.com/fatih/color"
@@ -15,8 +15,8 @@ type PrettyHandlerOptions struct {
 }
 
 type PrettyHandler struct {
-	opts PrettyHandlerOptions
 	slog.Handler
+
 	l     *stdLog.Logger
 	attrs []slog.Attr
 }

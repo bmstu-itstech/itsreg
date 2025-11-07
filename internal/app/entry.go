@@ -9,8 +9,8 @@ import (
 )
 
 type EntryCommand struct {
-	BotId  string
-	UserId int64
+	BotID  string
+	UserID int64
 	Key    string
 }
 
@@ -23,16 +23,16 @@ type entryHandler struct {
 }
 
 func (h entryHandler) Handle(ctx context.Context, cmd EntryCommand) error {
-	bot, err := h.bp.Bot(ctx, bots.BotId(cmd.BotId))
+	bot, err := h.bp.Bot(ctx, bots.BotID(cmd.BotID))
 	if err != nil {
 		return err
 	}
 
 	script := bot.Script()
-	prtId := bots.NewParticipantId(bots.UserId(cmd.UserId), bots.BotId(cmd.BotId))
+	prtID := bots.NewParticipantID(bots.UserID(cmd.UserID), bots.BotID(cmd.BotID))
 
 	var response []bots.BotMessage
-	err = h.pr.UpdateOrCreate(ctx, prtId, func(
+	err = h.pr.UpdateOrCreate(ctx, prtID, func(
 		_ context.Context, prt *bots.Participant,
 	) error {
 		response, err = script.Entry(prt, bots.EntryKey(cmd.Key))
@@ -43,7 +43,7 @@ func (h entryHandler) Handle(ctx context.Context, cmd EntryCommand) error {
 	}
 
 	for _, msg := range response {
-		err = h.ms.Send(ctx, bot.Token(), prtId.UserId(), msg)
+		err = h.ms.Send(ctx, bot.Token(), prtID.UserID(), msg)
 		if err != nil {
 			return err
 		}

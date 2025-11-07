@@ -6,6 +6,7 @@ import (
 
 type accessTokenClaims struct {
 	jwt.RegisteredClaims
+
 	UserUUID string `json:"user_uuid"`
 }
 

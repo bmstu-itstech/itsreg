@@ -17,9 +17,13 @@ type Server struct {
 	app *app.Application
 }
 
+func NewHTTPServer(app *app.Application) *Server {
+	return &Server{app: app}
+}
+
 func (s *Server) GetBots(w http.ResponseWriter, r *http.Request) {
 	bs, err := s.app.Queries.GetUserBots.Handle(r.Context(), app.GetUserBots{
-		UserId: 1,
+		UserID: 1,
 	})
 	if err != nil {
 		httpError(w, r, err, http.StatusInternalServerError)
@@ -43,7 +47,7 @@ func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.app.Commands.CreateBot.Handle(r.Context(), app.CreateBot{
-		BotId:  req.Id,
+		BotID:  req.Id,
 		Token:  req.Token,
 		Author: 1,
 		Script: script,
@@ -64,7 +68,7 @@ func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
-	bot, err := s.app.Queries.GetBot.Handle(r.Context(), app.GetBot{Id: id})
+	bot, err := s.app.Queries.GetBot.Handle(r.Context(), app.GetBot{ID: id})
 	if errors.Is(err, bots.ErrBotNotFound) {
 		httpError(w, r, err, http.StatusNotFound)
 		return
@@ -74,7 +78,7 @@ func (s *Server) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 
-	threads, err := s.app.Queries.GetThreads.Handle(r.Context(), app.GetThreads{BotId: id})
+	threads, err := s.app.Queries.GetThreads.Handle(r.Context(), app.GetThreads{BotID: id})
 	if err != nil {
 		httpError(w, r, err, http.StatusInternalServerError)
 		return
@@ -88,7 +92,7 @@ func (s *Server) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
 }
 
 func (s *Server) StartBot(w http.ResponseWriter, r *http.Request, id string) {
-	err := s.app.Commands.Start.Handle(r.Context(), app.Start{BotId: id})
+	err := s.app.Commands.Start.Handle(r.Context(), app.Start{BotID: id})
 	if errors.Is(err, bots.ErrBotNotFound) {
 		httpError(w, r, err, http.StatusNotFound)
 		return
@@ -100,7 +104,7 @@ func (s *Server) StartBot(w http.ResponseWriter, r *http.Request, id string) {
 }
 
 func (s *Server) StopBot(w http.ResponseWriter, r *http.Request, id string) {
-	err := s.app.Commands.Stop.Handle(r.Context(), app.Stop{BotId: id})
+	err := s.app.Commands.Stop.Handle(r.Context(), app.Stop{BotID: id})
 	if errors.Is(err, bots.ErrBotNotFound) {
 		httpError(w, r, err, http.StatusNotFound)
 		return
@@ -116,7 +120,7 @@ func (s *Server) StopBot(w http.ResponseWriter, r *http.Request, id string) {
 }
 
 func (s *Server) GetBot(w http.ResponseWriter, r *http.Request, id string) {
-	bot, err := s.app.Queries.GetBot.Handle(r.Context(), app.GetBot{Id: id})
+	bot, err := s.app.Queries.GetBot.Handle(r.Context(), app.GetBot{ID: id})
 	if errors.Is(err, bots.ErrBotNotFound) {
 		httpError(w, r, err, http.StatusNotFound)
 		return
@@ -127,10 +131,6 @@ func (s *Server) GetBot(w http.ResponseWriter, r *http.Request, id string) {
 	}
 
 	render.JSON(w, r, botFromApp(bot))
-}
-
-func NewHTTPServer(app *app.Application) *Server {
-	return &Server{app: app}
 }
 
 func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
@@ -170,20 +170,20 @@ func renderCsvAnswers(w http.ResponseWriter, nodes []app.Node, threads []app.Thr
 	return nil
 }
 
-func makeMapStateToIndex(threads []app.Thread) map[uint]int {
-	states := make(map[uint]bool)
+func makeMapStateToIndex(threads []app.Thread) map[int]int {
+	states := make(map[int]bool)
 	for _, thread := range threads {
 		for state := range thread.Answers {
 			states[state] = true
 		}
 	}
 
-	sortedStates := make([]uint, 0)
+	sortedStates := make([]int, 0)
 	for state := range states {
-		sortedStates = salad.InsertSorted(sortedStates, state, func(x, y uint) bool { return x < y })
+		sortedStates = salad.InsertSorted(sortedStates, state, func(x, y int) bool { return x < y })
 	}
 
-	m := make(map[uint]int, len(sortedStates))
+	m := make(map[int]int, len(sortedStates))
 	for idx, state := range sortedStates {
 		m[state] = idx
 	}
@@ -195,7 +195,7 @@ const answerThreadIDHeadName = "#"
 const answerTimestampHeadName = "Отметка времени"
 const answerUsernameHeadName = "Никнейм"
 
-func makeAnswersTHead(nodes []app.Node, stateToIndex map[uint]int) []string {
+func makeAnswersTHead(nodes []app.Node, stateToIndex map[int]int) []string {
 	head := make([]string, len(stateToIndex)+offset)
 
 	head[0] = answerThreadIDHeadName
@@ -204,7 +204,6 @@ func makeAnswersTHead(nodes []app.Node, stateToIndex map[uint]int) []string {
 
 	for _, node := range nodes {
 		idx, ok := stateToIndex[node.State]
-		fmt.Printf("%v\n", node)
 		if ok {
 			head[idx+offset] = node.Title
 		}
@@ -213,10 +212,10 @@ func makeAnswersTHead(nodes []app.Node, stateToIndex map[uint]int) []string {
 	return head
 }
 
-func makeAnswersTRow(thread app.Thread, stateToIndex map[uint]int) []string {
+func makeAnswersTRow(thread app.Thread, stateToIndex map[int]int) []string {
 	row := make([]string, len(stateToIndex)+offset)
 
-	row[0] = thread.Id
+	row[0] = thread.ID
 	row[1] = thread.StartedAt.Format("2006-01-02 15:04:05")
 	row[2] = thread.Username
 
@@ -230,7 +229,7 @@ func makeAnswersTRow(thread app.Thread, stateToIndex map[uint]int) []string {
 	return row
 }
 
-func makeAnswersTBody(threads []app.Thread, stateToIndex map[uint]int) [][]string {
+func makeAnswersTBody(threads []app.Thread, stateToIndex map[int]int) [][]string {
 	body := make([][]string, len(threads))
 	for i, thread := range threads {
 		body[i] = makeAnswersTRow(thread, stateToIndex)

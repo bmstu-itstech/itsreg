@@ -4,6 +4,7 @@ type Priority int
 
 type Edge struct {
 	Predicate
+
 	to        State
 	operation Operation
 }

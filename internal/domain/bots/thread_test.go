@@ -17,11 +17,11 @@ func TestNewThread(t *testing.T) {
 		thread, err := bots.NewThread(entry)
 		require.NoError(t, err)
 		require.NotNil(t, thread)
-		require.NotZero(t, thread.Id())
+		require.NotZero(t, thread.ID())
 		require.Equal(t, entry.Key(), thread.Key())
 		require.Equal(t, entry.Start(), thread.State())
 		require.Empty(t, thread.Answers())
-		require.Less(t, time.Now().Sub(thread.StartedAt()), timeEps)
+		require.Less(t, time.Since(thread.StartedAt()), timeEps)
 	})
 
 	t.Run("Empty entry", func(t *testing.T) {

@@ -15,6 +15,8 @@ import (
 	"github.com/bmstu-itstech/itsreg-bots/pkg/logs/sl"
 )
 
+const corsMaxAge = 300
+
 func RunHTTPServer(createHandler func(router chi.Router) http.Handler) {
 	RunHTTPServerOnAddr(":"+os.Getenv("PORT"), createHandler)
 }
@@ -28,8 +30,9 @@ func RunHTTPServerOnAddr(addr string, createHandler func(router chi.Router) http
 	rootRouter := chi.NewRouter()
 	rootRouter.Mount("/api/v2", createHandler(apiRouter))
 
-	log.Info("Starting: HTTP server", "addr", addr)
+	log.Info("starting: HTTP server", "addr", addr)
 
+	//nolint:gosec // Не имеется возможности переехать на другой фреймворк
 	err := http.ListenAndServe(addr, rootRouter)
 	if err != nil {
 		log.Error("Unable to start HTTP server")
@@ -65,7 +68,7 @@ func addCorsMiddleware(router *chi.Mux) {
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
-		MaxAge:           300,
+		MaxAge:           corsMaxAge,
 	})
 	router.Use(corsMiddleware.Handler)
 }
