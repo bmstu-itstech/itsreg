@@ -1,13 +1,10 @@
 openapi: 3.0.3
 info:
-  title: ITS Reg
-  description: "ITS Reg"
-  version: 1.0.0
+  title: ITS Reg API
+  description: ITS Reg API
+  version: 2.0.0
 servers:
-  - url: 'http://{hostname}:8400/api'
-    variables:
-      hostname:
-        default: localhost
+  - url: "{url}"
 security:
   - bearerAuth: []
 
@@ -15,24 +12,30 @@ paths:
   /bots:
     put:
       operationId: createBot
-      description: "Создать или заменить существующего бота с данным UUID."
+      description: Создать или заменить существующего бота с данным ID.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PostBots'
+              $ref: '#/components/schemas/PutBots'
       responses:
         "201":
-          description: "Бот успешно создан."
+          description: Бот успешно создан.
         "400":
-          description: "Данные в запросе невалидны."
+          description: Данные в запросе невалидны.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "401":
-          description: "Не был указан JWT токен."
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Бот с данным ID уже существует, нет доступа к его обновлению
           content:
             application/json:
               schema:
@@ -40,14 +43,16 @@ paths:
 
     get:
       operationId: getBots
-      description: "Получить информацию о ботах."
+      description: Получить информацию о ботах пользователя
       responses:
         "200":
-          description: "Успешно получена информация о ботах."
+          description: Успешно получена информация о ботах.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetBots'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bot'
         "400":
           description: "Данные в запросе невалидны."
           content:
@@ -55,304 +60,173 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         "401":
-          description: "Не был указан JWT токен."
+          description: Не был указан JWT токен.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /bots/{uuid}:
+  /bots/{id}:
     get:
       operationId: getBot
-      description: "Получить информацию о боте с указанным UUID."
+      description: Получить информацию о боте с указанным ID.
       parameters:
         - in: path
-          name: uuid
+          name: id
           schema:
             type: string
-            example: 14ab-d740
+            example: example_bot
           required: true
-          description: "Уникальный UUID бота."
+          description: Уникальный ID бота.
       responses:
         "200":
-          description: "Бот найден."
+          description: Бот найден.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Bot'
         "400":
-          description: "Данные в запросе невалидны."
+          description: Данные в запросе невалидны.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "401":
-          description: "Не был указан JWT токен."
+          description: Не был указан JWT токен.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "403":
-          description: "Нет доступа к боту с данным UUID."
+          description: Нет доступа к боту с данным UUID.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "404":
-          description: "Бот с данным UUID не найден."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    delete:
-      operationId: deleteBot
-      description: "Удаляет бота с заданным UUID."
-      parameters:
-        - in: path
-          name: uuid
-          schema:
-            type: string
-            example: 14ab-d740
-          required: true
-          description: "Уникальный UUID бота."
-      responses:
-        "200":
-          description: "Бот успешно удалён."
-        "400":
-          description: "Данные в запросе невалидны."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "401":
-          description: "Не был указан JWT токен."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "403":
-          description: "Нет доступа к боту с данным UUID."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "404":
-          description: "Бот с данным UUID не найден."
+          description: Бот с данным UUID не найден.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /bots/{uuid}/answers:
+  /bots/{id}/answers:
     get:
       operationId: getAnswers
-      description: "Получить ответы участников на бота с данным UUID в формате CSV."
+      description: Получить ответы участников на бота с данным ID в формате CSV.
       parameters:
         - in: path
-          name: uuid
+          name: id
           schema:
             type: string
-            example: 14ab-d740
+            example: example_bot
           required: true
-          description: "Уникальный UUID бота."
+          description: Уникальный ID бота.
       responses:
         "200":
-          description: "Успешно получены ответы участников."
+          description: Успешно получены ответы участников.
           content:
             text/csv: { }
         "400":
-          description: "Данные в запросе невалидны."
+          description: Данные в запросе невалидны.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "401":
-          description: "Не был указан JWT токен."
+          description: Не был указан JWT токен.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "403":
-          description: "Нет доступа к боту с данным UUID."
+          description: Нет доступа к боту с данным ID.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "404":
-          description: "Бот с данным UUID не найден."
+          description: Бот с данным ID не найден.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /bots/{uuid}/start:
+  /bots/{id}/start:
     post:
       operationId: startBot
-      description: "Отправить запрос на запуск бота с данным UUID."
+      description: Запустить бота с указанным ID
       parameters:
         - in: path
-          name: uuid
+          name: id
           schema:
             type: string
-            example: 14ab-d740
+            example: example_bot
           required: true
-          description: "Уникальный UUID бота."
+          description: Уникальный ID бота.
       responses:
         "200":
-          description: "Успешно отправлен запрос на запуск бота."
+          description: Бот успешно запущен.
         "400":
-          description: "Данные в запросе невалидны."
+          description: Данные в запросе невалидны.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "401":
-          description: "Не был указан JWT токен."
+          description: Не был указан JWT токен.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "403":
-          description: "Нет доступа к боту с данным UUID."
+          description: Нет доступа к боту с данным ID.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "404":
-          description: "Бот с данным UUID не найден."
+          description: Бот с данным ID не найден.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /bots/{uuid}/stop:
+  /bots/{id}/stop:
     post:
       operationId: stopBot
-      description: "Отправить запрос на остановку бота с данным UUID."
+      description: Отправить запрос на остановку бота с данным ID.
       parameters:
         - in: path
-          name: uuid
+          name: id
           schema:
             type: string
-            example: 14ab-d740
-            description: "Bot's UUID"
+            example: example_bot
           required: true
-          description: "Уникальный UUID бота."
+          description: Уникальный ID бота.
       responses:
         "200":
-          description: "Успешно отправлен запрос на остановку бота."
+          description: Бот успешно остановлен.
         "400":
-          description: "Данные в запросе невалидны."
+          description: Данные в запросе невалидны.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "401":
-          description: "Не был указан JWT токен."
+          description: Не был указан JWT токен.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "403":
-          description: "Нет доступа к боту с данным UUID."
+          description: Нет доступа к боту с данным ID.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "404":
-          description: "Бот с данным UUID не найден."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /bots/{uuid}/mailings:
-    post:
-      operationId: createMailing
-      description: "Создать рассылку в боте. Для запуска рассылки необходимо отправить запрос на /bots/{uuid}/mailing/{entryKey}/start."
-      parameters:
-        - in: path
-          name: uuid
-          schema:
-            type: string
-            default: Bot's UUID
-          required: true
-          description: "Уникальный UUID бота."
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateMailing'
-      responses:
-        "200":
-          description: "TODO"
-        "400":
-          description: "Данные в запросе невалидны."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "401":
-          description: "Не был указан JWT токен."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "403":
-          description: "Нет доступа к боту с данным UUID."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "404":
-          description: "Бот с данным UUID не найден."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /bots/{uuid}/mailings/{entryKey}/start:
-    post:
-      operationId: startMailing
-      description: "Начать рассылку с бота данным UUID и ключом entryKey."
-      parameters:
-        - in: path
-          name: uuid
-          schema:
-            type: string
-            default: Bot's UUID
-          required: true
-          description: "Уникальный UUID бота."
-        - in: path
-          name: entryKey
-          schema:
-            type: string
-            default: Mailing's entry key
-          required: true
-          description: "Уникальный ключ рассылки бота."
-      responses:
-        "200":
-          description: "TODO"
-        "400":
-          description: "Данные в запросе невалидны."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "401":
-          description: "Не был указан JWT токен."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "403":
-          description: "Нет доступа к боту с данным UUID."
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        "404":
-          description: "Бот с данным UUID или рассылка с ключом не найдены."
+          description: Бот с данным ID не найден.
           content:
             application/json:
               schema:
@@ -366,238 +240,197 @@ components:
       bearerFormat: JWT
 
   schemas:
-    Option:
-      description: "Опция для блока с выбором ответа. Представлена в telegram как кнопка в клавиатуре (ReplyKeyboard)."
+    Predicate:
       type: object
-      required:
-        - text
-        - next
-      properties:
-        text:
-          type: string
-          description: "Текст на кнопке."
-          example: "Опция А"
-        next:
-          type: integer
-          description: "Состояние (state) следующего блока, если пользователь выбрал данную опцию."
-          example: 2
+      description: Predicate описывает условие перехода по ребру.
+      oneOf:
+        - $ref: '#/components/schemas/AlwaysPredicate'
+        - $ref: '#/components/schemas/ExactPredicate'
+        - $ref: '#/components/schemas/RegexpPredicate'
+      discriminator:
+        propertyName: type
+        mapping:
+          always: '#/components/schemas/AlwaysPredicate'
+          exact:  '#/components/schemas/ExactPredicate'
+          regexp: '#/components/schemas/RegexpPredicate'
 
-    Block:
-      description: >
-        Минимальная структурная единица сценария бота. Представляет из себя сообщение, которое отправляет бот пользователю, и в зависимости от типа блока обрабатывается по-разному:
-         - Сообщение (message) - просто сообщение от бота. Не ждет ответа пользователя и сразу переключает пользователя на следующий блок с состоянием next.
-         - Вопрос (question) - сообщение от бот, ожидается ответ пользователя. После ответа пользователя переключает пользователя на следующий блок с состоянием next
-         - Выбор (selection) - сообщение от бота, после которого ожидается ответ пользователя кнопкой или произвольным текстом. Если пользователь отвечает кнопкой, бот переключает его на следующий блок с состоянием next у выбранной опции (Option). Если пользователь отвечает произвольным текстом, переключает пользователя на следующий блок с состоянием next.
+    AlwaysPredicate:
       type: object
-      required:
-        - type
-        - state
-        - nextState
-        - title
-        - text
+      description: Переход по ребру осуществляется на любое сообщение пользователя.
       properties:
         type:
-          description: >
-            Тип кнопки:
-             - Сообщение (message) - просто сообщение от бота. Не ждет ответа пользователя и сразу переключает пользователя на следующий блок с состоянием next.
-             - Вопрос (question) - сообщение от бот, ожидается ответ пользователя. После ответа пользователя переключает пользователя на следующий блок с состоянием next
-             - Выбор (selection) - сообщение от бота, после которого ожидается ответ пользователя кнопкой или произвольным текстом. Если пользователь отвечает кнопкой, бот переключает его на следующий блок с состоянием next у выбранной опции (Option). Если пользователь отвечает произвольным текстом, переключает пользователя на следующий блок с состоянием next.
           type: string
-          enum:
-            - message
-            - question
-            - selection
-          example: message
-        state:
-          description: "Уникальный идентификатор блока в рамках бота. Не может равняться нулю."
-          type: integer
-          example: 1
-        nextState:
-          description: "Состояние (state) другого блока. Конкретное значение определяется типом (type) блока."
-          type: integer
-          example: 2
-        title:
-          description: "Название блока. Используется в заголовке таблицы с ответами участников."
-          type: string
-          example: Greeting
-        text:
-          description: "Текст сообщения бота. Не допускается использование вёрстки."
-          type: string
-          example: Hello, user!
-        options:
-          description: "Опции для блока с выбором ответа. Не допускается использование опций для других типов блока."
-          type: array
-          items:
-            $ref: '#/components/schemas/Option'
-
-    EntryPoint:
-      description:
-        Точка входа для бота. Бот должен иметь как минимум точку входа "start". Иные точки входа используются для создания рассылок.
-        Точка входа начинает скрипт бота с отправки блока с состоянием state пользователю.
-      type: object
+          enum: [always]
       required:
-        - key
+        - type
+
+    ExactPredicate:
+      type: object
+      description: Переход по ребру осуществляется при полном совпадении строки text с сообщением пользователя.
+      properties:
+        type:
+          type: string
+          enum: [exact]
+        text:
+          type: string
+      required:
+        - type
+        - text
+
+    RegexpPredicate:
+      type: object
+      description: Переход по ребру осуществляется при совпадении с регулярным выражением pattern.
+      properties:
+        type:
+          type: string
+          enum: [regexp]
+        pattern:
+          type: string
+      required:
+        - type
+        - pattern
+
+    Edge:
+      type: object
+      description: Обозначают связь между узлами как переход в результате ответа пользователя.
+      properties:
+        predicate:
+          $ref: '#/components/schemas/Predicate'
+        to:
+          type: integer
+          description: State узла, к которому совершается переход.
+        operation:
+          type: string
+          description: >
+            Действие, которое выполнится в результате перехода пользователя по ребру.
+            - noop. Ничего не происходит. Подходит для использования в меню и промежуточных узлах.
+            - save. Сохраняет ответ или перезаписывает предыдущий. Подходит в большинстве ситуаций.
+            - append. Добавляет ответ к предыдущему. Подходит для вопросов с множественным выбором.
+          enum:
+            - noop
+            - save
+            - append
+      required:
+        - predicate
+        - to
+        - operation
+
+    Message:
+      type: object
+      description: Любое сообщение в Telegram. На данный момент описывается текстом, но в будущем добавится поддержка файлов.
+      properties:
+        text:
+          type: string
+      required:
+        - text
+
+    Node:
+      type: object
+      description: >
+        Минимальная структурная единица сценария бота. Представляет собой сообщение (сообщения), которые отправляются
+        пользователю. Ожидается ответ пользователя для перехода к следующему узлу.
+      properties:
+        state:
+          type: integer
+          description: Уникальный номер узла в сценарии бота.
+        title:
+          type: string
+          description: Человеко-читаемое название узла. В таблице ответов будет отображаться как заголовок столбца.
+        edges:
+          type: array
+          description: Массив исходящих рёбер узла.
+          items:
+            $ref: '#/components/schemas/Edge'
+        messages:
+          type: array
+          description: Массив отправляемых ботом сообщений при вхождении в узел.
+          items:
+            $ref: '#/components/schemas/Message'
+        options:
+          type: array
+          description: Массив кнопок (опций) ответа для пользователя.
+          items:
+            type: string
+      required:
         - state
+        - title
+        - messages
+
+    Entry:
+      type: object
+      description: >
+        Точка входа в сценарий бота. Пользователь может вызвать точку входу командой /<entry> (как, например, /start).
+        Может быть вызвана рассылкой по такому же ключу.
       properties:
         key:
-          description: "Уникальный ключ точки входа бота."
           type: string
-          example: start
-        state:
-          description: "Состояние (state) первого блока в скрипте."
+          description: Ключ точки входа.
+        start:
           type: integer
-          example: 1
-
-    Mailing:
-      description: "Рассылка от бота. При старте рассылки активирует точку входа с ключом entryKey всем пользователям, прошедшим блок с состоянием requiredState."
-      type: object
+          description: Указатель на State узла, с которого начинается выполнение сценария.
       required:
-        - name
-        - entryKey
-        - requiredState
+        - key
+        - start
+
+    Script:
+      type: object
+      description: Сценарий бота.
       properties:
-        name:
-          description: "Имя рассылки."
-          type: string
-          example: "Рассылка для завершивших скрипт бота."
-        entryKey:
-          description: "Ключ точки входа (EntryPoint), которая активируется при старте рассылки."
-          type: string
-          example: mailing-1
-        requiredState:
-          description: "Состояние (state) блока, требуемого для отправки рассылки или 0, для всех, кто завершил скрипт. Так, requiredState = 5 обозначает, что рассылка будет отправлена всем участникам, которые ответили на блок с состоянием 5."
-          type: integer
-          example: 0
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Node'
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entry'
+      required:
+        - nodes
+        - entries
 
     Bot:
-      description: "Информация о боте."
       type: object
-      required:
-        - botUUID
-        - name
-        - token
-        - status
-        - entries
-        - blocks
-        - createdAt
-        - updatedAt
       properties:
-        botUUID:
-          description: "Уникальный идентификатор бота. Не должен превышать длину в 36 символов."
+        id:
           type: string
-          example: 14ab-d740
-        name:
-          description: "Имя бота."
-          type: string
-          example: Example bot
+          description: Уникальный ID бота.
         token:
-          description: "Телеграм токен бота. Получить токен можно в телеграм-боте @BotFather."
           type: string
-        status:
-          description: "Статус бота: started (запущен), stopped (не запущен), failed (ошибка запуска)."
-          type: string
-          enum:
-            - started
-            - stopped
-            - failed
-        entries:
-          description: "Все точки входа бота, см. EntryPoint. Гарантировано существует точка входа start"
-          type: array
-          items:
-            $ref: '#/components/schemas/EntryPoint'
-        mailings:
-          description: "Все рассылки бота, см. Mailings."
-          type: array
-          items:
-            $ref: '#/components/schemas/Mailing'
-        blocks:
-          description: "Все блоки бота, см. Block."
-          type: array
-          items:
-            $ref: '#/components/schemas/Block'
-        createdAt:
-          description: "Время создания бота."
-          type: string
-          format: date-time
-        updatedAt:
-          description: "Время последнего обновления бота."
-          type: string
-          format: date-time
-
-    PostBots:
-      description: "Данные, необходимые для создания бота."
-      type: object
-      required:
-        - botUUID
-        - name
-        - token
-        - entries
-        - blocks
-      properties:
-        botUUID:
-          description: "Уникальный идентификатор бота. Не должен превышать длину в 36 символов."
-          type: string
-          example: 14ab-d740
-        name:
-          description: "Имя бота."
-          type: string
-          example: Example bot
-        token:
-          description: "Телеграм токен бота. Получить токен можно в телеграм-боте @BotFather."
-          type: string
-        entries:
-          description: "Все точки входа бота, см. EntryPoint. Необходимо наличие точки входа start."
-          type: array
-          items:
-            $ref: '#/components/schemas/EntryPoint'
-        mailings:
-          description: "Все рассылки бота, см. Mailings."
-          type: array
-          items:
-            $ref: '#/components/schemas/Mailing'
-        blocks:
-          description: "Все блоки бота, см. Block."
-          type: array
-          items:
-            $ref: '#/components/schemas/Block'
-
-    GetBots:
-      description: "Список ботов."
-      type: array
-      items:
-        $ref: '#/components/schemas/Bot'
-
-    CreateMailing:
-      description: "Рассылка и связанные с ней точка входа и блоки."
-      type: object
-      required:
-        - name
-        - requiredState
-        - entryPoint
-        - blocks
-      properties:
-        name:
-          type: string
-          description: "Название рассылки."
-          example: "Рассылка участникам"
-        requiredState:
+          description: Телеграм токен для бота, полученный в @BotFather.
+        author:
           type: integer
-          description: "Состояние участника, необходимое для получения рассылки."
-          example: 0
-        entryPoint:
-          $ref: '#/components/schemas/EntryPoint'
-        blocks:
-          description: "Список блоков для рассылки. Обычно содержит единственный блок типа message."
-          type: array
-          items:
-            $ref: '#/components/schemas/Block'
+          format: int64
+          description: ID пользователя - автора бота.
+        script:
+          $ref: '#/components/schemas/Script'
+      required:
+        - id
+        - token
+        - author
+        - script
+
+    PutBots:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Уникальный ID бота.
+        token:
+          type: string
+          description: Телеграм токен для бота, полученный в @BotFather.
+        script:
+          $ref: '#/components/schemas/Script'
+      required:
+        - id
+        - token
+        - script
 
     Error:
-      description: "Описание ошибки."
       type: object
-      required:
-        - message
       properties:
         message:
           type: string
-          example: error message
+        slug:
+          type: string
+      required:
+        - message

@@ -1,110 +1,163 @@
 package bots
 
 import (
-	"github.com/bmstu-itstech/itsreg-bots/internal/common/commonerrs"
+	"errors"
+	"fmt"
+	"maps"
 )
 
-type Participant struct {
-	BotUUID string
-	UserID  int64
-	State   int
-	answers map[int]Answer
+type UserID int64
+
+type ParticipantID struct {
+	userID UserID
+	botID  BotID
 }
 
-func NewParticipant(
-	botUUID string,
-	id int64,
-) (*Participant, error) {
-	if botUUID == "" {
-		return nil, commonerrs.NewInvalidInputError("expected not empty botUUID")
+func NewParticipantID(userID UserID, botID BotID) ParticipantID {
+	return ParticipantID{
+		userID: userID,
+		botID:  botID,
 	}
+}
 
-	if id == 0 {
-		return nil, commonerrs.NewInvalidInputError("expected not empty id")
+func (id ParticipantID) IsZero() bool {
+	return id.botID == ""
+}
+
+func (id ParticipantID) UserID() UserID {
+	return id.userID
+}
+
+func (id ParticipantID) BotID() BotID {
+	return id.botID
+}
+
+type Participant struct {
+	id              ParticipantID
+	threads         map[ThreadID]*Thread
+	currentThreadID *ThreadID
+}
+
+func NewParticipant(id ParticipantID) (*Participant, error) {
+	if id.IsZero() {
+		return nil, errors.New("id is zero")
 	}
 
 	return &Participant{
-		BotUUID: botUUID,
-		UserID:  id,
-		State:   0,
-		answers: make(map[int]Answer),
+		id:              id,
+		threads:         make(map[ThreadID]*Thread),
+		currentThreadID: nil,
 	}, nil
 }
 
-func MustNewParticipant(
-	botUUID string,
-	id int64,
-) *Participant {
-	p, err := NewParticipant(botUUID, id)
+func MustNewParticipant(id ParticipantID) *Participant {
+	p, err := NewParticipant(id)
 	if err != nil {
 		panic(err)
 	}
 	return p
 }
 
-func UnmarshallParticipantFromDB(
-	botUUID string,
-	id int64,
-	state int,
-	answers []Answer,
+func (p *Participant) Clone() *Participant {
+	threads := make(map[ThreadID]*Thread)
+	for k, v := range p.threads {
+		threads[k] = v.Clone()
+	}
+	return &Participant{
+		id:              p.id,
+		threads:         threads,
+		currentThreadID: p.currentThreadID, // Значение по указателю не изменяется - аналог Optional; поэтому можно
+		// не копировать значение по адресу
+	}
+}
+
+func (p *Participant) Equals(other *Participant) bool {
+	return p.id == other.id &&
+		equalThreadMaps(p.threads, other.threads) &&
+		equalThreadIDs(p.currentThreadID, other.currentThreadID)
+}
+
+func equalThreadIDs(a, b *ThreadID) bool {
+	if a != nil && b != nil {
+		return *a == *b
+	}
+	return a == b
+}
+
+func equalThreadMaps(a, b map[ThreadID]*Thread) bool {
+	return maps.EqualFunc(a, b, func(t1 *Thread, t2 *Thread) bool {
+		return t1.Equals(t2)
+	})
+}
+
+func (p *Participant) Threads() []*Thread {
+	threads := make([]*Thread, 0, len(p.threads))
+	for _, thread := range p.threads {
+		threads = append(threads, thread.Clone())
+	}
+	return threads
+}
+
+func (p *Participant) StartThread(entry Entry) (*Thread, error) {
+	thread, err := NewThread(entry)
+	if err != nil {
+		return nil, err
+	}
+	id := thread.ID()
+	p.threads[id] = thread
+	p.currentThreadID = &id
+	return thread, nil
+}
+
+func (p *Participant) CurrentThread() (*Thread, bool) {
+	if p.currentThreadID == nil {
+		return nil, false
+	}
+	thread := p.threads[*p.currentThreadID] // Гарантировано есть
+	return thread, true
+}
+
+func (p *Participant) ID() ParticipantID {
+	return p.id
+}
+
+func UnmarshallParticipant(
+	botID string,
+	userID int64,
+	_threads []*Thread,
+	_currentThreadID *string,
 ) (*Participant, error) {
-	if botUUID == "" {
-		return nil, commonerrs.NewInvalidInputError("expected not empty botUUID")
+	if botID == "" {
+		return nil, errors.New("BotID is empty")
 	}
 
-	if id == 0 {
-		return nil, commonerrs.NewInvalidInputError("expected not empty id")
+	if userID == 0 {
+		return nil, errors.New("UserID is empty")
 	}
 
-	m := make(map[int]Answer)
-	for _, a := range answers {
-		m[a.State] = a
+	threads := make(map[ThreadID]*Thread, len(_threads))
+	for _, thread := range _threads {
+		threads[thread.ID()] = thread
+	}
+
+	if _currentThreadID != nil && *_currentThreadID == "" {
+		return nil, errors.New("currentThreadID is not null and empty")
+	}
+
+	id := NewParticipantID(UserID(userID), BotID(botID))
+
+	var currentThreadID *ThreadID
+	if _currentThreadID != nil {
+		t := ThreadID(*_currentThreadID)
+		if _, ok := threads[t]; !ok {
+			return nil, fmt.Errorf("unknown thread: %s", t)
+		}
+		currentThreadID = &t
 	}
 
 	return &Participant{
-		BotUUID: botUUID,
-		UserID:  id,
-		State:   state,
-		answers: m,
+		id:              id,
+		threads:         threads,
+		currentThreadID: currentThreadID,
 	}, nil
-}
-
-func (p *Participant) Answers() []Answer {
-	answers := make([]Answer, 0, len(p.answers))
-	for _, a := range p.answers {
-		answers = append(answers, a)
-	}
-	return answers
-}
-
-func (p *Participant) IsProcessing() bool {
-	return p.State != 0
-}
-
-func (p *Participant) SwitchTo(state int) {
-	p.State = state
-}
-
-func (p *Participant) AddAnswer(text string) error {
-	ans, err := NewAnswer(p.State, text)
-	if err != nil {
-		return err
-	}
-	p.answers[p.State] = ans
-	return nil
-}
-
-func (p *Participant) CleanAnswerIfExists(state int) {
-	if _, ok := p.answers[state]; ok {
-		delete(p.answers, state)
-	}
-}
-
-func (p *Participant) HasAnswer(state int) bool {
-	for s := range p.answers {
-		if s == state {
-			return true
-		}
-	}
-	return false
 }

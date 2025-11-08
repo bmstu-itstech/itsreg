@@ -1,40 +1,49 @@
 package bots
 
-import "fmt"
+type EntryKey string
 
-type EntryNotFoundError struct {
-	Key string
+type Entry struct {
+	key   EntryKey
+	start State
 }
 
-func (e EntryNotFoundError) Error() string {
-	return fmt.Sprintf("entry '%s' not found", e.Key)
-}
-
-func (b *Bot) Entry(prt *Participant, key string) ([]Message, error) {
-	e, ok := b.entryPoints[key]
-	if !ok {
-		return nil, EntryNotFoundError{Key: key}
+func NewEntry(key EntryKey, start State) (Entry, error) {
+	if start < 0 {
+		return Entry{}, NewInvalidInputError(
+			"invalid-entry",
+			"expected non-negative start state",
+		)
 	}
 
-	b.cleanAllAnswersFrom(e.State, prt)
-	prt.SwitchTo(e.State)
+	if key == "" {
+		return Entry{}, NewInvalidInputError(
+			"invalid-entry-key",
+			"failed to create entry: expected not empty key",
+		)
+	}
 
-	response := make([]Message, 0, 1)
-	response = append(response)
+	return Entry{
+		key:   key,
+		start: start,
+	}, nil
+}
 
-	ms, err := b.processStart(prt)
+func MustNewEntry(key EntryKey, start State) Entry {
+	e, err := NewEntry(key, start)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-
-	response = append(response, ms...)
-
-	return response, nil
+	return e
 }
 
-func (b *Bot) cleanAllAnswersFrom(start int, prt *Participant) {
-	blocks := b.Traverse(start)
-	for _, block := range blocks {
-		prt.CleanAnswerIfExists(block.State)
-	}
+func (e Entry) IsZero() bool {
+	return e == Entry{}
+}
+
+func (e Entry) Key() EntryKey {
+	return e.key
+}
+
+func (e Entry) Start() State {
+	return e.start
 }

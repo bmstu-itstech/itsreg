@@ -1,3 +1,0 @@
-ALTER TABLE bots
-    ADD COLUMN IF NOT EXISTS
-        owner_uuid VARCHAR(36) NOT NULL DEFAULT '';

@@ -26,3 +26,5 @@ go.work.sum
 
 # DotEnv file
 .env
+
+.docker-postgres

@@ -1,30 +1,24 @@
 package app
 
-import (
-	"github.com/bmstu-itstech/itsreg-bots/internal/app/command"
-	"github.com/bmstu-itstech/itsreg-bots/internal/app/query"
-)
+type Commands struct {
+	CreateBot      CreateBotHandler
+	Entry          EntryHandler
+	Process        ProcessHandler
+	Start          StartHandler
+	Stop           StopHandler
+	UpdateBot      UpdateBotHandler
+	UpdateUsername UpdateUsernameHandler
+}
+
+type Queries struct {
+	GetBot      GetBotHandler
+	GetStatus   GetStatusHandler
+	GetThreads  GetThreadsHandler
+	GetUserBots GetUserBotsHandler
+	GetUsername GetUsernameHandler
+}
 
 type Application struct {
 	Commands Commands
 	Queries  Queries
-}
-
-type Commands struct {
-	CreateBot     command.CreateBotHandler
-	DeleteBot     command.DeleteBotHandler
-	StartBot      command.StartBotHandler
-	StopBot       command.StopBotHandler
-	UpdateStatus  command.UpdateStatusHandler
-	Entry         command.EntryHandler
-	Process       command.ProcessHandler
-	CreateMailing command.CreateMailingHandler
-	StartMailing  command.StartMailingHandler
-}
-
-type Queries struct {
-	AllAnswers  query.GetAnswersTableHandler
-	GetBot      query.GetBotHandler
-	GetBots     query.GetBotsHandler
-	StartedBots query.GetStartedBotsHandler
 }

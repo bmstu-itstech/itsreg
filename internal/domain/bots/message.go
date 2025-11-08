@@ -1,77 +1,56 @@
 package bots
 
-import (
-	"slices"
-
-	"github.com/bmstu-itstech/itsreg-bots/internal/common/commonerrs"
-)
+const messageMergeDelim = "\n"
 
 type Message struct {
-	Text    string
-	Buttons []string
+	text string
 }
 
-func (m Message) IsZero() bool {
-	return m.Text == ""
-}
-
-func NewPlainMessage(text string) (Message, error) {
+func NewMessage(text string) (Message, error) {
 	if text == "" {
-		return Message{}, commonerrs.NewInvalidInputError("expected not empty message text")
+		return Message{}, NewInvalidInputError(
+			"invalid-message",
+			"expected not empty text in message",
+		)
 	}
-
 	return Message{
-		Text:    text,
-		Buttons: make([]string, 0),
+		text: text,
 	}, nil
 }
 
-func MustNewPlainMessage(text string) Message {
-	m, err := NewPlainMessage(text)
+func MustNewMessage(text string) Message {
+	m, err := NewMessage(text)
 	if err != nil {
 		panic(err)
 	}
 	return m
 }
 
-func NewMessageWithButtons(
-	text string,
-	options []Option,
-) (Message, error) {
-	if text == "" {
-		return Message{}, commonerrs.NewInvalidInputError("expected not empty message text")
-	}
+// Text возвращает строго текст сообщения.
+// Может быть пустым, например, если пользователь отправить файл.
+func (m Message) Text() string {
+	return m.text
+}
 
-	if len(options) == 0 {
-		return Message{}, commonerrs.NewInvalidInputError("expected not empty message options")
-	}
+// String возвращает строковое представление сообщения.
+// В отличие от Message.Text гарантируется, что строка не будет пустой.
+func (m Message) String() string {
+	return m.text
+}
 
-	buttons := make([]string, len(options))
-	for i, option := range options {
-		buttons[i] = option.Text
-	}
-
+// Merge объединяет два сообщения.
+// Как? Не должно иметь значения. Пока сообщения содержат только текст,
+// объединять будем конкатенацией строк с разделителем messageMergeDelim.
+func (m Message) Merge(o Message) Message {
 	return Message{
-		Text:    text,
-		Buttons: buttons,
-	}, nil
-}
-
-func MustNewMessageWithButtons(
-	text string,
-	options []Option,
-) Message {
-	m, err := NewMessageWithButtons(text, options)
-	if err != nil {
-		panic(err)
+		text: m.text + messageMergeDelim + o.text,
 	}
-	return m
 }
 
-func (m Message) Equal(o Message) bool {
-	return m.Text == o.Text && buttonsEqual(m.Buttons, o.Buttons)
-}
-
-func buttonsEqual(a, b []string) bool {
-	return slices.Equal(b, a)
+// PromoteToBotMessage модифицирует сообщение для отправки его ботом.
+func (m Message) PromoteToBotMessage(opts []Option) BotMessage {
+	return BotMessage{
+		Message: m,
+		opts:    opts,
+	}
 }
