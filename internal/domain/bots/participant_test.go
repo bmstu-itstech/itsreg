@@ -53,7 +53,7 @@ func TestParticipant_Clone(t *testing.T) {
 	id := bots.NewParticipantID(1, "bot")
 	prt := bots.MustNewParticipant(id)
 
-	startState := bots.State(1)
+	startState := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", startState)
 
 	_, err := prt.StartThread(entry)
@@ -80,7 +80,7 @@ func TestParticipant_StartThread(t *testing.T) {
 	id := bots.NewParticipantID(1, "bot")
 	prt := bots.MustNewParticipant(id)
 
-	startState := bots.State(1)
+	startState := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", startState)
 
 	started, err := prt.StartThread(entry)

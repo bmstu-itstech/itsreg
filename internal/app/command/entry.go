@@ -1,20 +1,15 @@
-package app
+package command
 
 import (
 	"context"
 	"log/slog"
 
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
 
-type EntryCommand struct {
-	BotID  string
-	UserID int64
-	Key    string
-}
-
-type EntryHandler decorator.CommandHandler[EntryCommand]
+type EntryHandler decorator.CommandHandler[request.EntryCommand]
 
 type entryHandler struct {
 	bp bots.BotProvider
@@ -22,7 +17,7 @@ type entryHandler struct {
 	ms bots.BotMessageSender
 }
 
-func (h entryHandler) Handle(ctx context.Context, cmd EntryCommand) error {
+func (h entryHandler) Handle(ctx context.Context, cmd request.EntryCommand) error {
 	bot, err := h.bp.Bot(ctx, bots.BotID(cmd.BotID))
 	if err != nil {
 		return err

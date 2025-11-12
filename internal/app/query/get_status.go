@@ -1,24 +1,22 @@
-package app
+package query
 
 import (
 	"context"
 	"log/slog"
 
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/response"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
 
-type GetStatus struct {
-	BotID string
-}
-
-type GetStatusHandler decorator.QueryHandler[GetStatus, string]
+type GetStatusHandler decorator.QueryHandler[request.GetStatusQuery, response.GetStatusResponse]
 
 type getStatusHandler struct {
 	sp bots.StatusProvider
 }
 
-func (h getStatusHandler) Handle(ctx context.Context, q GetStatus) (string, error) {
+func (h getStatusHandler) Handle(ctx context.Context, q request.GetStatusQuery) (response.GetStatusResponse, error) {
 	status, err := h.sp.Status(ctx, bots.BotID(q.BotID))
 	if err != nil {
 		return "", err

@@ -11,26 +11,24 @@ import (
 
 func TestNewEntry(t *testing.T) {
 	tests := []struct {
-		name          string
-		key           bots.EntryKey
-		start         bots.State
-		wantErr       bool
-		errSlug       string
-		expectedError string
+		name    string
+		key     bots.EntryKey
+		start   bots.State
+		wantErr bool
+		errCode string
 	}{
 		{
 			name:    "Valid entry",
 			key:     "start",
-			start:   bots.State(1),
+			start:   bots.MustNewState(1),
 			wantErr: false,
 		},
 		{
-			name:          "Empty key",
-			key:           "",
-			start:         bots.State(1),
-			wantErr:       true,
-			errSlug:       "invalid-entry-key",
-			expectedError: "expected not empty key",
+			name:    "Empty key",
+			key:     "",
+			start:   bots.MustNewState(1),
+			wantErr: true,
+			errCode: "entry-empty-key",
 		},
 	}
 
@@ -43,8 +41,7 @@ func TestNewEntry(t *testing.T) {
 				var ierr bots.InvalidInputError
 				ok := errors.As(err, &ierr)
 				require.True(t, ok)
-				require.Equal(t, tt.errSlug, ierr.Slug())
-				require.ErrorContains(t, err, tt.expectedError)
+				require.Equal(t, tt.errCode, ierr.Code)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.key, entry.Key())

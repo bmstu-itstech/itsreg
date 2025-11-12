@@ -1,24 +1,21 @@
-package app
+package command
 
 import (
 	"context"
 	"log/slog"
 
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
 
-type Stop struct {
-	BotID string
-}
-
-type StopHandler decorator.CommandHandler[Stop]
+type StopHandler decorator.CommandHandler[request.StopCommand]
 
 type stopHandler struct {
 	im bots.InstanceManager
 }
 
-func (h stopHandler) Handle(ctx context.Context, cmd Stop) error {
+func (h stopHandler) Handle(ctx context.Context, cmd request.StopCommand) error {
 	return h.im.Stop(ctx, bots.BotID(cmd.BotID))
 }
 

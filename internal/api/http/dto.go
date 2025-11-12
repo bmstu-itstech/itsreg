@@ -3,10 +3,10 @@ package http
 import (
 	"fmt"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/app"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto"
 )
 
-func batchBotsFromApp(bots []app.Bot) []Bot {
+func batchBotsFromApp(bots []dto.Bot) []Bot {
 	res := make([]Bot, len(bots))
 	for i, bot := range bots {
 		res[i] = botFromApp(bot)
@@ -14,7 +14,7 @@ func batchBotsFromApp(bots []app.Bot) []Bot {
 	return res
 }
 
-func botFromApp(bot app.Bot) Bot {
+func botFromApp(bot dto.Bot) Bot {
 	return Bot{
 		Author: bot.Author,
 		Id:     bot.ID,
@@ -23,48 +23,48 @@ func botFromApp(bot app.Bot) Bot {
 	}
 }
 
-func scriptToApp(bot Script) (app.Script, error) {
+func scriptToApp(bot Script) (dto.Script, error) {
 	nodes, err := batchNodeToApp(bot.Nodes)
 	if err != nil {
-		return app.Script{}, err
+		return dto.Script{}, err
 	}
 
-	return app.Script{
+	return dto.Script{
 		Nodes:   nodes,
 		Entries: batchEntriesToApp(bot.Entries),
 	}, nil
 }
 
-func scriptFromApp(bot app.Script) Script {
+func scriptFromApp(bot dto.Script) Script {
 	return Script{
 		Entries: batchEntriesFromApp(bot.Entries),
 		Nodes:   batchNodesFromApp(bot.Nodes),
 	}
 }
 
-func entryToApp(entry Entry) app.Entry {
-	return app.Entry{
+func entryToApp(entry Entry) dto.Entry {
+	return dto.Entry{
 		Key:   entry.Key,
 		Start: entry.Start,
 	}
 }
 
-func entryFromApp(entry app.Entry) Entry {
+func entryFromApp(entry dto.Entry) Entry {
 	return Entry{
 		Key:   entry.Key,
 		Start: entry.Start,
 	}
 }
 
-func batchEntriesToApp(entries []Entry) []app.Entry {
-	res := make([]app.Entry, len(entries))
+func batchEntriesToApp(entries []Entry) []dto.Entry {
+	res := make([]dto.Entry, len(entries))
 	for i, entry := range entries {
 		res[i] = entryToApp(entry)
 	}
 	return res
 }
 
-func batchEntriesFromApp(entries []app.Entry) []Entry {
+func batchEntriesFromApp(entries []dto.Entry) []Entry {
 	res := make([]Entry, len(entries))
 	for i, entry := range entries {
 		res[i] = entryFromApp(entry)
@@ -72,13 +72,13 @@ func batchEntriesFromApp(entries []app.Entry) []Entry {
 	return res
 }
 
-func nodeToApp(node Node) (app.Node, error) {
+func nodeToApp(node Node) (dto.Node, error) {
 	edges, err := batchEdgesToApp(emptyOnNil(node.Edges))
 	if err != nil {
-		return app.Node{}, err
+		return dto.Node{}, err
 	}
 
-	return app.Node{
+	return dto.Node{
 		State:    node.State,
 		Title:    node.Title,
 		Edges:    edges,
@@ -87,7 +87,7 @@ func nodeToApp(node Node) (app.Node, error) {
 	}, nil
 }
 
-func nodeFromApp(node app.Node) Node {
+func nodeFromApp(node dto.Node) Node {
 	return Node{
 		Edges:    nilOnEmpty(batchEdgesFromApp(node.Edges)),
 		Messages: batchMessagesFromApp(node.Messages),
@@ -97,8 +97,8 @@ func nodeFromApp(node app.Node) Node {
 	}
 }
 
-func batchNodeToApp(nodes []Node) ([]app.Node, error) {
-	res := make([]app.Node, len(nodes))
+func batchNodeToApp(nodes []Node) ([]dto.Node, error) {
+	res := make([]dto.Node, len(nodes))
 	for i, node := range nodes {
 		n, err := nodeToApp(node)
 		if err != nil {
@@ -109,7 +109,7 @@ func batchNodeToApp(nodes []Node) ([]app.Node, error) {
 	return res, nil
 }
 
-func batchNodesFromApp(nodes []app.Node) []Node {
+func batchNodesFromApp(nodes []dto.Node) []Node {
 	res := make([]Node, len(nodes))
 	for i, node := range nodes {
 		res[i] = nodeFromApp(node)
@@ -117,20 +117,20 @@ func batchNodesFromApp(nodes []app.Node) []Node {
 	return res
 }
 
-func edgeToApp(edge Edge) (app.Edge, error) {
+func edgeToApp(edge Edge) (dto.Edge, error) {
 	pred, err := predicateToApp(edge.Predicate)
 	if err != nil {
-		return app.Edge{}, err
+		return dto.Edge{}, err
 	}
 
-	return app.Edge{
+	return dto.Edge{
 		Predicate: pred,
 		To:        edge.To,
 		Operation: string(edge.Operation),
 	}, nil
 }
 
-func edgeFromApp(edge app.Edge) Edge {
+func edgeFromApp(edge dto.Edge) Edge {
 	return Edge{
 		Operation: EdgeOperation(edge.Operation),
 		Predicate: predicateFromApp(edge.Predicate),
@@ -138,8 +138,8 @@ func edgeFromApp(edge app.Edge) Edge {
 	}
 }
 
-func batchEdgesToApp(edges []Edge) ([]app.Edge, error) {
-	res := make([]app.Edge, len(edges))
+func batchEdgesToApp(edges []Edge) ([]dto.Edge, error) {
+	res := make([]dto.Edge, len(edges))
 	for i, edge := range edges {
 		e, err := edgeToApp(edge)
 		if err != nil {
@@ -150,7 +150,7 @@ func batchEdgesToApp(edges []Edge) ([]app.Edge, error) {
 	return res, nil
 }
 
-func batchEdgesFromApp(edges []app.Edge) []Edge {
+func batchEdgesFromApp(edges []dto.Edge) []Edge {
 	res := make([]Edge, len(edges))
 	for i, edge := range edges {
 		res[i] = edgeFromApp(edge)
@@ -158,15 +158,15 @@ func batchEdgesFromApp(edges []app.Edge) []Edge {
 	return res
 }
 
-func batchMessageToApp(msgs []Message) []app.Message {
-	res := make([]app.Message, len(msgs))
+func batchMessageToApp(msgs []Message) []dto.Message {
+	res := make([]dto.Message, len(msgs))
 	for i, msg := range msgs {
 		res[i] = messageToApp(msg)
 	}
 	return res
 }
 
-func batchMessagesFromApp(msgs []app.Message) []Message {
+func batchMessagesFromApp(msgs []dto.Message) []Message {
 	res := make([]Message, len(msgs))
 	for i, msg := range msgs {
 		res[i] = messageFromApp(msg)
@@ -174,46 +174,46 @@ func batchMessagesFromApp(msgs []app.Message) []Message {
 	return res
 }
 
-func predicateToApp(pred Predicate) (app.Predicate, error) {
+func predicateToApp(pred Predicate) (dto.Predicate, error) {
 	d, err := pred.Discriminator()
 	if err != nil {
-		return app.Predicate{}, err
+		return dto.Predicate{}, err
 	}
 
 	switch d {
 	case string(Always):
-		return app.Predicate{
+		return dto.Predicate{
 			Type: string(Always),
 		}, nil
 
 	case string(Exact):
 		exact, err2 := pred.AsExactPredicate()
 		if err2 != nil {
-			return app.Predicate{}, err2
+			return dto.Predicate{}, err2
 		}
-		return app.Predicate{
+		return dto.Predicate{
 			Type: string(Exact),
 			Data: exact.Text,
 		}, err2
 
-	case string(Regexp):
-		regexp, err2 := pred.AsRegexpPredicate()
+	case string(Regex):
+		regexp, err2 := pred.AsRegexPredicate()
 		if err2 != nil {
-			return app.Predicate{}, err2
+			return dto.Predicate{}, err2
 		}
-		return app.Predicate{
-			Type: string(Regexp),
+		return dto.Predicate{
+			Type: string(Regex),
 			Data: regexp.Pattern,
 		}, err2
 
 	default:
-		return app.Predicate{}, fmt.Errorf(
+		return dto.Predicate{}, fmt.Errorf(
 			"invalid predicate type %s, expected one of ['always', 'exact', 'regexp']", d,
 		)
 	}
 }
 
-func predicateFromApp(pred app.Predicate) Predicate {
+func predicateFromApp(pred dto.Predicate) Predicate {
 	switch pred.Type {
 	case string(Always):
 		p := Predicate{}
@@ -228,10 +228,10 @@ func predicateFromApp(pred app.Predicate) Predicate {
 		})
 		return p
 
-	case string(Regexp):
+	case string(Regex):
 		p := Predicate{}
-		_ = p.FromRegexpPredicate(RegexpPredicate{
-			Type:    Regexp,
+		_ = p.FromRegexPredicate(RegexPredicate{
+			Type:    Regex,
 			Pattern: pred.Data,
 		})
 		return p
@@ -241,13 +241,13 @@ func predicateFromApp(pred app.Predicate) Predicate {
 	}
 }
 
-func messageToApp(message Message) app.Message {
-	return app.Message{
+func messageToApp(message Message) dto.Message {
+	return dto.Message{
 		Text: message.Text,
 	}
 }
 
-func messageFromApp(message app.Message) Message {
+func messageFromApp(message dto.Message) Message {
 	return Message{
 		Text: message.Text,
 	}
@@ -261,8 +261,15 @@ func emptyOnNil[T any](ts *[]T) []T {
 }
 
 func nilOnEmpty[T any](ts []T) *[]T {
-	if ts == nil {
+	if len(ts) == 0 {
 		return nil
 	}
 	return &ts
+}
+
+func nilOnEmptyMap[K comparable, V any](tm map[K]V) *map[K]V {
+	if len(tm) == 0 {
+		return nil
+	}
+	return &tm
 }

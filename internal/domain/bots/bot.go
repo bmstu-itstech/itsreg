@@ -21,24 +21,15 @@ type Bot struct {
 
 func NewBot(id BotID, token Token, author UserID, script Script) (Bot, error) {
 	if id == "" {
-		return Bot{}, NewInvalidInputError(
-			"invalid-bot",
-			"expected not empty bot id",
-		)
+		return Bot{}, NewInvalidInputError("bot-empty-id", "expected not empty bot id", "field", "id2")
 	}
 
 	if token == "" {
-		return Bot{}, NewInvalidInputError(
-			"invalid-bot",
-			"expected not empty bot token",
-		)
+		return Bot{}, NewInvalidInputError("bot-empty-token", "expected not empty bot token", "field", "token")
 	}
 
 	if author == 0 {
-		return Bot{}, NewInvalidInputError(
-			"invalid-bot",
-			"expected not empty bot author id",
-		)
+		return Bot{}, NewInvalidInputError("bot-empty-author-id", "expected not empty bot author", "field", "author")
 	}
 
 	if script.IsZero() {

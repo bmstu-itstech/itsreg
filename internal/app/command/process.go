@@ -1,20 +1,16 @@
-package app
+package command
 
 import (
 	"context"
 	"log/slog"
 
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
 
-type Process struct {
-	BotID   string
-	UserID  int64
-	Message Message
-}
-
-type ProcessHandler decorator.CommandHandler[Process]
+type ProcessHandler decorator.CommandHandler[request.ProcessCommand]
 
 type processHandler struct {
 	bp bots.BotProvider
@@ -22,7 +18,7 @@ type processHandler struct {
 	ms bots.BotMessageSender
 }
 
-func (h processHandler) Handle(ctx context.Context, cmd Process) error {
+func (h processHandler) Handle(ctx context.Context, cmd request.ProcessCommand) error {
 	bot, err := h.bp.Bot(ctx, bots.BotID(cmd.BotID))
 	if err != nil {
 		return err
@@ -30,7 +26,7 @@ func (h processHandler) Handle(ctx context.Context, cmd Process) error {
 
 	script := bot.Script()
 	prtID := bots.NewParticipantID(bots.UserID(cmd.UserID), bots.BotID(cmd.BotID))
-	message, err := messageFromDto(cmd.Message)
+	message, err := dto.MessageFromDTO(cmd.Message)
 	if err != nil {
 		return err
 	}

@@ -1,5 +1,7 @@
 package bots
 
+import "errors"
+
 type EntryKey string
 
 type Entry struct {
@@ -8,18 +10,12 @@ type Entry struct {
 }
 
 func NewEntry(key EntryKey, start State) (Entry, error) {
-	if start < 0 {
-		return Entry{}, NewInvalidInputError(
-			"invalid-entry",
-			"expected non-negative start state",
-		)
+	if key == "" {
+		return Entry{}, NewInvalidInputError("entry-empty-key", "expected not empty entry key", "field", "key")
 	}
 
-	if key == "" {
-		return Entry{}, NewInvalidInputError(
-			"invalid-entry-key",
-			"failed to create entry: expected not empty key",
-		)
+	if start == ZeroState {
+		return Entry{}, errors.New("empty start state")
 	}
 
 	return Entry{

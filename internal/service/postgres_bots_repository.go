@@ -187,7 +187,11 @@ func (r *PostgresBotRepository) selectEntries(
 	}
 	res := make([]bots.Entry, len(rows))
 	for i, row := range rows {
-		entry, err2 := bots.NewEntry(bots.EntryKey(row.Key), bots.State(row.Start))
+		state, err2 := bots.NewState(row.Start)
+		if err2 != nil {
+			return nil, err2
+		}
+		entry, err2 := bots.NewEntry(bots.EntryKey(row.Key), state)
 		if err2 != nil {
 			return nil, err2
 		}
@@ -207,19 +211,23 @@ func (r *PostgresBotRepository) selectNodes(
 	}
 	res := make([]bots.Node, len(rows))
 	for i, row := range rows {
-		edges, err2 := r.selectEdges(ctx, qc, botID, bots.State(row.State))
+		state, err2 := bots.NewState(row.State)
 		if err2 != nil {
 			return nil, err2
 		}
-		msgs, err2 := r.selectMessages(ctx, qc, botID, bots.State(row.State))
+		edges, err2 := r.selectEdges(ctx, qc, botID, state)
 		if err2 != nil {
 			return nil, err2
 		}
-		opts, err2 := r.selectOptions(ctx, qc, botID, bots.State(row.State))
+		msgs, err2 := r.selectMessages(ctx, qc, botID, state)
 		if err2 != nil {
 			return nil, err2
 		}
-		node, err2 := bots.NewNode(bots.State(row.State), row.Title, edges, msgs, opts)
+		opts, err2 := r.selectOptions(ctx, qc, botID, state)
+		if err2 != nil {
+			return nil, err2
+		}
+		node, err2 := bots.NewNode(state, row.Title, edges, msgs, opts)
 		if err2 != nil {
 			return nil, err2
 		}
@@ -234,7 +242,7 @@ func (r *PostgresBotRepository) selectEdges(
 	botID bots.BotID,
 	state bots.State,
 ) ([]bots.Edge, error) {
-	rows, err := r.selectEdgeRows(ctx, qc, string(botID), int(state))
+	rows, err := r.selectEdgeRows(ctx, qc, string(botID), state.Int())
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +256,11 @@ func (r *PostgresBotRepository) selectEdges(
 		if err2 != nil {
 			return nil, err2
 		}
-		edge := bots.NewEdge(pred, bots.State(row.ToState), oper)
+		to, err2 := bots.NewState(row.State)
+		if err2 != nil {
+			return nil, err2
+		}
+		edge := bots.NewEdge(pred, to, oper)
 		res[i] = edge
 	}
 	return res, nil
@@ -260,7 +272,7 @@ func (r *PostgresBotRepository) selectMessages(
 	botID bots.BotID,
 	state bots.State,
 ) ([]bots.Message, error) {
-	rows, err := r.selectMessageRows(ctx, qc, string(botID), int(state))
+	rows, err := r.selectMessageRows(ctx, qc, string(botID), state.Int())
 	if err != nil {
 		return nil, err
 	}
@@ -280,13 +292,17 @@ func (r *PostgresBotRepository) selectOptions(
 	botID bots.BotID,
 	state bots.State,
 ) ([]bots.Option, error) {
-	rows, err := r.selectOptionRows(ctx, qc, string(botID), int(state))
+	rows, err := r.selectOptionRows(ctx, qc, string(botID), state.Int())
 	if err != nil {
 		return nil, err
 	}
 	res := make([]bots.Option, len(rows))
 	for i, row := range rows {
-		res[i] = bots.Option(row.Text)
+		o, err2 := bots.NewOption(row.Text)
+		if err2 != nil {
+			return nil, err2
+		}
+		res[i] = o
 	}
 	return res, nil
 }
@@ -372,7 +388,7 @@ func (r *PostgresBotRepository) syncEdgeRows(
 	state bots.State,
 	rows []edgeRow,
 ) error {
-	dbRows, err := r.selectEdgeRows(ctx, ec, string(botID), int(state))
+	dbRows, err := r.selectEdgeRows(ctx, ec, string(botID), state.Int())
 	if err != nil {
 		return err
 	}
@@ -384,7 +400,7 @@ func (r *PostgresBotRepository) syncEdgeRows(
 	}
 
 	if len(dbRows) > 0 {
-		err = r.deleteEdgeRows(ctx, ec, string(botID), int(state))
+		err = r.deleteEdgeRows(ctx, ec, string(botID), state.Int())
 		if err != nil {
 			return err
 		}
@@ -407,7 +423,7 @@ func (r *PostgresBotRepository) syncMessageRows(
 	state bots.State,
 	rows []messageRow,
 ) error {
-	dbRows, err := r.selectMessageRows(ctx, ec, string(botID), int(state))
+	dbRows, err := r.selectMessageRows(ctx, ec, string(botID), state.Int())
 	if err != nil {
 		return err
 	}
@@ -419,7 +435,7 @@ func (r *PostgresBotRepository) syncMessageRows(
 	}
 
 	if len(dbRows) > 0 {
-		err = r.deleteMessageRows(ctx, ec, string(botID), int(state))
+		err = r.deleteMessageRows(ctx, ec, string(botID), state.Int())
 		if err != nil {
 			return err
 		}
@@ -442,7 +458,7 @@ func (r *PostgresBotRepository) syncOptionRows(
 	state bots.State,
 	rows []optionRow,
 ) error {
-	dbRows, err := r.selectOptionRows(ctx, ec, string(botID), int(state))
+	dbRows, err := r.selectOptionRows(ctx, ec, string(botID), state.Int())
 	if err != nil {
 		return err
 	}
@@ -454,7 +470,7 @@ func (r *PostgresBotRepository) syncOptionRows(
 	}
 
 	if len(changes.Deleted) > 0 {
-		err = r.deleteOptionRows(ctx, ec, string(botID), int(state))
+		err = r.deleteOptionRows(ctx, ec, string(botID), state.Int())
 		if err != nil {
 			return err
 		}
@@ -1097,7 +1113,7 @@ func entryToRow(botID bots.BotID, entry bots.Entry) entryRow {
 	return entryRow{
 		BotID: string(botID),
 		Key:   string(entry.Key()),
-		Start: int(entry.Start()),
+		Start: entry.Start().Int(),
 	}
 }
 
@@ -1112,7 +1128,7 @@ func entriesToRows(botID bots.BotID, entries []bots.Entry) []entryRow {
 func nodeToRow(botID bots.BotID, node bots.Node) nodeRow {
 	return nodeRow{
 		BotID: string(botID),
-		State: int(node.State()),
+		State: node.State().Int(),
 		Title: node.Title(),
 	}
 }
@@ -1129,8 +1145,8 @@ func edgeToRow(botID bots.BotID, state bots.State, edge bots.Edge) edgeRow {
 	ptype, pdata := predicateToStrings(edge.Predicate)
 	return edgeRow{
 		BotID:     string(botID),
-		State:     int(state),
-		ToState:   int(edge.To()),
+		State:     state.Int(),
+		ToState:   edge.To().Int(),
 		Operation: operationToString(edge.Operation()),
 		PredType:  ptype,
 		PredData:  pdata,
@@ -1148,7 +1164,7 @@ func edgesToRows(botID bots.BotID, state bots.State, edges []bots.Edge) []edgeRo
 func messageToRow(botID bots.BotID, state bots.State, msg bots.Message) messageRow {
 	return messageRow{
 		BotID: string(botID),
-		State: int(state),
+		State: state.Int(),
 		Text:  msg.Text(),
 	}
 }
@@ -1164,8 +1180,8 @@ func messagesToRows(botID bots.BotID, state bots.State, msgs []bots.Message) []m
 func optionToRow(botID bots.BotID, state bots.State, opt bots.Option) optionRow {
 	return optionRow{
 		BotID: string(botID),
-		State: int(state),
-		Text:  string(opt),
+		State: state.Int(),
+		Text:  opt.String(),
 	}
 }
 

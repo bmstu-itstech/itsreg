@@ -12,6 +12,10 @@ import (
 
 	httpapi "github.com/bmstu-itstech/itsreg-bots/internal/api/http"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/command"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/query"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/internal/service"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/logs"
@@ -19,7 +23,7 @@ import (
 	"github.com/bmstu-itstech/itsreg-bots/pkg/server"
 )
 
-func connectDb() (*sqlx.DB, error) {
+func connectDB() (*sqlx.DB, error) {
 	uri := os.Getenv("DATABASE_URI")
 	if uri == "" {
 		return nil, errors.New("DATABASE_URI must be set")
@@ -31,7 +35,7 @@ func main() {
 	l := logs.DefaultLogger()
 	mc := metrics.NoOp{}
 
-	db, err := connectDb()
+	db, err := connectDB()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,30 +46,28 @@ func main() {
 	botMessageSender := service.NewTelegramMessageSender()
 
 	process := ProcessHandlerAdapter{
-		app.NewProcessHandler(botRepository, participantRepository, botMessageSender, l, mc),
+		command.NewProcessHandler(botRepository, participantRepository, botMessageSender, l, mc),
 	}
 	entry := EntryHandlerAdapter{
-		app.NewEntryHandler(botRepository, participantRepository, botMessageSender, l, mc),
+		command.NewEntryHandler(botRepository, participantRepository, botMessageSender, l, mc),
 	}
 
 	telegramService := service.NewTelegramService(l, process, entry)
 
 	a := app.Application{
 		Commands: app.Commands{
-			CreateBot:      app.NewCreateBotHandler(botRepository, l, mc),
-			Entry:          app.NewEntryHandler(botRepository, participantRepository, botMessageSender, l, mc),
-			Process:        app.NewProcessHandler(botRepository, participantRepository, botMessageSender, l, mc),
-			Start:          app.NewStartHandler(telegramService, botRepository, l, mc),
-			Stop:           app.NewStopHandler(telegramService, l, mc),
-			UpdateBot:      app.NewUpdateBotHandler(botRepository, l, mc),
-			UpdateUsername: app.NewUpdateUsernameHandler(usernameRepository, l, mc),
+			CreateBot: command.NewCreateBotHandler(botRepository, l, mc),
+			Entry:     command.NewEntryHandler(botRepository, participantRepository, botMessageSender, l, mc),
+			Process:   command.NewProcessHandler(botRepository, participantRepository, botMessageSender, l, mc),
+			Start:     command.NewStartHandler(telegramService, botRepository, l, mc),
+			Stop:      command.NewStopHandler(telegramService, l, mc),
+			UpdateBot: command.NewUpdateBotHandler(botRepository, l, mc),
 		},
 		Queries: app.Queries{
-			GetBot:      app.NewGetBotHandler(botRepository, l, mc),
-			GetStatus:   app.NewGetStatusHandler(telegramService, l, mc),
-			GetThreads:  app.NewGetThreadsHandler(participantRepository, usernameRepository, l, mc),
-			GetUserBots: app.NewGetUserBotsHandler(botRepository, l, mc),
-			GetUsername: app.NewGetUsernameHandler(usernameRepository, l, mc),
+			GetBot:      query.NewGetBotHandler(botRepository, l, mc),
+			GetStatus:   query.NewGetStatusHandler(telegramService, l, mc),
+			GetThreads:  query.NewGetThreadsHandler(participantRepository, usernameRepository, l, mc),
+			GetUserBots: query.NewGetUserBotsHandler(botRepository, l, mc),
 		},
 	}
 
@@ -74,26 +76,29 @@ func main() {
 	})
 }
 
+// Страшно, очень страшно.
+// Как сделать иначе?
+
 type ProcessHandlerAdapter struct {
-	H app.ProcessHandler
+	H command.ProcessHandler
 }
 
 func (a ProcessHandlerAdapter) Process(
 	ctx context.Context, botID bots.BotID, userID bots.UserID, msg bots.Message,
 ) error {
-	return a.H.Handle(ctx, app.Process{
+	return a.H.Handle(ctx, request.ProcessCommand{
 		BotID:   string(botID),
 		UserID:  int64(userID),
-		Message: app.Message{Text: msg.Text()},
+		Message: dto.Message{Text: msg.Text()},
 	})
 }
 
 type EntryHandlerAdapter struct {
-	H app.EntryHandler
+	H command.EntryHandler
 }
 
 func (a EntryHandlerAdapter) Entry(ctx context.Context, botID bots.BotID, userID bots.UserID, key bots.EntryKey) error {
-	return a.H.Handle(ctx, app.EntryCommand{
+	return a.H.Handle(ctx, request.EntryCommand{
 		BotID:  string(botID),
 		UserID: int64(userID),
 		Key:    string(key),

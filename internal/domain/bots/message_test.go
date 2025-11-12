@@ -14,7 +14,9 @@ func TestNewMessage(t *testing.T) {
 
 	_, err = bots.NewMessage("")
 	require.Error(t, err)
-	require.EqualError(t, err, "expected not empty text in message")
+	var iiErr bots.InvalidInputError
+	require.ErrorAs(t, err, &iiErr)
+	require.Equal(t, "message-empty-text", iiErr.Code)
 }
 
 func TestMessage_String(t *testing.T) {
@@ -53,7 +55,9 @@ func TestMessage_PromoteToBotMessage(t *testing.T) {
 	t.Run("promote with not nil options", func(t *testing.T) {
 		msg := bots.MustNewMessage("abc")
 		opts := []bots.Option{
-			"a", "b", "c",
+			bots.MustNewOption("a"),
+			bots.MustNewOption("b"),
+			bots.MustNewOption("c"),
 		}
 		got := msg.PromoteToBotMessage(opts)
 		require.Equal(t, msg.Text(), got.Text())

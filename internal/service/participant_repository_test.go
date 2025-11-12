@@ -98,7 +98,7 @@ func testParticipantRepositoryCreateNew(t *testing.T, repo bots.ParticipantRepos
 func testParticipantRepositoryUpdateExisting(t *testing.T, repo bots.ParticipantRepository) {
 	ctx := context.Background()
 	id := bots.NewParticipantID(bots.UserID(gofakeit.Int64()), testBotID)
-	entry := bots.MustNewEntry(testEntryKey, testStartState)
+	entry := bots.MustNewEntry(testEntryKey, bots.MustNewState(testStartState))
 
 	msg := bots.MustNewMessage("hello")
 	err := repo.UpdateOrCreate(ctx, id, func(_ context.Context, prt *bots.Participant) error {
@@ -112,7 +112,7 @@ func testParticipantRepositoryUpdateExisting(t *testing.T, repo bots.Participant
 		cthr, ok := prt.CurrentThread()
 		require.True(t, ok)
 		require.NotNil(t, cthr)
-		recv, ok := cthr.Answers()[testStartState]
+		recv, ok := cthr.Answers()[bots.MustNewState(testStartState)]
 		require.True(t, ok)
 		require.Equal(t, msg, recv)
 		return nil

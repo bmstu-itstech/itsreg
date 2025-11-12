@@ -22,8 +22,7 @@ type ExactMatchPredicate struct {
 func NewExactMatchPredicate(text string) (Predicate, error) {
 	if text == "" {
 		return nil, NewInvalidInputError(
-			"invalid-exact-match-predicate",
-			"expected non-empty string for exact match predicate",
+			"predicate-empty-text", "expected non-empty string for exact match predicate", "field", "text",
 		)
 	}
 	return ExactMatchPredicate{text}, nil
@@ -52,16 +51,17 @@ type RegexMatchPredicate struct {
 func NewRegexMatchPredicate(pattern string) (Predicate, error) {
 	if pattern == "" {
 		return nil, NewInvalidInputError(
-			"invalid-regex-predicate",
-			"expected not empty pattern for regexp predicate",
+			"predicate-empty-pattern", "expected non-empty predicate pattern", "field", "pattern",
 		)
 	}
 
 	regex, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, NewInvalidInputError(
-			"invalid-regex-predicate-pattern",
-			fmt.Sprintf("failed to compile regexp pattern: %s", pattern),
+			"predicate-invalid-pattern",
+			fmt.Sprintf("failed to compile regex pattern '%s': %s", pattern, err.Error()),
+			"field",
+			"pattern",
 		)
 	}
 

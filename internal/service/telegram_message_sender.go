@@ -36,7 +36,7 @@ func buildInlineKeyboardMarkup(opts []bots.Option) tgbotapi.ReplyKeyboardMarkup 
 	rows := make([][]tgbotapi.KeyboardButton, len(opts))
 	for i, opt := range opts {
 		rows[i] = []tgbotapi.KeyboardButton{
-			tgbotapi.NewKeyboardButton(string(opt)),
+			tgbotapi.NewKeyboardButton(opt.String()),
 		}
 	}
 	keyboard := tgbotapi.NewReplyKeyboard(rows...)

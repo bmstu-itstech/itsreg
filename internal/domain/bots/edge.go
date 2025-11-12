@@ -1,7 +1,5 @@
 package bots
 
-type Priority int
-
 type Edge struct {
 	Predicate
 

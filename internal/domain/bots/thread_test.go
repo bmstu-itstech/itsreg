@@ -13,7 +13,7 @@ const timeEps = time.Millisecond
 
 func TestNewThread(t *testing.T) {
 	t.Run("Valid entry", func(t *testing.T) {
-		entry := bots.MustNewEntry("start", 1)
+		entry := bots.MustNewEntry("start", bots.MustNewState(1))
 		thread, err := bots.NewThread(entry)
 		require.NoError(t, err)
 		require.NotNil(t, thread)
@@ -32,7 +32,7 @@ func TestNewThread(t *testing.T) {
 }
 
 func TestThread_Clone(t *testing.T) {
-	state1 := bots.State(1)
+	state1 := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state1)
 	thread := bots.MustNewThread(entry)
 	thread.SaveAnswer(bots.MustNewMessage("test"))
@@ -46,7 +46,7 @@ func TestThread_Clone(t *testing.T) {
 }
 
 func TestThread_SaveAnswer(t *testing.T) {
-	state1 := bots.State(1)
+	state1 := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state1)
 	thread := bots.MustNewThread(entry)
 
@@ -60,7 +60,7 @@ func TestThread_SaveAnswer(t *testing.T) {
 	require.Len(t, thread.Answers(), 1)
 	require.Equal(t, msgB, thread.Answers()[state1])
 
-	state2 := bots.State(2)
+	state2 := bots.MustNewState(2)
 	thread.StepTo(state2)
 
 	msgC := bots.MustNewMessage("c")
@@ -71,7 +71,7 @@ func TestThread_SaveAnswer(t *testing.T) {
 }
 
 func TestThread_AppendAnswer(t *testing.T) {
-	state1 := bots.State(1)
+	state1 := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state1)
 	thread := bots.MustNewThread(entry)
 
@@ -87,7 +87,7 @@ func TestThread_AppendAnswer(t *testing.T) {
 	composed := msgA.Merge(msgB)
 	require.Equal(t, composed, thread.Answers()[state1])
 
-	state2 := bots.State(2)
+	state2 := bots.MustNewState(2)
 	thread.StepTo(state2)
 
 	msgC := bots.MustNewMessage("c")

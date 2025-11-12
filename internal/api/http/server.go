@@ -9,6 +9,8 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/app"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/salad"
 )
@@ -22,11 +24,11 @@ func NewHTTPServer(app *app.Application) *Server {
 }
 
 func (s *Server) GetBots(w http.ResponseWriter, r *http.Request) {
-	bs, err := s.app.Queries.GetUserBots.Handle(r.Context(), app.GetUserBots{
+	bs, err := s.app.Queries.GetUserBots.Handle(r.Context(), request.GetUserBotsQuery{
 		UserID: 1,
 	})
 	if err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -36,17 +38,17 @@ func (s *Server) GetBots(w http.ResponseWriter, r *http.Request) {
 func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
 	req := PutBots{}
 	if err := render.Decode(r, &req); err != nil {
-		httpError(w, r, err, http.StatusBadRequest)
+		renderPlainError(w, r, err, http.StatusBadRequest)
 		return
 	}
 
 	script, err := scriptToApp(req.Script)
 	if err != nil {
-		httpError(w, r, err, http.StatusBadRequest)
+		renderPlainError(w, r, err, http.StatusBadRequest)
 		return
 	}
 
-	err = s.app.Commands.CreateBot.Handle(r.Context(), app.CreateBot{
+	err = s.app.Commands.CreateBot.Handle(r.Context(), request.CreateBotCommand{
 		BotID:  req.Id,
 		Token:  req.Token,
 		Author: 1,
@@ -55,11 +57,18 @@ func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
 
 	var iiErr bots.InvalidInputError
 	if errors.As(err, &iiErr) {
-		httpSlugError(w, r, iiErr.Error(), iiErr.Slug(), http.StatusBadRequest)
+		renderInvalidInputError(w, r, iiErr, http.StatusBadRequest)
 		return
 	}
+
+	var mErr *bots.MultiError
+	if errors.As(err, &mErr) {
+		renderMultiError(w, r, mErr, http.StatusBadRequest)
+		return
+	}
+
 	if err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -68,87 +77,74 @@ func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
-	bot, err := s.app.Queries.GetBot.Handle(r.Context(), app.GetBot{ID: id})
+	bot, err := s.app.Queries.GetBot.Handle(r.Context(), request.GetBotQuery{ID: id})
 	if errors.Is(err, bots.ErrBotNotFound) {
-		httpError(w, r, err, http.StatusNotFound)
+		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 
-	threads, err := s.app.Queries.GetThreads.Handle(r.Context(), app.GetThreads{BotID: id})
+	threads, err := s.app.Queries.GetThreads.Handle(r.Context(), request.GetThreadsQuery{BotID: id})
 	if err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 
 	err = renderCsvAnswers(w, bot.Script.Nodes, threads)
 	if err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 }
 
 func (s *Server) StartBot(w http.ResponseWriter, r *http.Request, id string) {
-	err := s.app.Commands.Start.Handle(r.Context(), app.Start{BotID: id})
+	err := s.app.Commands.Start.Handle(r.Context(), request.StartCommand{BotID: id})
 	if errors.Is(err, bots.ErrBotNotFound) {
-		httpError(w, r, err, http.StatusNotFound)
+		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 }
 
 func (s *Server) StopBot(w http.ResponseWriter, r *http.Request, id string) {
-	err := s.app.Commands.Stop.Handle(r.Context(), app.Stop{BotID: id})
+	err := s.app.Commands.Stop.Handle(r.Context(), request.StopCommand{BotID: id})
 	if errors.Is(err, bots.ErrBotNotFound) {
-		httpError(w, r, err, http.StatusNotFound)
+		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
 	if errors.Is(err, bots.ErrRunningInstanceNotFound) {
-		httpError(w, r, err, http.StatusNotFound)
+		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 }
 
 func (s *Server) GetBot(w http.ResponseWriter, r *http.Request, id string) {
-	bot, err := s.app.Queries.GetBot.Handle(r.Context(), app.GetBot{ID: id})
+	bot, err := s.app.Queries.GetBot.Handle(r.Context(), request.GetBotQuery{ID: id})
 	if errors.Is(err, bots.ErrBotNotFound) {
-		httpError(w, r, err, http.StatusNotFound)
+		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		httpError(w, r, err, http.StatusInternalServerError)
+		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
 
 	render.JSON(w, r, botFromApp(bot))
 }
 
-func httpError(w http.ResponseWriter, r *http.Request, err error, code int) {
-	render.Status(r, code)
-	render.JSON(w, r, Error{Message: err.Error()})
-}
-
-func httpSlugError(w http.ResponseWriter, r *http.Request, msg string, slug string, code int) {
-	render.Status(r, code)
-	render.JSON(w, r, Error{
-		Message: msg,
-		Slug:    &slug,
-	})
-}
-
 const offset = 3
 
-func renderCsvAnswers(w http.ResponseWriter, nodes []app.Node, threads []app.Thread) error {
+func renderCsvAnswers(w http.ResponseWriter, nodes []dto.Node, threads []dto.Thread) error {
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 
 	utf8bom := []byte{0xEF, 0xBB, 0xBF}
@@ -170,7 +166,7 @@ func renderCsvAnswers(w http.ResponseWriter, nodes []app.Node, threads []app.Thr
 	return nil
 }
 
-func makeMapStateToIndex(threads []app.Thread) map[int]int {
+func makeMapStateToIndex(threads []dto.Thread) map[int]int {
 	states := make(map[int]bool)
 	for _, thread := range threads {
 		for state := range thread.Answers {
@@ -195,7 +191,7 @@ const answerThreadIDHeadName = "#"
 const answerTimestampHeadName = "Отметка времени"
 const answerUsernameHeadName = "Никнейм"
 
-func makeAnswersTHead(nodes []app.Node, stateToIndex map[int]int) []string {
+func makeAnswersTHead(nodes []dto.Node, stateToIndex map[int]int) []string {
 	head := make([]string, len(stateToIndex)+offset)
 
 	head[0] = answerThreadIDHeadName
@@ -212,7 +208,7 @@ func makeAnswersTHead(nodes []app.Node, stateToIndex map[int]int) []string {
 	return head
 }
 
-func makeAnswersTRow(thread app.Thread, stateToIndex map[int]int) []string {
+func makeAnswersTRow(thread dto.Thread, stateToIndex map[int]int) []string {
 	row := make([]string, len(stateToIndex)+offset)
 
 	row[0] = thread.ID
@@ -229,7 +225,7 @@ func makeAnswersTRow(thread app.Thread, stateToIndex map[int]int) []string {
 	return row
 }
 
-func makeAnswersTBody(threads []app.Thread, stateToIndex map[int]int) [][]string {
+func makeAnswersTBody(threads []dto.Thread, stateToIndex map[int]int) [][]string {
 	body := make([][]string, len(threads))
 	for i, thread := range threads {
 		body[i] = makeAnswersTRow(thread, stateToIndex)

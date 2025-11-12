@@ -1,37 +1,25 @@
-package app
+package command
 
 import (
 	"context"
 	"log/slog"
 
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
 
-type CreateBot struct {
-	BotID  string
-	Token  string
-	Author int64
-	Script Script
-}
-
-type CreateBotHandler decorator.CommandHandler[CreateBot]
+type CreateBotHandler decorator.CommandHandler[request.CreateBotCommand]
 
 type createBotHandler struct {
 	bm bots.BotManager
 }
 
-func (h createBotHandler) Handle(ctx context.Context, cmd CreateBot) error {
-	script, err := scriptFromDto(cmd.Script)
+func (h createBotHandler) Handle(ctx context.Context, cmd request.CreateBotCommand) error {
+	bot, err := request.BotFromCommand(cmd)
 	if err != nil {
 		return err
 	}
-
-	bot, err := bots.NewBot(bots.BotID(cmd.BotID), bots.Token(cmd.Token), bots.UserID(cmd.Author), script)
-	if err != nil {
-		return err
-	}
-
 	return h.bm.Upsert(ctx, bot)
 }
 

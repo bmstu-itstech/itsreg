@@ -136,6 +136,11 @@ func UnmarshallThread(
 		return nil, errors.New("key is empty")
 	}
 
+	s, err := NewState(state)
+	if err != nil {
+		return nil, err
+	}
+
 	if answers == nil {
 		answers = make(map[State]Message)
 	}
@@ -147,7 +152,7 @@ func UnmarshallThread(
 	return &Thread{
 		id:        ThreadID(id),
 		key:       EntryKey(key),
-		state:     State(state),
+		state:     s,
 		answers:   answers,
 		startedAt: startedAt,
 	}, nil

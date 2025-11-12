@@ -10,19 +10,18 @@ import (
 
 func TestNewBot(t *testing.T) {
 	msg := bots.MustNewMessage("some text")
-	node := bots.MustNewNode(1, "test", nil, []bots.Message{msg}, nil)
-	entry := bots.MustNewEntry("start", 1)
+	node := bots.MustNewNode(bots.MustNewState(1), "test", nil, []bots.Message{msg}, nil)
+	entry := bots.MustNewEntry("start", bots.MustNewState(1))
 	validScript := bots.MustNewScript([]bots.Node{node}, []bots.Entry{entry})
-	zeroScript := bots.Script{}
 
 	tests := []struct {
-		name        string
-		id          bots.BotID
-		token       bots.Token
-		author      bots.UserID
-		script      bots.Script
-		wantErr     bool
-		errContains string
+		name    string
+		id      bots.BotID
+		token   bots.Token
+		author  bots.UserID
+		script  bots.Script
+		wantErr bool
+		errCode string
 	}{
 		{
 			name:    "Valid bot",
@@ -33,40 +32,31 @@ func TestNewBot(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Empty bot id",
-			id:          "",
-			token:       "token",
-			author:      1,
-			script:      validScript,
-			wantErr:     true,
-			errContains: "expected not empty bot id",
+			name:    "Empty bot id",
+			id:      "",
+			token:   "token",
+			author:  1,
+			script:  validScript,
+			wantErr: true,
+			errCode: "bot-empty-id",
 		},
 		{
-			name:        "Empty token",
-			id:          "bot",
-			token:       "",
-			author:      1,
-			script:      validScript,
-			wantErr:     true,
-			errContains: "expected not empty bot token",
+			name:    "Empty token",
+			id:      "bot",
+			token:   "",
+			author:  1,
+			script:  validScript,
+			wantErr: true,
+			errCode: "bot-empty-token",
 		},
 		{
-			name:        "Zero author id",
-			id:          "bot",
-			token:       "token",
-			author:      0,
-			script:      validScript,
-			wantErr:     true,
-			errContains: "expected not empty bot author id",
-		},
-		{
-			name:        "Zero script",
-			id:          "bot",
-			token:       "token",
-			author:      1,
-			script:      zeroScript,
-			wantErr:     true,
-			errContains: "empty script",
+			name:    "Zero author id",
+			id:      "bot",
+			token:   "token",
+			author:  0,
+			script:  validScript,
+			wantErr: true,
+			errCode: "bot-empty-author-id",
 		},
 	}
 
@@ -75,7 +65,9 @@ func TestNewBot(t *testing.T) {
 			bot, err := bots.NewBot(tt.id, tt.token, tt.author, tt.script)
 			if tt.wantErr {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.errContains)
+				var iiErr bots.InvalidInputError
+				require.ErrorAs(t, err, &iiErr)
+				require.Equal(t, tt.errCode, iiErr.Code)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.id, bot.ID())

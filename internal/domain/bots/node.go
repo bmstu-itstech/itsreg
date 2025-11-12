@@ -1,12 +1,43 @@
 package bots
 
 import (
+	"errors"
+	"fmt"
 	"slices"
 )
 
 // State есть состояние в контексте FSM и уникальный номер узла
 // в пределах скрипта.
-type State int
+type State struct {
+	i int
+}
+
+var ZeroState State
+
+func NewState(i int) (State, error) {
+	if i == 0 {
+		return State{}, NewInvalidInputError("state-empty", "expected not empty state")
+	}
+	if i < 0 {
+		return ZeroState, NewInvalidInputError(
+			"state-invalid",
+			fmt.Sprintf("expected state is positive value, got %d", i),
+		)
+	}
+	return State{i: i}, nil
+}
+
+func MustNewState(i int) State {
+	s, err := NewState(i)
+	if err != nil {
+		panic(err)
+	}
+	return s
+}
+
+func (s State) Int() int {
+	return s.i
+}
 
 // Node есть минимальная структурная единица Script.
 type Node struct {
@@ -17,20 +48,14 @@ type Node struct {
 	opts  []Option  // Список кнопок-клавиатуры, которые будут отправлены с последним сообщением
 }
 
-// NewNode создаёт Node. msgs должно содержать как минимум одно BotMessage.
+// NewNode создаёт Node. msgs должно содержать как минимум одно Message.
 func NewNode(state State, title string, edges []Edge, msgs []Message, opts []Option) (Node, error) {
-	if state < 0 {
-		return Node{}, NewInvalidInputError(
-			"invalid-node",
-			"expected non-negative state",
-		)
+	if state == ZeroState {
+		return Node{}, errors.New("empty state")
 	}
 
 	if title == "" {
-		return Node{}, NewInvalidInputError(
-			"invalid-node",
-			"expected not empty title",
-		)
+		return Node{}, NewInvalidInputError("node-empty-title", "expected not empty title text", "field", "title")
 	}
 
 	if edges == nil {
@@ -39,8 +64,7 @@ func NewNode(state State, title string, edges []Edge, msgs []Message, opts []Opt
 
 	if len(msgs) == 0 {
 		return Node{}, NewInvalidInputError(
-			"invalid-node",
-			"expected at least one message in node",
+			"node-empty-messages", "expected at least one message in node", "field", "messages",
 		)
 	}
 

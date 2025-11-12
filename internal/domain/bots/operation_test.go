@@ -9,7 +9,7 @@ import (
 )
 
 func TestNoOp_Act(t *testing.T) {
-	state := bots.State(1)
+	state := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state)
 	thread := bots.MustNewThread(entry)
 	op := bots.NoOp{}
@@ -20,7 +20,7 @@ func TestNoOp_Act(t *testing.T) {
 }
 
 func TestSaveOp_Act(t *testing.T) {
-	state := bots.State(1)
+	state := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state)
 	thread := bots.MustNewThread(entry)
 	op := bots.SaveOp{}
@@ -39,7 +39,7 @@ func TestSaveOp_Act(t *testing.T) {
 }
 
 func TestSaveAppendOp_Act(t *testing.T) {
-	state := bots.State(1)
+	state := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state)
 	thread := bots.MustNewThread(entry)
 	op := bots.AppendOp{}

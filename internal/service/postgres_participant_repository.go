@@ -174,7 +174,11 @@ func (r *PostgresParticipantRepository) selectAnswers(
 		if err2 != nil {
 			return nil, err2
 		}
-		res[bots.State(row.State)] = msg
+		state, err2 := bots.NewState(row.State)
+		if err2 != nil {
+			return nil, err2
+		}
+		res[state] = msg
 	}
 	return res, nil
 }
@@ -741,7 +745,7 @@ func threadToRow(botID bots.BotID, userID bots.UserID, thread *bots.Thread) thre
 		BotID:     string(botID),
 		UserID:    int64(userID),
 		Key:       string(thread.Key()),
-		State:     int(thread.State()),
+		State:     thread.State().Int(),
 		StartedAt: thread.StartedAt(),
 	}
 }
@@ -757,7 +761,7 @@ func threadsToRows(botID bots.BotID, id bots.UserID, threads []*bots.Thread) []t
 func answerToRow(threadID bots.ThreadID, state bots.State, msg bots.Message) answerRow {
 	return answerRow{
 		ThreadID: string(threadID),
-		State:    int(state),
+		State:    state.Int(),
 		Text:     msg.Text(),
 	}
 }
