@@ -256,7 +256,7 @@ func (r *PostgresBotRepository) selectEdges(
 		if err2 != nil {
 			return nil, err2
 		}
-		to, err2 := bots.NewState(row.State)
+		to, err2 := bots.NewState(row.ToState)
 		if err2 != nil {
 			return nil, err2
 		}

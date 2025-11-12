@@ -1,5 +1,5 @@
 services:
-  postgres:
+  db:
     image: postgres:15.3-alpine3.18
     command: postgres
     ports:
@@ -28,7 +28,7 @@ services:
       "up"
     ]
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
     volumes:
       - ./migrations:/migrations

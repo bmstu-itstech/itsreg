@@ -94,8 +94,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	msgs, err := script.Entry(prt, "start")
 	require.NoError(t, err)
 	require.Equal(t, greetingNode.BotMessages(), msgs)
-	thread, ok := prt.CurrentThread()
-	require.True(t, ok)
+	thread := prt.ActiveThread()
 	require.NotNil(t, thread)
 	require.Equal(t, thread.State(), bots.MustNewState(1))
 
@@ -103,8 +102,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	msgs, err = script.Process(prt, bots.MustNewMessage("/admin"))
 	require.NoError(t, err)
 	require.Empty(t, msgs)
-	thread, ok = prt.CurrentThread()
-	require.True(t, ok)
+	thread = prt.ActiveThread()
 	require.Equal(t, thread.State(), bots.MustNewState(1))
 	require.Empty(t, thread.Answers())
 
@@ -112,8 +110,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	msgs, err = script.Process(prt, bots.MustNewMessage("Далее"))
 	require.NoError(t, err)
 	require.Equal(t, fullNameNode.BotMessages(), msgs)
-	thread, ok = prt.CurrentThread()
-	require.True(t, ok)
+	thread = prt.ActiveThread()
 	require.Equal(t, thread.State(), bots.MustNewState(2))
 	require.Empty(t, thread.Answers())
 
@@ -121,8 +118,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	msgs, err = script.Process(prt, bots.MustNewMessage("Назад"))
 	require.NoError(t, err)
 	require.Equal(t, greetingNode.BotMessages(), msgs)
-	thread, ok = prt.CurrentThread()
-	require.True(t, ok)
+	thread = prt.ActiveThread()
 	require.Equal(t, thread.State(), bots.MustNewState(1))
 	require.Empty(t, thread.Answers())
 
@@ -130,16 +126,14 @@ func TestScript_EntryNProcess(t *testing.T) {
 	msgs, err = script.Process(prt, bots.MustNewMessage("Далее"))
 	require.NoError(t, err)
 	require.Equal(t, fullNameNode.BotMessages(), msgs)
-	thread, ok = prt.CurrentThread()
-	require.True(t, ok)
+	thread = prt.ActiveThread()
 	require.Equal(t, thread.State(), bots.MustNewState(2))
 
 	// Пользователь вводит своё ФИО
 	msgs, err = script.Process(prt, bots.MustNewMessage("Иванов Иван Иванович"))
 	require.NoError(t, err)
 	require.Equal(t, choosePillNode.BotMessages(), msgs)
-	thread, ok = prt.CurrentThread()
-	require.True(t, ok)
+	thread = prt.ActiveThread()
 	require.Equal(t, thread.State(), bots.MustNewState(3))
 	require.Equal(t, map[bots.State]bots.Message{
 		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван Иванович"),
@@ -149,8 +143,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	msgs, err = script.Process(prt, bots.MustNewMessage("Красная"))
 	require.NoError(t, err)
 	require.Equal(t, redPillNode.BotMessages(), msgs)
-	thread, ok = prt.CurrentThread()
-	require.True(t, ok)
+	thread = prt.ActiveThread()
 	require.Equal(t, thread.State(), bots.MustNewState(10))
 	require.Equal(t, map[bots.State]bots.Message{
 		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван Иванович"),
@@ -161,8 +154,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	msgs, err = script.Process(prt, bots.MustNewMessage("Назад"))
 	require.NoError(t, err)
 	require.Equal(t, choosePillNode.BotMessages(), msgs)
-	thread, ok = prt.CurrentThread()
-	require.True(t, ok)
+	thread = prt.ActiveThread()
 	require.Equal(t, thread.State(), bots.MustNewState(3))
 	require.Equal(t, map[bots.State]bots.Message{
 		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван Иванович"),
@@ -173,8 +165,7 @@ func TestScript_EntryNProcess(t *testing.T) {
 	msgs, err = script.Process(prt, bots.MustNewMessage("Синяя"))
 	require.NoError(t, err)
 	require.Equal(t, bluePill.BotMessages(), msgs)
-	thread, ok = prt.CurrentThread()
-	require.True(t, ok)
+	thread = prt.ActiveThread()
 	require.Equal(t, thread.State(), bots.MustNewState(11))
 	require.Equal(t, map[bots.State]bots.Message{
 		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван Иванович"),

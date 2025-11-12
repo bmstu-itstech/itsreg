@@ -72,8 +72,8 @@ func (s Script) Entry(prt *Participant, key EntryKey) ([]BotMessage, error) {
 }
 
 func (s Script) Process(prt *Participant, in Message) ([]BotMessage, error) {
-	thread, ok := prt.CurrentThread()
-	if !ok {
+	thread := prt.ActiveThread()
+	if thread == nil {
 		return nil, ErrNoStartedThread
 	}
 

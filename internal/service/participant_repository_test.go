@@ -14,14 +14,11 @@ import (
 )
 
 const (
-	testBotID      = "test"
-	testEntryKey   = "start"
-	testStartState = 1
+	testBotID       = "test"
+	testEntryKey    = "start"
+	testEntryKeyAlt = "start2"
+	testStartState  = 1
 )
-
-func setupMockParticipantRepository() *service.MockParticipantRepository {
-	return service.NewMockParticipantRepository()
-}
 
 func setupPostgresParticipantRepository() (*service.PostgresParticipantRepository, func()) {
 	db := tests.ConnectPostgresDB()
@@ -40,28 +37,13 @@ func setupPostgresParticipantRepository() (*service.PostgresParticipantRepositor
 
 	db.MustExecContext(
 		context.Background(),
-		`INSERT INTO entries (bot_id, key, start) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-		testBotID, testEntryKey, testStartState,
+		`INSERT INTO entries (bot_id, key, start) VALUES ($1, $2, $4), ($1, $3, $5) ON CONFLICT DO NOTHING`,
+		testBotID, testEntryKey, testEntryKeyAlt, testStartState, testStartState,
 	)
 
 	return service.NewPostgresParticipantRepository(db, slog.Default()), func() {
 		_ = db.Close()
 	}
-}
-
-func TestMockParticipantRepository_CreateNew(t *testing.T) {
-	r := setupMockParticipantRepository()
-	testParticipantRepositoryCreateNew(t, r)
-}
-
-func TestMockParticipantRepository_UpdateExisting(t *testing.T) {
-	r := setupMockParticipantRepository()
-	testParticipantRepositoryUpdateExisting(t, r)
-}
-
-func TestMockParticipantRepository_CreateMultiplyParticipants(t *testing.T) {
-	r := setupMockParticipantRepository()
-	testParticipantRepositoryCreateMultiplyParticipants(t, r)
 }
 
 func TestPostgresParticipantRepository_CreateNew(t *testing.T) {
@@ -80,6 +62,12 @@ func TestPostgresParticipantRepository_CreateMultiplyParticipants(t *testing.T) 
 	r, closeFn := setupPostgresParticipantRepository()
 	t.Cleanup(closeFn)
 	testParticipantRepositoryCreateMultiplyParticipants(t, r)
+}
+
+func TestPostgresParticipantRepository_CreateNewThread(t *testing.T) {
+	r, closeFn := setupPostgresParticipantRepository()
+	t.Cleanup(closeFn)
+	testParticipantRepositoryCreateNewThread(t, r)
 }
 
 func testParticipantRepositoryCreateNew(t *testing.T, repo bots.ParticipantRepository) {
@@ -109,8 +97,7 @@ func testParticipantRepositoryUpdateExisting(t *testing.T, repo bots.Participant
 	require.NoError(t, err)
 
 	err = repo.UpdateOrCreate(ctx, id, func(_ context.Context, prt *bots.Participant) error {
-		cthr, ok := prt.CurrentThread()
-		require.True(t, ok)
+		cthr := prt.ActiveThread()
 		require.NotNil(t, cthr)
 		recv, ok := cthr.Answers()[bots.MustNewState(testStartState)]
 		require.True(t, ok)
@@ -132,6 +119,40 @@ func testParticipantRepositoryCreateMultiplyParticipants(t *testing.T, repo bots
 
 	err = repo.UpdateOrCreate(ctx, id2, func(_ context.Context, _ *bots.Participant) error {
 		return nil
+	})
+	require.NoError(t, err)
+}
+
+func testParticipantRepositoryCreateNewThread(t *testing.T, repo bots.ParticipantRepository) {
+	ctx := context.Background()
+	id := bots.NewParticipantID(bots.UserID(gofakeit.Int64()), testBotID)
+
+	entry1 := bots.MustNewEntry(testEntryKey, bots.MustNewState(testStartState))
+	entry2 := bots.MustNewEntry(testEntryKeyAlt, bots.MustNewState(testStartState))
+
+	var thrID1, thrID2 bots.ThreadID
+	err := repo.UpdateOrCreate(ctx, id, func(_ context.Context, prt *bots.Participant) error {
+		_, err := prt.StartThread(entry1)
+		require.NoError(t, err)
+		require.NotNil(t, prt.ActiveThread())
+		thrID1 = prt.ActiveThread().ID()
+		return err
+	})
+	require.NoError(t, err)
+
+	err = repo.UpdateOrCreate(ctx, id, func(_ context.Context, prt *bots.Participant) error {
+		require.Equal(t, thrID1, prt.ActiveThread().ID())
+		_, err = prt.StartThread(entry2)
+		require.NotNil(t, prt.ActiveThread())
+		thrID2 = prt.ActiveThread().ID()
+		return err
+	})
+	require.NoError(t, err)
+
+	err = repo.UpdateOrCreate(ctx, id, func(_ context.Context, prt *bots.Participant) error {
+		require.NotNil(t, prt.ActiveThread())
+		require.Equal(t, thrID2, prt.ActiveThread().ID())
+		return err
 	})
 	require.NoError(t, err)
 }
