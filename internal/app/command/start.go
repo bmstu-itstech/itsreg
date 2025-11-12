@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
@@ -12,8 +13,8 @@ import (
 type StartHandler decorator.CommandHandler[request.StartCommand]
 
 type startHandler struct {
-	im bots.InstanceManager
-	bp bots.BotProvider
+	im port.InstanceManager
+	bp port.BotProvider
 }
 
 func (h startHandler) Handle(ctx context.Context, cmd request.StartCommand) error {
@@ -25,8 +26,8 @@ func (h startHandler) Handle(ctx context.Context, cmd request.StartCommand) erro
 }
 
 func NewStartHandler(
-	im bots.InstanceManager,
-	bp bots.BotProvider,
+	im port.InstanceManager,
+	bp port.BotProvider,
 	l *slog.Logger,
 	mc decorator.MetricsClient,
 ) StartHandler {

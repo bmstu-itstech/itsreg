@@ -1,20 +1,25 @@
-package service
+package telegram
 
 import (
 	"context"
+	"log/slog"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 )
 
-type TelegramMessageSender struct{}
-
-func NewTelegramMessageSender() *TelegramMessageSender {
-	return &TelegramMessageSender{}
+type MessageSender struct {
+	l *slog.Logger
 }
 
-func (s *TelegramMessageSender) Send(
+func NewMessageSender(l *slog.Logger) *MessageSender {
+	return &MessageSender{
+		l: l,
+	}
+}
+
+func (s *MessageSender) Send(
 	_ context.Context, token bots.Token, userID bots.UserID, msg bots.BotMessage,
 ) error {
 	api, err := tgbotapi.NewBotAPI(string(token))

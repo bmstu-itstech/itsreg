@@ -8,6 +8,7 @@ import (
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/response"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
@@ -15,8 +16,8 @@ import (
 type GetThreadsHandler decorator.QueryHandler[request.GetThreadsQuery, response.GetThreadsResponse]
 
 type getThreadsHandler struct {
-	tp bots.ThreadProvider
-	up bots.UsernameProvider
+	tp port.ThreadProvider
+	up port.UsernameProvider
 }
 
 func (h getThreadsHandler) Handle(ctx context.Context, q request.GetThreadsQuery) (response.GetThreadsResponse, error) {
@@ -36,7 +37,7 @@ func (h getThreadsHandler) Handle(ctx context.Context, q request.GetThreadsQuery
 }
 
 func NewGetThreadsHandler(
-	tp bots.ThreadProvider, up bots.UsernameProvider, l *slog.Logger, mc decorator.MetricsClient,
+	tp port.ThreadProvider, up port.UsernameProvider, l *slog.Logger, mc decorator.MetricsClient,
 ) GetThreadsHandler {
 	return decorator.ApplyQueryDecorators(getThreadsHandler{tp, up}, l, mc)
 }

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
@@ -12,9 +13,9 @@ import (
 type EntryHandler decorator.CommandHandler[request.EntryCommand]
 
 type entryHandler struct {
-	bp bots.BotProvider
-	pr bots.ParticipantRepository
-	ms bots.BotMessageSender
+	bp port.BotProvider
+	pr port.ParticipantRepository
+	ms port.MessageSender
 }
 
 func (h entryHandler) Handle(ctx context.Context, cmd request.EntryCommand) error {
@@ -27,7 +28,7 @@ func (h entryHandler) Handle(ctx context.Context, cmd request.EntryCommand) erro
 	prtID := bots.NewParticipantID(bots.UserID(cmd.UserID), bots.BotID(cmd.BotID))
 
 	var response []bots.BotMessage
-	err = h.pr.UpdateOrCreate(ctx, prtID, func(
+	err = h.pr.UpdateOrCreateParticipant(ctx, prtID, func(
 		_ context.Context, prt *bots.Participant,
 	) error {
 		response, err = script.Entry(prt, bots.EntryKey(cmd.Key))
@@ -48,9 +49,9 @@ func (h entryHandler) Handle(ctx context.Context, cmd request.EntryCommand) erro
 }
 
 func NewEntryHandler(
-	bp bots.BotProvider,
-	pr bots.ParticipantRepository,
-	ms bots.BotMessageSender,
+	bp port.BotProvider,
+	pr port.ParticipantRepository,
+	ms port.MessageSender,
 	l *slog.Logger,
 	mc decorator.MetricsClient,
 ) EntryHandler {

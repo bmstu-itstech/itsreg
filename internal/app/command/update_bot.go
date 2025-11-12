@@ -5,14 +5,14 @@ import (
 	"log/slog"
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
 
 type UpdateBotHandler decorator.CommandHandler[request.UpdateBotCommand]
 
 type updateBotHandler struct {
-	bm bots.BotManager
+	br port.BotRepository
 }
 
 func (h updateBotHandler) Handle(ctx context.Context, cmd request.UpdateBotCommand) error {
@@ -20,13 +20,13 @@ func (h updateBotHandler) Handle(ctx context.Context, cmd request.UpdateBotComma
 	if err != nil {
 		return err
 	}
-	return h.bm.Upsert(ctx, bot)
+	return h.br.UpsertBot(ctx, bot)
 }
 
 func NewUpdateBotHandler(
-	bm bots.BotManager,
+	br port.BotRepository,
 	l *slog.Logger,
 	mc decorator.MetricsClient,
 ) UpdateBotHandler {
-	return decorator.ApplyCommandDecorators(updateBotHandler{bm}, l, mc)
+	return decorator.ApplyCommandDecorators(updateBotHandler{br}, l, mc)
 }

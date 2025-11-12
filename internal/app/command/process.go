@@ -6,6 +6,7 @@ import (
 
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
@@ -13,9 +14,9 @@ import (
 type ProcessHandler decorator.CommandHandler[request.ProcessCommand]
 
 type processHandler struct {
-	bp bots.BotProvider
-	pr bots.ParticipantRepository
-	ms bots.BotMessageSender
+	bp port.BotProvider
+	pr port.ParticipantRepository
+	ms port.MessageSender
 }
 
 func (h processHandler) Handle(ctx context.Context, cmd request.ProcessCommand) error {
@@ -32,7 +33,7 @@ func (h processHandler) Handle(ctx context.Context, cmd request.ProcessCommand) 
 	}
 
 	var response []bots.BotMessage
-	err = h.pr.UpdateOrCreate(ctx, prtID, func(
+	err = h.pr.UpdateOrCreateParticipant(ctx, prtID, func(
 		_ context.Context, prt *bots.Participant,
 	) error {
 		response, err = script.Process(prt, message)
@@ -53,9 +54,9 @@ func (h processHandler) Handle(ctx context.Context, cmd request.ProcessCommand) 
 }
 
 func NewProcessHandler(
-	bp bots.BotProvider,
-	pr bots.ParticipantRepository,
-	ms bots.BotMessageSender,
+	bp port.BotProvider,
+	pr port.ParticipantRepository,
+	ms port.MessageSender,
 	l *slog.Logger,
 	mc decorator.MetricsClient,
 ) ProcessHandler {

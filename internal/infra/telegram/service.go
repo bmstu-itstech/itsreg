@@ -1,4 +1,4 @@
-package service
+package telegram
 
 import (
 	"context"
@@ -8,39 +8,27 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 )
 
-type TelegramService struct {
+type InstanceManager struct {
 	m       sync.Map // map[string]*botInstance
 	log     *slog.Logger
-	process bots.ProcessHandler
-	entry   bots.EntryHandler
+	process port.ProcessHandler
+	entry   port.EntryHandler
 }
 
-func NewTelegramService(log *slog.Logger, process bots.ProcessHandler, entry bots.EntryHandler) *TelegramService {
-	return &TelegramService{
+func NewInstanceManager(log *slog.Logger, process port.ProcessHandler, entry port.EntryHandler) *InstanceManager {
+	return &InstanceManager{
 		log:     log,
 		process: process,
 		entry:   entry,
 	}
 }
 
-func (s *TelegramService) Status(_ context.Context, id bots.BotID) (bots.Status, error) {
-	r, ok := s.m.Load(id)
-	if !ok {
-		return bots.Idle, nil
-	}
-
-	ins, _ := r.(*botInstance)
-	if ins.IsDead() {
-		return bots.Dead, nil
-	}
-	return bots.Running, nil
-}
-
-func (s *TelegramService) Start(ctx context.Context, id bots.BotID, token bots.Token) error {
-	const op = "TelegramService.Start"
+func (s *InstanceManager) Start(ctx context.Context, id bots.BotID, token bots.Token) error {
+	const op = "InstanceManager.Start"
 	l := s.log.With(
 		slog.String("op", op),
 		slog.String("bot_id", string(id)),
@@ -66,11 +54,11 @@ func (s *TelegramService) Start(ctx context.Context, id bots.BotID, token bots.T
 	return nil
 }
 
-func (s *TelegramService) Stop(_ context.Context, id bots.BotID) error {
+func (s *InstanceManager) Stop(_ context.Context, id bots.BotID) error {
 	r, ok := s.m.Load(id)
 	ins, _ := r.(*botInstance)
 	if !ok {
-		return fmt.Errorf("%w: %s", bots.ErrRunningInstanceNotFound, id)
+		return fmt.Errorf("%w: %s", port.ErrRunningInstanceNotFound, id)
 	}
 	ins.Stop()
 	s.m.Delete(id)
@@ -81,8 +69,8 @@ type botInstance struct {
 	BotID   bots.BotID
 	api     *tgbotapi.BotAPI
 	stopCh  chan struct{}
-	process bots.ProcessHandler
-	entry   bots.EntryHandler
+	process port.ProcessHandler
+	entry   port.EntryHandler
 	log     *slog.Logger
 	dead    bool
 }
@@ -90,8 +78,8 @@ type botInstance struct {
 func startBotInstance(
 	botID bots.BotID,
 	token bots.Token,
-	process bots.ProcessHandler,
-	entry bots.EntryHandler,
+	process port.ProcessHandler,
+	entry port.EntryHandler,
 	log *slog.Logger,
 ) (*botInstance, error) {
 	api, err := tgbotapi.NewBotAPI(string(token))

@@ -17,7 +17,8 @@ import (
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/query"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
-	"github.com/bmstu-itstech/itsreg-bots/internal/service"
+	"github.com/bmstu-itstech/itsreg-bots/internal/infra/postgres"
+	"github.com/bmstu-itstech/itsreg-bots/internal/infra/telegram"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/logs"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/metrics"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/server"
@@ -40,34 +41,27 @@ func main() {
 		log.Fatal(err)
 	}
 
-	botRepository := service.NewPostgresBotRepository(db)
-	participantRepository := service.NewPostgresParticipantRepository(db, l)
-	usernameRepository := service.NewPostgresUsernameRepository(db)
-	botMessageSender := service.NewTelegramMessageSender()
+	repos := postgres.NewRepository(db, l)
+	sender := telegram.NewMessageSender(l)
 
-	process := ProcessHandlerAdapter{
-		command.NewProcessHandler(botRepository, participantRepository, botMessageSender, l, mc),
-	}
-	entry := EntryHandlerAdapter{
-		command.NewEntryHandler(botRepository, participantRepository, botMessageSender, l, mc),
-	}
-
-	telegramService := service.NewTelegramService(l, process, entry)
+	process := ProcessHandlerAdapter{command.NewProcessHandler(repos, repos, sender, l, mc)}
+	entry := EntryHandlerAdapter{command.NewEntryHandler(repos, repos, sender, l, mc)}
+	instanceManager := telegram.NewInstanceManager(l, process, entry)
 
 	a := app.Application{
 		Commands: app.Commands{
-			CreateBot: command.NewCreateBotHandler(botRepository, l, mc),
-			Entry:     command.NewEntryHandler(botRepository, participantRepository, botMessageSender, l, mc),
-			Process:   command.NewProcessHandler(botRepository, participantRepository, botMessageSender, l, mc),
-			Start:     command.NewStartHandler(telegramService, botRepository, l, mc),
-			Stop:      command.NewStopHandler(telegramService, l, mc),
-			UpdateBot: command.NewUpdateBotHandler(botRepository, l, mc),
+			CreateBot: command.NewCreateBotHandler(repos, l, mc),
+			Entry:     command.NewEntryHandler(repos, repos, sender, l, mc),
+			Process:   command.NewProcessHandler(repos, repos, sender, l, mc),
+			Start:     command.NewStartHandler(instanceManager, repos, l, mc),
+			Stop:      command.NewStopHandler(instanceManager, l, mc),
+			UpdateBot: command.NewUpdateBotHandler(repos, l, mc),
 		},
 		Queries: app.Queries{
-			GetBot:      query.NewGetBotHandler(botRepository, l, mc),
-			GetStatus:   query.NewGetStatusHandler(telegramService, l, mc),
-			GetThreads:  query.NewGetThreadsHandler(participantRepository, usernameRepository, l, mc),
-			GetUserBots: query.NewGetUserBotsHandler(botRepository, l, mc),
+			GetBot:      query.NewGetBotHandler(repos, l, mc),
+			GetStatus:   query.NewGetStatusHandler(instanceManager, l, mc),
+			GetThreads:  query.NewGetThreadsHandler(repos, repos, l, mc),
+			GetUserBots: query.NewGetUserBotsHandler(repos, l, mc),
 		},
 	}
 

@@ -1,27 +1,17 @@
-package service
+package postgres
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/zhikh23/pgutils"
 
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 )
 
-type PostgresUsernameRepository struct {
-	db *sqlx.DB
-}
-
-func NewPostgresUsernameRepository(db *sqlx.DB) *PostgresUsernameRepository {
-	return &PostgresUsernameRepository{
-		db: db,
-	}
-}
-
-func (r *PostgresUsernameRepository) Upsert(ctx context.Context, id bots.UserID, username bots.Username) error {
+func (r *Repository) UpsertUsername(ctx context.Context, id bots.UserID, username bots.Username) error {
 	return pgutils.RequireAffected(pgutils.Exec(ctx, r.db,
 		`INSERT INTO
 			usernames (
@@ -40,7 +30,7 @@ func (r *PostgresUsernameRepository) Upsert(ctx context.Context, id bots.UserID,
 	))
 }
 
-func (r *PostgresUsernameRepository) Username(ctx context.Context, id bots.UserID) (bots.Username, error) {
+func (r *Repository) Username(ctx context.Context, id bots.UserID) (bots.Username, error) {
 	var row usernameRow
 	err := pgutils.Get(ctx, r.db, &row,
 		`SELECT 
@@ -53,7 +43,7 @@ func (r *PostgresUsernameRepository) Username(ctx context.Context, id bots.UserI
 		id,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", bots.ErrUsernameNotFound
+		return "", port.ErrUsernameNotFound
 	}
 
 	return bots.Username(row.Username), nil

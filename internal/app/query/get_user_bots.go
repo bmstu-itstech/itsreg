@@ -7,6 +7,7 @@ import (
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/response"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/decorator"
 )
@@ -14,7 +15,7 @@ import (
 type GetUserBotsHandler decorator.QueryHandler[request.GetUserBotsQuery, response.GetUserBotsResponse]
 
 type getUserBotsHandler struct {
-	bp bots.BotProvider
+	bp port.BotProvider
 }
 
 func (h getUserBotsHandler) Handle(
@@ -27,6 +28,6 @@ func (h getUserBotsHandler) Handle(
 	return dto.BatchBotToDto(res), nil
 }
 
-func NewGetUserBotsHandler(bp bots.BotProvider, l *slog.Logger, mc decorator.MetricsClient) GetUserBotsHandler {
+func NewGetUserBotsHandler(bp port.BotProvider, l *slog.Logger, mc decorator.MetricsClient) GetUserBotsHandler {
 	return decorator.ApplyQueryDecorators(getUserBotsHandler{bp}, l, mc)
 }

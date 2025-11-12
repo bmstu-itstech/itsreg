@@ -11,6 +11,7 @@ import (
 	"github.com/bmstu-itstech/itsreg-bots/internal/app"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg-bots/pkg/salad"
 )
@@ -78,7 +79,7 @@ func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
 	bot, err := s.app.Queries.GetBot.Handle(r.Context(), request.GetBotQuery{ID: id})
-	if errors.Is(err, bots.ErrBotNotFound) {
+	if errors.Is(err, port.ErrBotNotFound) {
 		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
@@ -102,7 +103,7 @@ func (s *Server) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
 
 func (s *Server) StartBot(w http.ResponseWriter, r *http.Request, id string) {
 	err := s.app.Commands.Start.Handle(r.Context(), request.StartCommand{BotID: id})
-	if errors.Is(err, bots.ErrBotNotFound) {
+	if errors.Is(err, port.ErrBotNotFound) {
 		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
@@ -114,11 +115,11 @@ func (s *Server) StartBot(w http.ResponseWriter, r *http.Request, id string) {
 
 func (s *Server) StopBot(w http.ResponseWriter, r *http.Request, id string) {
 	err := s.app.Commands.Stop.Handle(r.Context(), request.StopCommand{BotID: id})
-	if errors.Is(err, bots.ErrBotNotFound) {
+	if errors.Is(err, port.ErrBotNotFound) {
 		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
-	if errors.Is(err, bots.ErrRunningInstanceNotFound) {
+	if errors.Is(err, port.ErrRunningInstanceNotFound) {
 		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
@@ -130,7 +131,7 @@ func (s *Server) StopBot(w http.ResponseWriter, r *http.Request, id string) {
 
 func (s *Server) GetBot(w http.ResponseWriter, r *http.Request, id string) {
 	bot, err := s.app.Queries.GetBot.Handle(r.Context(), request.GetBotQuery{ID: id})
-	if errors.Is(err, bots.ErrBotNotFound) {
+	if errors.Is(err, port.ErrBotNotFound) {
 		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
