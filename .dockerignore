@@ -1,0 +1,8 @@
+.env*
+
+.idea/
+.vscode/
+
+storage
+.pgdata
+
