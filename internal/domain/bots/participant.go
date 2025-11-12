@@ -77,7 +77,7 @@ func UnmarshallParticipant(
 	thread *Thread,
 ) (*Participant, error) {
 	if botID == "" {
-		return nil, errors.New("BotID is empty")
+		return nil, errors.New("botID is empty")
 	}
 
 	if userID == 0 {

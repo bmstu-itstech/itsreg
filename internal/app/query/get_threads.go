@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -27,9 +28,12 @@ func (h getThreadsHandler) Handle(ctx context.Context, q request.GetThreadsQuery
 	}
 	res := make([]dto.Thread, len(threads))
 	for i, thread := range threads {
-		username, err2 := h.up.Username(ctx, thread.UserID())
-		if err2 != nil {
+		prtID := bots.NewParticipantID(thread.UserID(), thread.BotID())
+		username, err2 := h.up.Username(ctx, prtID)
+		if errors.Is(err2, port.ErrUsernameNotFound) {
 			username = bots.Username(fmt.Sprintf("id%d", thread.UserID()))
+		} else if err2 != nil {
+			return nil, err2
 		}
 		res[i] = dto.ThreadToDto(thread.Thread(), string(username))
 	}

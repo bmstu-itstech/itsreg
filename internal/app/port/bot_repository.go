@@ -7,7 +7,7 @@ import (
 )
 
 type BotRepository interface {
-	// UpsertBot создаёт нового бота или обновляет существующий с данным BotID.
+	// UpsertBot создаёт нового бота или обновляет существующий с данным botID.
 	UpsertBot(ctx context.Context, bot bots.Bot) error
 
 	BotProvider

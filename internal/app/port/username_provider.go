@@ -11,5 +11,5 @@ var ErrUsernameNotFound = errors.New("username not found")
 
 type UsernameProvider interface {
 	// Username возвращает имя пользователя с UserID.
-	Username(ctx context.Context, id bots.UserID) (bots.Username, error)
+	Username(ctx context.Context, prtID bots.ParticipantID) (bots.Username, error)
 }

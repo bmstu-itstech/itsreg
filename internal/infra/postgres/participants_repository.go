@@ -119,7 +119,7 @@ func (r *Repository) selectBotThreads(
 		if err2 != nil {
 			return nil, err2
 		}
-		res[i] = bots.NewUserThread(thread, bots.UserID(row.UserID))
+		res[i] = bots.NewBotThread(thread, botID, bots.UserID(row.UserID))
 	}
 	return res, nil
 }

@@ -14,38 +14,38 @@ import (
 
 type InstanceManager struct {
 	m       sync.Map // map[string]*botInstance
-	log     *slog.Logger
+	l       *slog.Logger
 	process port.ProcessHandler
 	entry   port.EntryHandler
 }
 
 func NewInstanceManager(log *slog.Logger, process port.ProcessHandler, entry port.EntryHandler) *InstanceManager {
 	return &InstanceManager{
-		log:     log,
+		l:       log,
 		process: process,
 		entry:   entry,
 	}
 }
 
-func (s *InstanceManager) Start(ctx context.Context, id bots.BotID, token bots.Token) error {
+func (m *InstanceManager) Start(ctx context.Context, id bots.BotID, token bots.Token) error {
 	const op = "InstanceManager.Start"
-	l := s.log.With(
+	l := m.l.With(
 		slog.String("op", op),
 		slog.String("bot_id", string(id)),
 	)
 
-	_, ok := s.m.Load(id)
+	_, ok := m.m.Load(id)
 	if ok {
 		// Перезапускаем бота, если он уже запущен
 		l.InfoContext(ctx, "bot already exists; stopping instance...")
-		err := s.Stop(ctx, id)
+		err := m.Stop(ctx, id)
 		if err != nil {
 			l.ErrorContext(ctx, "failed to stop previous instance while starting", slog.String("error", err.Error()))
 		}
 	}
 
-	ins, err := startBotInstance(id, token, s.process, s.entry, s.log)
-	s.m.Store(id, ins) // В любом случае сохраняем, чтобы иметь status = dead
+	ins, err := startBotInstance(id, token, m.process, m.entry, m.l)
+	m.m.Store(id, ins) // В любом случае сохраняем, чтобы иметь status = dead
 	if err != nil {
 		l.ErrorContext(ctx, "failed to start bot", slog.String("error", err.Error()))
 		return fmt.Errorf("failed to start bot instance %s: %w", id, err)
@@ -54,19 +54,20 @@ func (s *InstanceManager) Start(ctx context.Context, id bots.BotID, token bots.T
 	return nil
 }
 
-func (s *InstanceManager) Stop(_ context.Context, id bots.BotID) error {
-	r, ok := s.m.Load(id)
+func (m *InstanceManager) Stop(_ context.Context, id bots.BotID) error {
+	r, ok := m.m.Load(id)
 	ins, _ := r.(*botInstance)
 	if !ok {
 		return fmt.Errorf("%w: %s", port.ErrRunningInstanceNotFound, id)
 	}
 	ins.Stop()
-	s.m.Delete(id)
+	m.m.Delete(id)
 	return nil
 }
 
 type botInstance struct {
-	BotID   bots.BotID
+	botID   bots.BotID
+	token   bots.Token
 	api     *tgbotapi.BotAPI
 	stopCh  chan struct{}
 	process port.ProcessHandler
@@ -88,7 +89,8 @@ func startBotInstance(
 	}
 
 	i := &botInstance{
-		BotID:   botID,
+		botID:   botID,
+		token:   token,
 		api:     api,
 		stopCh:  make(chan struct{}),
 		process: process,
@@ -135,7 +137,7 @@ func (i *botInstance) handleUpdate(ctx context.Context, upd tgbotapi.Update) {
 	const op = "botInstance.handleUpdate"
 	l := i.log.With(
 		slog.String("op", op),
-		slog.String("bot_id", string(i.BotID)),
+		slog.String("bot_id", string(i.botID)),
 	)
 
 	if upd.Message == nil {
@@ -144,10 +146,10 @@ func (i *botInstance) handleUpdate(ctx context.Context, upd tgbotapi.Update) {
 
 	var err error
 	if upd.Message.IsCommand() {
-		err = i.entry.Entry(ctx, i.BotID, bots.UserID(upd.Message.Chat.ID), bots.EntryKey(upd.Message.Command()))
+		err = i.entry.Entry(ctx, i.botID, bots.UserID(upd.Message.Chat.ID), bots.EntryKey(upd.Message.Command()))
 	} else {
 		if msg, err2 := bots.NewMessage(upd.Message.Text); err2 == nil {
-			err = i.process.Process(ctx, i.BotID, bots.UserID(upd.Message.Chat.ID), msg)
+			err = i.process.Process(ctx, i.botID, bots.UserID(upd.Message.Chat.ID), msg)
 		} else {
 			l.WarnContext(ctx, "unhandled message", slog.String("message", fmt.Sprintf("%v", upd.Message)))
 		}

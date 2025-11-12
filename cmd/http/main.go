@@ -60,7 +60,7 @@ func main() {
 		Queries: app.Queries{
 			GetBot:      query.NewGetBotHandler(repos, l, mc),
 			GetStatus:   query.NewGetStatusHandler(instanceManager, l, mc),
-			GetThreads:  query.NewGetThreadsHandler(repos, repos, l, mc),
+			GetThreads:  query.NewGetThreadsHandler(repos, instanceManager, l, mc),
 			GetUserBots: query.NewGetUserBotsHandler(repos, l, mc),
 		},
 	}
