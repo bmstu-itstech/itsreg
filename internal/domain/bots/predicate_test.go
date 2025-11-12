@@ -69,10 +69,10 @@ func TestExactMatchPredicate_Match(t *testing.T) {
 
 func TestNewRegexMatchPredicate(t *testing.T) {
 	tests := []struct {
-		name        string
-		pattern     string
-		wantErr     bool
-		expectedErr string
+		name    string
+		pattern string
+		wantErr bool
+		errCode string
 	}{
 		{
 			name:    "Valid regex pattern",
@@ -80,16 +80,16 @@ func TestNewRegexMatchPredicate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Empty pattern",
-			pattern:     "",
-			wantErr:     true,
-			expectedErr: "expected not empty pattern for regexp predicate",
+			name:    "Empty pattern",
+			pattern: "",
+			wantErr: true,
+			errCode: "predicate-empty-pattern",
 		},
 		{
-			name:        "Invalid pattern",
-			pattern:     "^[a-z",
-			wantErr:     true,
-			expectedErr: "failed to compile regexp pattern",
+			name:    "Invalid pattern",
+			pattern: "^[a-z",
+			wantErr: true,
+			errCode: "predicate-invalid-pattern",
 		},
 	}
 
@@ -98,8 +98,9 @@ func TestNewRegexMatchPredicate(t *testing.T) {
 			p, err := bots.NewRegexMatchPredicate(tt.pattern)
 			if tt.wantErr {
 				require.Error(t, err)
-				require.ErrorContains(t, err, tt.expectedErr)
-				require.ErrorAs(t, err, &bots.InvalidInputError{})
+				var iiErr bots.InvalidInputError
+				require.ErrorAs(t, err, &iiErr)
+				require.Equal(t, tt.errCode, iiErr.Code)
 			} else {
 				require.NoError(t, err)
 				require.NotZero(t, p)

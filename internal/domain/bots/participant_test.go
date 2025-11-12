@@ -41,53 +41,26 @@ func TestNewParticipant(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.id, got.ID())
-				require.Empty(t, got.Threads())
-				_, ok := got.CurrentThread()
-				require.False(t, ok)
+				thr := got.ActiveThread()
+				require.Nil(t, thr)
 			}
 		})
 	}
-}
-
-func TestParticipant_Clone(t *testing.T) {
-	id := bots.NewParticipantID(1, "bot")
-	prt := bots.MustNewParticipant(id)
-
-	startState := bots.State(1)
-	entry := bots.MustNewEntry("start", startState)
-
-	_, err := prt.StartThread(entry)
-	require.NoError(t, err)
-
-	cloned := prt.Clone()
-	require.Equal(t, prt.ID(), cloned.ID())
-	require.Equal(t, prt.Threads(), cloned.Threads())
-	c1, ok1 := prt.CurrentThread()
-	c2, ok2 := cloned.CurrentThread()
-	require.Equal(t, c1, c2)
-	require.Equal(t, ok1, ok2)
-
-	// Проверяем, что произошло глубокое копирование
-	_, err = prt.StartThread(entry)
-	require.NoError(t, err)
-	require.NotEqual(t, prt.Threads(), cloned.Threads())
-	c1, _ = prt.CurrentThread()
-	c2, _ = cloned.CurrentThread()
-	require.NotEqual(t, c1, c2)
 }
 
 func TestParticipant_StartThread(t *testing.T) {
 	id := bots.NewParticipantID(1, "bot")
 	prt := bots.MustNewParticipant(id)
 
-	startState := bots.State(1)
+	startState := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", startState)
 
 	started, err := prt.StartThread(entry)
 	require.NoError(t, err)
 	require.NotNil(t, started)
+	require.Equal(t, started.State(), entry.Start())
 
-	current, ok := prt.CurrentThread()
-	require.True(t, ok)
+	current := prt.ActiveThread()
+	require.NotNil(t, current)
 	require.Equal(t, started, current)
 }

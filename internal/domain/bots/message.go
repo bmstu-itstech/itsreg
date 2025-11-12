@@ -8,11 +8,9 @@ type Message struct {
 
 func NewMessage(text string) (Message, error) {
 	if text == "" {
-		return Message{}, NewInvalidInputError(
-			"invalid-message",
-			"expected not empty text in message",
-		)
+		return Message{}, NewInvalidInputError("message-empty-text", "expected not empty message text", "field", "text")
 	}
+
 	return Message{
 		text: text,
 	}, nil
@@ -27,7 +25,7 @@ func MustNewMessage(text string) Message {
 }
 
 // Text возвращает строго текст сообщения.
-// Может быть пустым, например, если пользователь отправить файл.
+// В будущем, теоретически, может быть пустым, например, если пользователь отправил файл.
 func (m Message) Text() string {
 	return m.text
 }

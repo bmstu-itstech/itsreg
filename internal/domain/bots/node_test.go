@@ -9,21 +9,21 @@ import (
 )
 
 func TestNewNode(t *testing.T) {
-	edge := bots.NewEdge(bots.AlwaysTruePredicate{}, bots.State(2), bots.NoOp{})
+	edge := bots.NewEdge(bots.AlwaysTruePredicate{}, bots.MustNewState(2), bots.NoOp{})
 
 	tests := []struct {
-		name        string
-		state       bots.State
-		title       string
-		edges       []bots.Edge
-		msgs        []bots.Message
-		opts        []bots.Option
-		wantErr     bool
-		expectedErr string
+		name    string
+		state   bots.State
+		title   string
+		edges   []bots.Edge
+		msgs    []bots.Message
+		opts    []bots.Option
+		wantErr bool
+		errCode string
 	}{
 		{
 			name:    "Valid node with one message",
-			state:   bots.State(1),
+			state:   bots.MustNewState(1),
 			title:   "test",
 			edges:   []bots.Edge{edge},
 			msgs:    []bots.Message{bots.MustNewMessage("test")},
@@ -32,7 +32,7 @@ func TestNewNode(t *testing.T) {
 		},
 		{
 			name:    "Valid node with multiple messages and edges",
-			state:   bots.State(1),
+			state:   bots.MustNewState(1),
 			title:   "test",
 			edges:   []bots.Edge{edge, edge},
 			msgs:    []bots.Message{bots.MustNewMessage("1"), bots.MustNewMessage("2")},
@@ -40,23 +40,23 @@ func TestNewNode(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "Empty title - error",
-			state:       bots.State(1),
-			title:       "",
-			edges:       []bots.Edge{edge},
-			msgs:        []bots.Message{bots.MustNewMessage("test")},
-			opts:        nil,
-			wantErr:     true,
-			expectedErr: "expected not empty title",
+			name:    "Empty title - error",
+			state:   bots.MustNewState(1),
+			title:   "",
+			edges:   []bots.Edge{edge},
+			msgs:    []bots.Message{bots.MustNewMessage("test")},
+			opts:    nil,
+			wantErr: true,
+			errCode: "node-empty-title",
 		},
 		{
-			name:        "Empty messages - error",
-			state:       bots.State(1),
-			title:       "test",
-			edges:       []bots.Edge{},
-			msgs:        []bots.Message{},
-			wantErr:     true,
-			expectedErr: "expected at least one message in node",
+			name:    "Empty messages - error",
+			state:   bots.MustNewState(1),
+			title:   "test",
+			edges:   []bots.Edge{},
+			msgs:    []bots.Message{},
+			wantErr: true,
+			errCode: "node-empty-messages",
 		},
 	}
 
@@ -65,8 +65,9 @@ func TestNewNode(t *testing.T) {
 			node, err := bots.NewNode(tt.state, tt.title, tt.edges, tt.msgs, tt.opts)
 			if tt.wantErr {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.expectedErr)
-				require.ErrorAs(t, err, &bots.InvalidInputError{})
+				var iiErr bots.InvalidInputError
+				require.ErrorAs(t, err, &iiErr)
+				require.Equal(t, tt.errCode, iiErr.Code)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.state, node.State())
@@ -80,7 +81,7 @@ func TestNewNode(t *testing.T) {
 
 func TestNode_IsZero(t *testing.T) {
 	msg := bots.MustNewMessage("some text")
-	initialized := bots.MustNewNode(1, "test", nil, []bots.Message{msg}, nil)
+	initialized := bots.MustNewNode(bots.MustNewState(1), "test", nil, []bots.Message{msg}, nil)
 	require.False(t, initialized.IsZero())
 
 	var uninitialized bots.Node
@@ -91,40 +92,40 @@ func TestNode_Transition(t *testing.T) {
 	msg := bots.MustNewMessage("some text")
 
 	t.Run("One edge - match", func(t *testing.T) {
-		edge := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.State(2), bots.NoOp{})
-		node := bots.MustNewNode(bots.State(1), "test", []bots.Edge{edge}, []bots.Message{msg}, nil)
+		edge := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.MustNewState(2), bots.NoOp{})
+		node := bots.MustNewNode(bots.MustNewState(1), "test", []bots.Edge{edge}, []bots.Message{msg}, nil)
 		walked, ok := node.Transition(bots.MustNewMessage("a"))
 		require.True(t, ok)
 		require.Equal(t, edge, walked)
 	})
 
 	t.Run("One edge - no match", func(t *testing.T) {
-		edge := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.State(2), bots.NoOp{})
-		node := bots.MustNewNode(bots.State(1), "test", []bots.Edge{edge}, []bots.Message{msg}, nil)
+		edge := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.MustNewState(2), bots.NoOp{})
+		node := bots.MustNewNode(bots.MustNewState(1), "test", []bots.Edge{edge}, []bots.Message{msg}, nil)
 		_, ok := node.Transition(bots.MustNewMessage("b"))
 		require.False(t, ok)
 	})
 
 	t.Run("Two edges - unique match", func(t *testing.T) {
-		edgeA := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.State(2), bots.NoOp{})
-		edgeB := bots.NewEdge(bots.MustNewExactMatchPredicate("b"), bots.State(3), bots.NoOp{})
-		node := bots.MustNewNode(bots.State(1), "test", []bots.Edge{edgeA, edgeB}, []bots.Message{msg}, nil)
+		edgeA := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.MustNewState(2), bots.NoOp{})
+		edgeB := bots.NewEdge(bots.MustNewExactMatchPredicate("b"), bots.MustNewState(3), bots.NoOp{})
+		node := bots.MustNewNode(bots.MustNewState(1), "test", []bots.Edge{edgeA, edgeB}, []bots.Message{msg}, nil)
 		walked, ok := node.Transition(bots.MustNewMessage("b"))
 		require.True(t, ok)
 		require.Equal(t, edgeB, walked)
 	})
 
 	t.Run("Two edges - high priority match", func(t *testing.T) {
-		edgeA1 := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.State(3), bots.NoOp{})
-		edgeA2 := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.State(2), bots.NoOp{})
-		node := bots.MustNewNode(bots.State(1), "test", []bots.Edge{edgeA1, edgeA2}, []bots.Message{msg}, nil)
+		edgeA1 := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.MustNewState(3), bots.NoOp{})
+		edgeA2 := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.MustNewState(2), bots.NoOp{})
+		node := bots.MustNewNode(bots.MustNewState(1), "test", []bots.Edge{edgeA1, edgeA2}, []bots.Message{msg}, nil)
 		walked, ok := node.Transition(bots.MustNewMessage("a"))
 		require.True(t, ok)
 		require.Equal(t, edgeA1, walked)
 	})
 
 	t.Run("No edges - no match", func(t *testing.T) {
-		node := bots.MustNewNode(bots.State(1), "test", nil, []bots.Message{msg}, nil)
+		node := bots.MustNewNode(bots.MustNewState(1), "test", nil, []bots.Message{msg}, nil)
 		_, ok := node.Transition(bots.MustNewMessage("a"))
 		require.False(t, ok)
 	})
@@ -133,11 +134,14 @@ func TestNode_Transition(t *testing.T) {
 func TestNode_Children(t *testing.T) {
 	msg := bots.MustNewMessage("some text")
 
-	edge1 := bots.NewEdge(bots.MustNewExactMatchPredicate("b"), bots.State(3), bots.NoOp{})
-	edge2 := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.State(2), bots.NoOp{})
-	edge3 := bots.NewEdge(bots.MustNewExactMatchPredicate("b"), bots.State(3), bots.NoOp{})
-	node := bots.MustNewNode(bots.State(1), "test", []bots.Edge{edge1, edge2, edge3}, []bots.Message{msg}, nil)
+	edge1 := bots.NewEdge(bots.MustNewExactMatchPredicate("b"), bots.MustNewState(3), bots.NoOp{})
+	edge2 := bots.NewEdge(bots.MustNewExactMatchPredicate("a"), bots.MustNewState(2), bots.NoOp{})
+	edge3 := bots.NewEdge(bots.MustNewExactMatchPredicate("b"), bots.MustNewState(3), bots.NoOp{})
+	node := bots.MustNewNode(bots.MustNewState(1), "test", []bots.Edge{edge1, edge2, edge3}, []bots.Message{msg}, nil)
 
-	// Упорядочивание происходит в порядке приоритета
-	require.Equal(t, []bots.State{3, 2}, node.Children())
+	// Порядок следует из приоритета
+	require.Equal(t, []bots.State{
+		bots.MustNewState(3),
+		bots.MustNewState(2),
+	}, node.Children())
 }

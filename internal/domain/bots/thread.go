@@ -103,22 +103,28 @@ func (t *Thread) StartedAt() time.Time {
 
 type BotThread struct {
 	thread *Thread
+	botID  BotID
 	userID UserID
 }
 
-func NewUserThread(thread *Thread, userID UserID) BotThread {
+func NewBotThread(thread *Thread, botID BotID, userID UserID) BotThread {
 	return BotThread{
 		thread: thread,
+		botID:  botID,
 		userID: userID,
 	}
 }
 
-func (ut *BotThread) UserID() UserID {
-	return ut.userID
+func (bt *BotThread) BotID() BotID {
+	return bt.botID
 }
 
-func (ut *BotThread) Thread() *Thread {
-	return ut.thread
+func (bt *BotThread) UserID() UserID {
+	return bt.userID
+}
+
+func (bt *BotThread) Thread() *Thread {
+	return bt.thread
 }
 
 func UnmarshallThread(
@@ -136,6 +142,11 @@ func UnmarshallThread(
 		return nil, errors.New("key is empty")
 	}
 
+	s, err := NewState(state)
+	if err != nil {
+		return nil, err
+	}
+
 	if answers == nil {
 		answers = make(map[State]Message)
 	}
@@ -147,7 +158,7 @@ func UnmarshallThread(
 	return &Thread{
 		id:        ThreadID(id),
 		key:       EntryKey(key),
-		state:     State(state),
+		state:     s,
 		answers:   answers,
 		startedAt: startedAt,
 	}, nil

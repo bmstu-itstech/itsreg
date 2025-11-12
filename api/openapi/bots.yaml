@@ -246,13 +246,13 @@ components:
       oneOf:
         - $ref: '#/components/schemas/AlwaysPredicate'
         - $ref: '#/components/schemas/ExactPredicate'
-        - $ref: '#/components/schemas/RegexpPredicate'
+        - $ref: '#/components/schemas/RegexPredicate'
       discriminator:
         propertyName: type
         mapping:
           always: '#/components/schemas/AlwaysPredicate'
           exact:  '#/components/schemas/ExactPredicate'
-          regexp: '#/components/schemas/RegexpPredicate'
+          regex:  '#/components/schemas/RegexPredicate'
 
     AlwaysPredicate:
       type: object
@@ -277,13 +277,13 @@ components:
         - type
         - text
 
-    RegexpPredicate:
+    RegexPredicate:
       type: object
       description: Переход по ребру осуществляется при совпадении с регулярным выражением pattern.
       properties:
         type:
           type: string
-          enum: [regexp]
+          enum: [regex]
         pattern:
           type: string
       required:
@@ -425,12 +425,53 @@ components:
         - token
         - script
 
-    Error:
+    PlainError:
       type: object
       properties:
         message:
           type: string
-        slug:
-          type: string
+          example: error message
       required:
         - message
+
+    InvalidInputError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: message-empty-text
+        message:
+          type: string
+          example: expected not empty message text
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            field: text
+            state: 5
+      required:
+        - code
+        - message
+
+    Error:
+      oneOf:
+        - $ref: '#/components/schemas/PlainError'
+        - $ref: '#/components/schemas/InvalidInputError'
+        - type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/PlainError'
+              - $ref: '#/components/schemas/InvalidInputError'
+      example:
+        - code: message-empty-text
+          message: expected not empty message text
+          details:
+            field: text
+            state: 5
+        - code: edge-invalid-pattern
+          message: failed to compile regex pattern
+          details:
+            field: pattern
+            state: 4
+            pattern: some-invalid-pattern

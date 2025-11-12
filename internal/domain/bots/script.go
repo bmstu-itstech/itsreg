@@ -3,9 +3,10 @@ package bots
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
 
-var ErrThreadNotStarted = errors.New("thread is not started")
+var ErrNoStartedThread = errors.New("has no started thread")
 
 type EntryNotFoundError struct {
 	key EntryKey
@@ -71,9 +72,9 @@ func (s Script) Entry(prt *Participant, key EntryKey) ([]BotMessage, error) {
 }
 
 func (s Script) Process(prt *Participant, in Message) ([]BotMessage, error) {
-	thread, ok := prt.CurrentThread()
-	if !ok {
-		return nil, ErrThreadNotStarted
+	thread := prt.ActiveThread()
+	if thread == nil {
+		return nil, ErrNoStartedThread
 	}
 
 	current, ok := s.nodes[thread.State()]
@@ -133,20 +134,6 @@ type coloredNode struct {
 	Color color
 }
 
-func newNodeNotFoundError(state State) error {
-	return NewInvalidInputError(
-		"invalid-script-node-not-found",
-		fmt.Sprintf("no node with state %d", state),
-	)
-}
-
-func newNodeNotConnectedError(state State) error {
-	return NewInvalidInputError(
-		"invalid-script-node-not-connected",
-		fmt.Sprintf("node with state %d not connected", state),
-	)
-}
-
 func mapNodes(nodes []Node) map[State]Node {
 	m := make(map[State]Node)
 	for _, n := range nodes {
@@ -173,7 +160,11 @@ func checkConnectivity(nodes map[State]Node, entries map[EntryKey]Entry) error {
 	}
 
 	if ok, state := findWhiteNode(cns); ok {
-		return newNodeNotConnectedError(state)
+		return NewInvalidInputError(
+			"node-is-not-connected",
+			fmt.Sprintf("node %d is connected, marked as an error", state),
+			"state", strconv.Itoa(state.Int()),
+		)
 	}
 
 	return nil
@@ -190,7 +181,11 @@ func coloredNodes(nodes map[State]Node) map[State]coloredNode {
 func colorize(currentState State, nodes map[State]coloredNode) error {
 	current, ok := nodes[currentState]
 	if !ok {
-		return newNodeNotFoundError(currentState)
+		return NewInvalidInputError(
+			"node-not-found",
+			fmt.Sprintf("node %d is not found", currentState),
+			"state", strconv.Itoa(currentState.Int()),
+		)
 	}
 
 	dye(nodes, currentState, grey)
@@ -198,7 +193,11 @@ func colorize(currentState State, nodes map[State]coloredNode) error {
 	for _, nextState := range current.Children() {
 		next, o := nodes[nextState]
 		if !o {
-			return newNodeNotFoundError(nextState)
+			return NewInvalidInputError(
+				"node-not-found",
+				fmt.Sprintf("node %d is not found", currentState),
+				"state", strconv.Itoa(currentState.Int()),
+			)
 		}
 
 		if next.Color == white {
@@ -225,5 +224,5 @@ func findWhiteNode(nodes map[State]coloredNode) (bool, State) {
 			return true, state
 		}
 	}
-	return false, 0
+	return false, ZeroState
 }

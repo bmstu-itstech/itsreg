@@ -31,9 +31,9 @@ const (
 	Exact ExactPredicateType = "exact"
 )
 
-// Defines values for RegexpPredicateType.
+// Defines values for RegexPredicateType.
 const (
-	Regexp RegexpPredicateType = "regexp"
+	Regex RegexPredicateType = "regex"
 )
 
 // AlwaysPredicate Переход по ребру осуществляется на любое сообщение пользователя.
@@ -85,8 +85,15 @@ type Entry struct {
 
 // Error defines model for Error.
 type Error struct {
-	Message string  `json:"message"`
-	Slug    *string `json:"slug,omitempty"`
+	union json.RawMessage
+}
+
+// Error2 defines model for .
+type Error2 = []Error_2_Item
+
+// Error_2_Item defines model for Error.2.Item.
+type Error_2_Item struct {
+	union json.RawMessage
 }
 
 // ExactPredicate Переход по ребру осуществляется при полном совпадении строки text с сообщением пользователя.
@@ -97,6 +104,13 @@ type ExactPredicate struct {
 
 // ExactPredicateType defines model for ExactPredicate.Type.
 type ExactPredicateType string
+
+// InvalidInputError defines model for InvalidInputError.
+type InvalidInputError struct {
+	Code    string             `json:"code"`
+	Details *map[string]string `json:"details,omitempty"`
+	Message string             `json:"message"`
+}
 
 // Message Любое сообщение в Telegram. На данный момент описывается текстом, но в будущем добавится поддержка файлов.
 type Message struct {
@@ -121,6 +135,11 @@ type Node struct {
 	Title string `json:"title"`
 }
 
+// PlainError defines model for PlainError.
+type PlainError struct {
+	Message string `json:"message"`
+}
+
 // Predicate Predicate описывает условие перехода по ребру.
 type Predicate struct {
 	union json.RawMessage
@@ -138,14 +157,14 @@ type PutBots struct {
 	Token string `json:"token"`
 }
 
-// RegexpPredicate Переход по ребру осуществляется при совпадении с регулярным выражением pattern.
-type RegexpPredicate struct {
-	Pattern string              `json:"pattern"`
-	Type    RegexpPredicateType `json:"type"`
+// RegexPredicate Переход по ребру осуществляется при совпадении с регулярным выражением pattern.
+type RegexPredicate struct {
+	Pattern string             `json:"pattern"`
+	Type    RegexPredicateType `json:"type"`
 }
 
-// RegexpPredicateType defines model for RegexpPredicate.Type.
-type RegexpPredicateType string
+// RegexPredicateType defines model for RegexPredicate.Type.
+type RegexPredicateType string
 
 // Script Сценарий бота.
 type Script struct {
@@ -155,6 +174,156 @@ type Script struct {
 
 // CreateBotJSONRequestBody defines body for CreateBot for application/json ContentType.
 type CreateBotJSONRequestBody = PutBots
+
+// AsPlainError returns the union data inside the Error as a PlainError
+func (t Error) AsPlainError() (PlainError, error) {
+	var body PlainError
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPlainError overwrites any union data inside the Error as the provided PlainError
+func (t *Error) FromPlainError(v PlainError) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePlainError performs a merge with any union data inside the Error, using the provided PlainError
+func (t *Error) MergePlainError(v PlainError) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsInvalidInputError returns the union data inside the Error as a InvalidInputError
+func (t Error) AsInvalidInputError() (InvalidInputError, error) {
+	var body InvalidInputError
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromInvalidInputError overwrites any union data inside the Error as the provided InvalidInputError
+func (t *Error) FromInvalidInputError(v InvalidInputError) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeInvalidInputError performs a merge with any union data inside the Error, using the provided InvalidInputError
+func (t *Error) MergeInvalidInputError(v InvalidInputError) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsError2 returns the union data inside the Error as a Error2
+func (t Error) AsError2() (Error2, error) {
+	var body Error2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromError2 overwrites any union data inside the Error as the provided Error2
+func (t *Error) FromError2(v Error2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeError2 performs a merge with any union data inside the Error, using the provided Error2
+func (t *Error) MergeError2(v Error2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Error) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *Error) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPlainError returns the union data inside the Error_2_Item as a PlainError
+func (t Error_2_Item) AsPlainError() (PlainError, error) {
+	var body PlainError
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPlainError overwrites any union data inside the Error_2_Item as the provided PlainError
+func (t *Error_2_Item) FromPlainError(v PlainError) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePlainError performs a merge with any union data inside the Error_2_Item, using the provided PlainError
+func (t *Error_2_Item) MergePlainError(v PlainError) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsInvalidInputError returns the union data inside the Error_2_Item as a InvalidInputError
+func (t Error_2_Item) AsInvalidInputError() (InvalidInputError, error) {
+	var body InvalidInputError
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromInvalidInputError overwrites any union data inside the Error_2_Item as the provided InvalidInputError
+func (t *Error_2_Item) FromInvalidInputError(v InvalidInputError) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeInvalidInputError performs a merge with any union data inside the Error_2_Item, using the provided InvalidInputError
+func (t *Error_2_Item) MergeInvalidInputError(v InvalidInputError) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Error_2_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *Error_2_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // AsAlwaysPredicate returns the union data inside the Predicate as a AlwaysPredicate
 func (t Predicate) AsAlwaysPredicate() (AlwaysPredicate, error) {
@@ -212,24 +381,24 @@ func (t *Predicate) MergeExactPredicate(v ExactPredicate) error {
 	return err
 }
 
-// AsRegexpPredicate returns the union data inside the Predicate as a RegexpPredicate
-func (t Predicate) AsRegexpPredicate() (RegexpPredicate, error) {
-	var body RegexpPredicate
+// AsRegexPredicate returns the union data inside the Predicate as a RegexPredicate
+func (t Predicate) AsRegexPredicate() (RegexPredicate, error) {
+	var body RegexPredicate
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromRegexpPredicate overwrites any union data inside the Predicate as the provided RegexpPredicate
-func (t *Predicate) FromRegexpPredicate(v RegexpPredicate) error {
-	v.Type = "regexp"
+// FromRegexPredicate overwrites any union data inside the Predicate as the provided RegexPredicate
+func (t *Predicate) FromRegexPredicate(v RegexPredicate) error {
+	v.Type = "regex"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeRegexpPredicate performs a merge with any union data inside the Predicate, using the provided RegexpPredicate
-func (t *Predicate) MergeRegexpPredicate(v RegexpPredicate) error {
-	v.Type = "regexp"
+// MergeRegexPredicate performs a merge with any union data inside the Predicate, using the provided RegexPredicate
+func (t *Predicate) MergeRegexPredicate(v RegexPredicate) error {
+	v.Type = "regex"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -258,8 +427,8 @@ func (t Predicate) ValueByDiscriminator() (interface{}, error) {
 		return t.AsAlwaysPredicate()
 	case "exact":
 		return t.AsExactPredicate()
-	case "regexp":
-		return t.AsRegexpPredicate()
+	case "regex":
+		return t.AsRegexPredicate()
 	default:
 		return nil, errors.New("unknown discriminator value: " + discriminator)
 	}
