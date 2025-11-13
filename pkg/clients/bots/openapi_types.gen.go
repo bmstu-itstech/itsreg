@@ -36,6 +36,13 @@ const (
 	Regex RegexPredicateType = "regex"
 )
 
+// Defines values for Status.
+const (
+	Dead    Status = "dead"
+	Idle    Status = "idle"
+	Running Status = "running"
+)
+
 // AlwaysPredicate Переход по ребру осуществляется на любое сообщение пользователя.
 type AlwaysPredicate struct {
 	Type AlwaysPredicateType `json:"type"`
@@ -171,6 +178,9 @@ type Script struct {
 	Entries []Entry `json:"entries"`
 	Nodes   []Node  `json:"nodes"`
 }
+
+// Status Статус инстанса бота.
+type Status string
 
 // CreateBotJSONRequestBody defines body for CreateBot for application/json ContentType.
 type CreateBotJSONRequestBody = PutBots

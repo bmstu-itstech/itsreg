@@ -33,13 +33,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
         "403":
           description: Бот с данным ID уже существует, нет доступа к его обновлению
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
 
     get:
       operationId: getBots
@@ -58,13 +58,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
         "401":
           description: Не был указан JWT токен.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
 
   /bots/{id}:
     get:
@@ -90,25 +90,63 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
         "401":
           description: Не был указан JWT токен.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
         "403":
-          description: Нет доступа к боту с данным UUID.
+          description: Нет доступа к боту с данным ID.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         "404":
-          description: Бот с данным UUID не найден.
+          description: Бот с данным ID не найден.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
+
+  /bots/{id}/status:
+    get:
+      operationId: getStatus
+      description: Получить статус инстанса бота в данный момент времени.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: example_bot
+          required: true
+          description: Уникальный ID бота.
+      responses:
+        "200":
+          description: Успешно получен статус бота
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "403":
+          description: Нет доступа к боту с данным ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот с данным ID не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
 
   /bots/{id}/answers:
     get:
@@ -132,13 +170,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
         "401":
           description: Не был указан JWT токен.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
         "403":
           description: Нет доступа к боту с данным ID.
           content:
@@ -150,7 +188,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
 
   /bots/{id}/start:
     post:
@@ -172,13 +210,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
         "401":
           description: Не был указан JWT токен.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
         "403":
           description: Нет доступа к боту с данным ID.
           content:
@@ -190,7 +228,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
 
   /bots/{id}/stop:
     post:
@@ -212,7 +250,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
         "401":
           description: Не был указан JWT токен.
           content:
@@ -224,13 +262,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
         "404":
           description: Бот с данным ID не найден.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/PlainError'
 
 components:
   securitySchemes:
@@ -433,6 +471,14 @@ components:
           example: error message
       required:
         - message
+
+    Status:
+      type: string
+      enum:
+        - running
+        - idle
+        - dead
+      description: Статус инстанса бота.
 
     InvalidInputError:
       type: object

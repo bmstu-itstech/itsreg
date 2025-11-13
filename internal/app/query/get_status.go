@@ -15,9 +15,14 @@ type GetStatusHandler decorator.QueryHandler[request.GetStatusQuery, response.Ge
 
 type getStatusHandler struct {
 	sp port.StatusProvider
+	bp port.BotProvider
 }
 
 func (h getStatusHandler) Handle(ctx context.Context, q request.GetStatusQuery) (response.GetStatusResponse, error) {
+	_, err := h.bp.Bot(ctx, bots.BotID(q.BotID))
+	if err != nil {
+		return "", err
+	}
 	status, err := h.sp.Status(ctx, bots.BotID(q.BotID))
 	if err != nil {
 		return "", err
@@ -25,6 +30,8 @@ func (h getStatusHandler) Handle(ctx context.Context, q request.GetStatusQuery) 
 	return status.String(), nil
 }
 
-func NewGetStatusHandler(sp port.StatusProvider, l *slog.Logger, mc decorator.MetricsClient) GetStatusHandler {
-	return decorator.ApplyQueryDecorators(getStatusHandler{sp}, l, mc)
+func NewGetStatusHandler(
+	sp port.StatusProvider, bp port.BotProvider, l *slog.Logger, mc decorator.MetricsClient,
+) GetStatusHandler {
+	return decorator.ApplyQueryDecorators(getStatusHandler{sp, bp}, l, mc)
 }

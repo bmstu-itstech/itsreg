@@ -143,6 +143,20 @@ func (s *Server) GetBot(w http.ResponseWriter, r *http.Request, id string) {
 	render.JSON(w, r, botFromApp(bot))
 }
 
+func (s *Server) GetStatus(w http.ResponseWriter, r *http.Request, id string) {
+	status, err := s.app.Queries.GetStatus.Handle(r.Context(), request.GetStatusQuery{BotID: id})
+	if errors.Is(err, port.ErrBotNotFound) {
+		renderPlainError(w, r, err, http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		renderPlainError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+
+	render.JSON(w, r, Status(status))
+}
+
 const offset = 3
 
 func renderCsvAnswers(w http.ResponseWriter, nodes []dto.Node, threads []dto.Thread) error {

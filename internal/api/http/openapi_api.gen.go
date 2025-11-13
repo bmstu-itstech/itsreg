@@ -30,6 +30,9 @@ type ServerInterface interface {
 	// (POST /bots/{id}/start)
 	StartBot(w http.ResponseWriter, r *http.Request, id string)
 
+	// (GET /bots/{id}/status)
+	GetStatus(w http.ResponseWriter, r *http.Request, id string)
+
 	// (POST /bots/{id}/stop)
 	StopBot(w http.ResponseWriter, r *http.Request, id string)
 }
@@ -60,6 +63,11 @@ func (_ Unimplemented) GetAnswers(w http.ResponseWriter, r *http.Request, id str
 
 // (POST /bots/{id}/start)
 func (_ Unimplemented) StartBot(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /bots/{id}/status)
+func (_ Unimplemented) GetStatus(w http.ResponseWriter, r *http.Request, id string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -186,6 +194,34 @@ func (siw *ServerInterfaceWrapper) StartBot(w http.ResponseWriter, r *http.Reque
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.StartBot(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetStatus(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStatus(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -350,6 +386,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/bots/{id}/start", wrapper.StartBot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/bots/{id}/status", wrapper.GetStatus)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/bots/{id}/stop", wrapper.StopBot)
