@@ -31,6 +31,8 @@ func (s *MessageSender) Send(
 	m.ParseMode = tgbotapi.ModeHTML
 	if opts := msg.Options(); len(opts) > 0 {
 		m.ReplyMarkup = buildInlineKeyboardMarkup(opts)
+	} else {
+		m.ReplyMarkup = tgbotapi.ReplyKeyboardRemove{RemoveKeyboard: true}
 	}
 
 	_, err = api.Send(m)
