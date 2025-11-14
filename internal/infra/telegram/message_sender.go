@@ -2,7 +2,10 @@ package telegram
 
 import (
 	"context"
+	"fmt"
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"log/slog"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
@@ -20,15 +23,21 @@ func NewMessageSender(l *slog.Logger) *MessageSender {
 }
 
 func (s *MessageSender) Send(
-	_ context.Context, token bots.Token, userID bots.UserID, msg bots.BotMessage,
+	ctx context.Context, token bots.Token, userID bots.UserID, msg bots.BotMessage,
 ) error {
+	const op = "MessageSender.Send"
+	l := s.l.With(
+		slog.String("op", op),
+		slog.String("message", msg.String()),
+	)
+
 	api, err := tgbotapi.NewBotAPI(string(token))
 	if err != nil {
 		return err
 	}
 
 	m := tgbotapi.NewMessage(int64(userID), msg.Text())
-	m.ParseMode = tgbotapi.ModeHTML
+	m.ParseMode = tgbotapi.ModeHTML // Меньше головной боли с пользовательским вводом
 	if opts := msg.Options(); len(opts) > 0 {
 		m.ReplyMarkup = buildInlineKeyboardMarkup(opts)
 	} else {
@@ -36,7 +45,30 @@ func (s *MessageSender) Send(
 	}
 
 	_, err = api.Send(m)
+	if err != nil {
+		if isCantParseEntitiesError(err) {
+			l.WarnContext(ctx, "can't parse MarkdownV2 entities in message, send message without formatting",
+				slog.String("error", err.Error()),
+			)
+			m.ParseMode = ""
+			_, err = api.Send(m)
+		} else if isForbiddenError(err) {
+			l.WarnContext(ctx, "user blocked bot, can't send message",
+				slog.String("error", err.Error()),
+			)
+			err = fmt.Errorf("%w: %d", port.ErrUserBlockedBot, userID)
+		}
+	}
+
 	return err
+}
+
+func isCantParseEntitiesError(err error) bool {
+	return strings.Contains(err.Error(), "can't parse entities")
+}
+
+func isForbiddenError(err error) bool {
+	return strings.Contains(err.Error(), "Forbidden")
 }
 
 func buildInlineKeyboardMarkup(opts []bots.Option) tgbotapi.ReplyKeyboardMarkup {
