@@ -637,6 +637,7 @@ func (r *Repository) selectBotThreadsRows(
 		FROM threads
 		WHERE
 			bot_id = $1
+		ORDER BY started_at DESC
 		`,
 		botID,
 	)
