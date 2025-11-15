@@ -12,10 +12,10 @@ type CreateBotCommand struct {
 	Script dto.Script
 }
 
-func BotFromCommand(cmd CreateBotCommand) (bots.Bot, error) {
+func BotFromCommand(cmd CreateBotCommand) (*bots.Bot, error) {
 	script, err := dto.ScriptFromDTO(cmd.Script)
 	if err != nil {
-		return bots.Bot{}, err
+		return nil, err
 	}
 	return bots.NewBot(bots.BotID(cmd.BotID), bots.Token(cmd.Token), bots.UserID(cmd.Author), script)
 }

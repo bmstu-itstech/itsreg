@@ -22,6 +22,7 @@ func (r *Repository) getBotRow(
 			id,
 			token,
 			author,
+			enabled,
 			created_at
 		FROM bots
 		WHERE
@@ -46,12 +47,36 @@ func (r *Repository) selectBotRowsByAuthor(
 			id,
 			token,
 			author,
+			enabled,
 			created_at
 		FROM bots
 		WHERE
 			author = $1
 		`,
 		author,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("selecting bot rows by author: %w", err)
+	}
+	return rows, nil
+}
+
+func (r *Repository) selectEnabledBotRows(
+	ctx context.Context,
+	qc sqlx.QueryerContext,
+) ([]botRow, error) {
+	var rows []botRow
+	err := pgutils.Select(ctx, qc, &rows, `
+		SELECT
+			id,
+			token,
+			author,
+			enabled,
+			created_at
+		FROM bots
+		WHERE
+			enabled = true
+		`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("selecting bot rows by author: %w", err)
@@ -70,12 +95,14 @@ func (r *Repository) upsertBotRow(
 				id, 
 				token, 
 				author,
+				enabled,
 				created_at
 			)
 		VALUES (
 		    :id,
 			:token,
 			:author,
+			:enabled,
 			:created_at
 		)
 		ON CONFLICT 
@@ -84,6 +111,7 @@ func (r *Repository) upsertBotRow(
 		SET
 			token      = :token,
 			author     = :author,
+			enabled    = :enabled,
 			created_at = :created_at
 		`,
 		row,

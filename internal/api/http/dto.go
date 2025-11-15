@@ -16,10 +16,11 @@ func batchBotsFromApp(bots []dto.Bot) []Bot {
 
 func botFromApp(bot dto.Bot) Bot {
 	return Bot{
-		Author: bot.Author,
-		Id:     bot.ID,
-		Script: scriptFromApp(bot.Script),
-		Token:  bot.Token,
+		Author:  bot.Author,
+		Enabled: bot.Enabled,
+		Id:      bot.ID,
+		Script:  scriptFromApp(bot.Script),
+		Token:   bot.Token,
 	}
 }
 

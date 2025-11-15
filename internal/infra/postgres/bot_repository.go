@@ -15,8 +15,8 @@ import (
 	"github.com/bmstu-itstech/itsreg-bots/pkg/diffcalc"
 )
 
-func (r *Repository) Bot(ctx context.Context, id bots.BotID) (bots.Bot, error) {
-	var bot bots.Bot
+func (r *Repository) Bot(ctx context.Context, id bots.BotID) (*bots.Bot, error) {
+	var bot *bots.Bot
 	err := pgutils.RunTx(ctx, r.db, func(tx *sqlx.Tx) error {
 		var err error
 		bot, err = r.getBot(ctx, tx, id)
@@ -25,8 +25,8 @@ func (r *Repository) Bot(ctx context.Context, id bots.BotID) (bots.Bot, error) {
 	return bot, err
 }
 
-func (r *Repository) UserBots(ctx context.Context, author bots.UserID) ([]bots.Bot, error) {
-	var _bots []bots.Bot
+func (r *Repository) UserBots(ctx context.Context, author bots.UserID) ([]*bots.Bot, error) {
+	var _bots []*bots.Bot
 	err := pgutils.RunTx(ctx, r.db, func(tx *sqlx.Tx) error {
 		var err error
 		_bots, err = r.selectBotsByAuthor(ctx, tx, author)
@@ -35,7 +35,17 @@ func (r *Repository) UserBots(ctx context.Context, author bots.UserID) ([]bots.B
 	return _bots, err
 }
 
-func (r *Repository) UpsertBot(ctx context.Context, bot bots.Bot) error {
+func (r *Repository) EnabledBots(ctx context.Context) ([]*bots.Bot, error) {
+	var _bots []*bots.Bot
+	err := pgutils.RunTx(ctx, r.db, func(tx *sqlx.Tx) error {
+		var err error
+		_bots, err = r.selectEnabledBots(ctx, tx)
+		return err
+	})
+	return _bots, err
+}
+
+func (r *Repository) UpsertBot(ctx context.Context, bot *bots.Bot) error {
 	_botRow := botToRow(bot)
 	entryRows := entriesToRows(bot.ID(), bot.Script().Entries())
 	nodes := bot.Script().Nodes()
@@ -113,12 +123,12 @@ func (r *Repository) selectBotsByAuthor(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
 	author bots.UserID,
-) ([]bots.Bot, error) {
+) ([]*bots.Bot, error) {
 	rows, err := r.selectBotRowsByAuthor(ctx, qc, int64(author))
 	if err != nil {
 		return nil, err
 	}
-	res := make([]bots.Bot, len(rows))
+	res := make([]*bots.Bot, len(rows))
 	for i, row := range rows {
 		entries, err2 := r.selectEntries(ctx, qc, bots.BotID(row.ID))
 		if err2 != nil {
@@ -132,7 +142,42 @@ func (r *Repository) selectBotsByAuthor(
 		if err2 != nil {
 			return nil, err2
 		}
-		bot, err2 := bots.UnmarshallBot(row.ID, row.Token, row.Author, script, row.CreatedAt.In(time.Local))
+		bot, err2 := bots.UnmarshallBot(
+			row.ID, row.Token, row.Author, row.Enabled, script, row.CreatedAt.In(time.Local),
+		)
+		if err2 != nil {
+			return nil, err2
+		}
+		res[i] = bot
+	}
+	return res, nil
+}
+
+func (r *Repository) selectEnabledBots(
+	ctx context.Context,
+	qc sqlx.QueryerContext,
+) ([]*bots.Bot, error) {
+	rows, err := r.selectEnabledBotRows(ctx, qc)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*bots.Bot, len(rows))
+	for i, row := range rows {
+		entries, err2 := r.selectEntries(ctx, qc, bots.BotID(row.ID))
+		if err2 != nil {
+			return nil, err2
+		}
+		nodes, err2 := r.selectNodes(ctx, qc, bots.BotID(row.ID))
+		if err2 != nil {
+			return nil, err2
+		}
+		script, err2 := bots.NewScript(nodes, entries)
+		if err2 != nil {
+			return nil, err2
+		}
+		bot, err2 := bots.UnmarshallBot(
+			row.ID, row.Token, row.Author, row.Enabled, script, row.CreatedAt.In(time.Local),
+		)
 		if err2 != nil {
 			return nil, err2
 		}
@@ -145,26 +190,26 @@ func (r *Repository) getBot(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
 	id bots.BotID,
-) (bots.Bot, error) {
+) (*bots.Bot, error) {
 	row, err := r.getBotRow(ctx, qc, string(id))
 	if errors.Is(err, sql.ErrNoRows) {
-		return bots.Bot{}, fmt.Errorf("%w: %s", port.ErrBotNotFound, id)
+		return nil, fmt.Errorf("%w: %s", port.ErrBotNotFound, id)
 	} else if err != nil {
-		return bots.Bot{}, err
+		return nil, err
 	}
 	entries, err := r.selectEntries(ctx, qc, id)
 	if err != nil {
-		return bots.Bot{}, err
+		return nil, err
 	}
 	nodes, err := r.selectNodes(ctx, qc, id)
 	if err != nil {
-		return bots.Bot{}, err
+		return nil, err
 	}
 	script, err := bots.NewScript(nodes, entries)
 	if err != nil {
-		return bots.Bot{}, err
+		return nil, err
 	}
-	return bots.UnmarshallBot(row.ID, row.Token, row.Author, script, row.CreatedAt.In(time.Local))
+	return bots.UnmarshallBot(row.ID, row.Token, row.Author, row.Enabled, script, row.CreatedAt.In(time.Local))
 }
 
 func (r *Repository) selectEntries(

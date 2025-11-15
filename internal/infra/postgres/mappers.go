@@ -63,11 +63,12 @@ func predicateFromStrings(ptype string, pdata string) (bots.Predicate, error) {
 	}
 }
 
-func botToRow(bot bots.Bot) botRow {
+func botToRow(bot *bots.Bot) botRow {
 	return botRow{
 		ID:        string(bot.ID()),
 		Token:     string(bot.Token()),
 		Author:    int64(bot.Author()),
+		Enabled:   bot.Enabled(),
 		CreatedAt: bot.CreatedAt().In(time.UTC),
 	}
 }

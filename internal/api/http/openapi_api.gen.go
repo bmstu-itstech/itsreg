@@ -27,6 +27,12 @@ type ServerInterface interface {
 	// (GET /bots/{id}/answers)
 	GetAnswers(w http.ResponseWriter, r *http.Request, id string)
 
+	// (POST /bots/{id}/disable)
+	DisableBot(w http.ResponseWriter, r *http.Request, id string)
+
+	// (POST /bots/{id}/enable)
+	EnableBot(w http.ResponseWriter, r *http.Request, id string)
+
 	// (POST /bots/{id}/mailing)
 	Mailing(w http.ResponseWriter, r *http.Request, id string)
 
@@ -61,6 +67,16 @@ func (_ Unimplemented) GetBot(w http.ResponseWriter, r *http.Request, id string)
 
 // (GET /bots/{id}/answers)
 func (_ Unimplemented) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /bots/{id}/disable)
+func (_ Unimplemented) DisableBot(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /bots/{id}/enable)
+func (_ Unimplemented) EnableBot(w http.ResponseWriter, r *http.Request, id string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -174,6 +190,62 @@ func (siw *ServerInterfaceWrapper) GetAnswers(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAnswers(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// DisableBot operation middleware
+func (siw *ServerInterfaceWrapper) DisableBot(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableBot(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// EnableBot operation middleware
+func (siw *ServerInterfaceWrapper) EnableBot(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EnableBot(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -419,6 +491,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/bots/{id}/answers", wrapper.GetAnswers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/bots/{id}/disable", wrapper.DisableBot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/bots/{id}/enable", wrapper.EnableBot)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/bots/{id}/mailing", wrapper.Mailing)

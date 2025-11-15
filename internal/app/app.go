@@ -6,13 +6,16 @@ import (
 )
 
 type Commands struct {
-	CreateBot command.CreateBotHandler
-	Entry     command.EntryHandler
-	Mailing   command.MailingHandler
-	Process   command.ProcessHandler
-	Start     command.StartHandler
-	Stop      command.StopHandler
-	UpdateBot command.UpdateBotHandler
+	CreateBot    command.CreateBotHandler
+	DisableBot   command.DisableBotHandler
+	EnableBot    command.EnableBotHandler
+	Entry        command.EntryHandler
+	Mailing      command.MailingHandler
+	Process      command.ProcessHandler
+	Start        command.StartHandler
+	StartEnabled command.StartEnabledHandler
+	Stop         command.StopHandler
+	UpdateBot    command.UpdateBotHandler
 }
 
 type Queries struct {

@@ -50,6 +50,7 @@ func (m *InstanceManager) Start(ctx context.Context, id bots.BotID, token bots.T
 		l.ErrorContext(ctx, "failed to start bot", slog.String("error", err.Error()))
 		return fmt.Errorf("failed to start bot instance %s: %w", id, err)
 	}
+	l.InfoContext(ctx, "bot instance started")
 
 	return nil
 }

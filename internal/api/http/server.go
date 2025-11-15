@@ -129,6 +129,30 @@ func (s *Server) StopBot(w http.ResponseWriter, r *http.Request, id string) {
 	}
 }
 
+func (s *Server) DisableBot(w http.ResponseWriter, r *http.Request, botID string) {
+	err := s.app.Commands.DisableBot.Handle(r.Context(), request.DisableBotCommand{BotID: botID})
+	if errors.Is(err, port.ErrBotNotFound) {
+		renderPlainError(w, r, err, http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		renderPlainError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *Server) EnableBot(w http.ResponseWriter, r *http.Request, botID string) {
+	err := s.app.Commands.EnableBot.Handle(r.Context(), request.EnableBotCommand{BotID: botID})
+	if errors.Is(err, port.ErrBotNotFound) {
+		renderPlainError(w, r, err, http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		renderPlainError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
 func (s *Server) GetBot(w http.ResponseWriter, r *http.Request, id string) {
 	bot, err := s.app.Queries.GetBot.Handle(r.Context(), request.GetBotQuery{ID: id})
 	if errors.Is(err, port.ErrBotNotFound) {

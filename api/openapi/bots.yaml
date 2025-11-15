@@ -203,7 +203,7 @@ paths:
   /bots/{id}/stop:
     post:
       operationId: stopBot
-      description: Отправить запрос на остановку бота с данным ID.
+      description: Остановить бота с указанным ID
       parameters:
         - in: path
           name: id
@@ -215,6 +215,74 @@ paths:
       responses:
         "200":
           description: Бот успешно остановлен.
+        "400":
+          description: Данные в запросе невалидны.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Бот с данным ID не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /bots/{id}/enable:
+    post:
+      operationId: enableBot
+      description: Включить автозапуск для бота
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: example_bot
+          required: true
+          description: Уникальный ID бота.
+      responses:
+        "200":
+          description: Бот успешно запущен и добавлен в автозапуск.
+        "400":
+          description: Данные в запросе невалидны.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот с данным ID не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /bots/{id}/disable:
+    post:
+      operationId: disableBot
+      description: Выключить автозапуск бота
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: example_bot
+          required: true
+          description: Уникальный ID бота.
+      responses:
+        "200":
+          description: Бот удалён из автозапуска.
         "400":
           description: Данные в запросе невалидны.
           content:
@@ -443,12 +511,16 @@ components:
           type: integer
           format: int64
           description: ID пользователя - автора бота.
+        enabled:
+          type: boolean
+          description: Автозапуск бота
         script:
           $ref: '#/components/schemas/Script'
       required:
         - id
         - token
         - author
+        - enabled
         - script
 
     PutBots:

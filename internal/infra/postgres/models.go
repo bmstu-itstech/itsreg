@@ -7,6 +7,7 @@ type botRow struct {
 	ID        string    `db:"id"`
 	Token     string    `db:"token"`
 	Author    int64     `db:"author"`
+	Enabled   bool      `db:"enabled"`
 	CreatedAt time.Time `db:"created_at"`
 }
 

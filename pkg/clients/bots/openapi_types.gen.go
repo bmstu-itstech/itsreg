@@ -56,6 +56,9 @@ type Bot struct {
 	// Author ID пользователя - автора бота.
 	Author int64 `json:"author"`
 
+	// Enabled Автозапуск бота
+	Enabled bool `json:"enabled"`
+
 	// Id Уникальный ID бота.
 	Id string `json:"id"`
 

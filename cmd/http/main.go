@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -50,13 +51,16 @@ func main() {
 
 	a := app.Application{
 		Commands: app.Commands{
-			CreateBot: command.NewCreateBotHandler(repos, l, mc),
-			Entry:     command.NewEntryHandler(repos, repos, sender, l, mc),
-			Mailing:   command.NewMailingHandler(repos, repos, sender, l, mc),
-			Process:   command.NewProcessHandler(repos, repos, sender, l, mc),
-			Start:     command.NewStartHandler(instanceManager, repos, l, mc),
-			Stop:      command.NewStopHandler(instanceManager, l, mc),
-			UpdateBot: command.NewUpdateBotHandler(repos, l, mc),
+			CreateBot:    command.NewCreateBotHandler(repos, l, mc),
+			DisableBot:   command.NewDisableBotHandler(repos, l, mc),
+			EnableBot:    command.NewEnableBotHandler(repos, instanceManager, l, mc),
+			Entry:        command.NewEntryHandler(repos, repos, sender, l, mc),
+			Mailing:      command.NewMailingHandler(repos, repos, sender, l, mc),
+			Process:      command.NewProcessHandler(repos, repos, sender, l, mc),
+			Start:        command.NewStartHandler(instanceManager, repos, l, mc),
+			StartEnabled: command.NewStartEnabledHandler(instanceManager, repos, l, mc),
+			Stop:         command.NewStopHandler(instanceManager, l, mc),
+			UpdateBot:    command.NewUpdateBotHandler(repos, l, mc),
 		},
 		Queries: app.Queries{
 			GetBot:      query.NewGetBotHandler(repos, l, mc),
@@ -64,6 +68,11 @@ func main() {
 			GetThreads:  query.NewGetThreadsHandler(repos, instanceManager, l, mc),
 			GetUserBots: query.NewGetUserBotsHandler(repos, l, mc),
 		},
+	}
+
+	err = a.Commands.StartEnabled.Handle(context.Background(), request.StartEnabledBotsCommand{})
+	if err != nil {
+		l.ErrorContext(context.Background(), "failed to start enabled bots", slog.String("error", err.Error()))
 	}
 
 	server.RunHTTPServer(func(router chi.Router) http.Handler {
