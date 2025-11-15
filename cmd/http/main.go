@@ -52,6 +52,7 @@ func main() {
 		Commands: app.Commands{
 			CreateBot: command.NewCreateBotHandler(repos, l, mc),
 			Entry:     command.NewEntryHandler(repos, repos, sender, l, mc),
+			Mailing:   command.NewMailingHandler(repos, repos, sender, l, mc),
 			Process:   command.NewProcessHandler(repos, repos, sender, l, mc),
 			Start:     command.NewStartHandler(instanceManager, repos, l, mc),
 			Stop:      command.NewStopHandler(instanceManager, l, mc),

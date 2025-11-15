@@ -8,6 +8,7 @@ import (
 type Commands struct {
 	CreateBot command.CreateBotHandler
 	Entry     command.EntryHandler
+	Mailing   command.MailingHandler
 	Process   command.ProcessHandler
 	Start     command.StartHandler
 	Stop      command.StopHandler

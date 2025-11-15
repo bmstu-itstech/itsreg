@@ -3,12 +3,12 @@ package telegram
 import (
 	"context"
 	"fmt"
-	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"log/slog"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
+	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
 )
 
@@ -47,7 +47,7 @@ func (s *MessageSender) Send(
 	_, err = api.Send(m)
 	if err != nil {
 		if isCantParseEntitiesError(err) {
-			l.WarnContext(ctx, "can't parse MarkdownV2 entities in message, send message without formatting",
+			l.WarnContext(ctx, "can't parse HTML entities in message, send message without formatting",
 				slog.String("error", err.Error()),
 			)
 			m.ParseMode = ""

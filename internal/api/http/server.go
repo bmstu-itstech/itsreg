@@ -157,6 +157,33 @@ func (s *Server) GetStatus(w http.ResponseWriter, r *http.Request, id string) {
 	render.JSON(w, r, Status(status))
 }
 
+func (s *Server) Mailing(w http.ResponseWriter, r *http.Request, botID string) {
+	req := PostMailing{}
+	if err := render.Decode(r, &req); err != nil {
+		renderPlainError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	err := s.app.Commands.Mailing.Handle(r.Context(), request.MailingCommand{
+		BotID:    botID,
+		EntryKey: req.EntryKey,
+		Users:    req.Users,
+	})
+	var mErr *bots.MultiError
+	if errors.As(err, &mErr) {
+		renderMultiError(w, r, mErr, http.StatusBadRequest)
+		return
+	}
+	if errors.Is(err, port.ErrBotNotFound) {
+		renderPlainError(w, r, err, http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		renderPlainError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+}
+
 const offset = 3
 
 func renderCsvAnswers(w http.ResponseWriter, nodes []dto.Node, threads []dto.Thread) error {

@@ -270,6 +270,52 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlainError'
 
+  /bots/{id}/mailing:
+    post:
+      operationId: mailing
+      description: Сделать рассылку по массиву пользователей.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: example_bot
+          required: true
+          description: Уникальный ID бота.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostMailing'
+      responses:
+        "200":
+          description: Рассылка прошла успешно.
+        "400":
+          description: Данные в запросе невалидны.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "403":
+          description: Нет доступа к боту с данным ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Бот с данным ID не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -479,6 +525,22 @@ components:
         - idle
         - dead
       description: Статус инстанса бота.
+
+    PostMailing:
+      type: object
+      properties:
+        entryKey:
+          type: string
+          description: Ключ точки входа, которая будет выполнена для списка пользователей.
+        users:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Список пользователей, для которых будет выполнен скрипт начиная с точки входа entryKey.
+      required:
+        - entryKey
+        - users
 
     InvalidInputError:
       type: object

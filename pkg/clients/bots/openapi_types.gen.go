@@ -147,6 +147,15 @@ type PlainError struct {
 	Message string `json:"message"`
 }
 
+// PostMailing defines model for PostMailing.
+type PostMailing struct {
+	// EntryKey Ключ точки входа, которая будет выполнена для списка пользователей.
+	EntryKey string `json:"entryKey"`
+
+	// Users Список пользователей, для которых будет выполнен скрипт начиная с точки входа entryKey.
+	Users []int64 `json:"users"`
+}
+
 // Predicate Predicate описывает условие перехода по ребру.
 type Predicate struct {
 	union json.RawMessage
@@ -184,6 +193,9 @@ type Status string
 
 // CreateBotJSONRequestBody defines body for CreateBot for application/json ContentType.
 type CreateBotJSONRequestBody = PutBots
+
+// MailingJSONRequestBody defines body for Mailing for application/json ContentType.
+type MailingJSONRequestBody = PostMailing
 
 // AsPlainError returns the union data inside the Error as a PlainError
 func (t Error) AsPlainError() (PlainError, error) {
