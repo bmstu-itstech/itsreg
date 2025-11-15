@@ -34,12 +34,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlainError'
-        "403":
-          description: Бот с данным ID уже существует, нет доступа к его обновлению
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlainError'
 
     get:
       operationId: getBots
@@ -97,12 +91,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlainError'
-        "403":
-          description: Нет доступа к боту с данным ID.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         "404":
           description: Бот с данным ID не найден.
           content:
@@ -131,12 +119,6 @@ paths:
                 $ref: '#/components/schemas/Status'
         "401":
           description: Не был указан JWT токен.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlainError'
-        "403":
-          description: Нет доступа к боту с данным ID.
           content:
             application/json:
               schema:
@@ -177,12 +159,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlainError'
-        "403":
-          description: Нет доступа к боту с данным ID.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         "404":
           description: Бот с данным ID не найден.
           content:
@@ -217,12 +193,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlainError'
-        "403":
-          description: Нет доступа к боту с данным ID.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         "404":
           description: Бот с данным ID не найден.
           content:
@@ -257,12 +227,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        "403":
-          description: Нет доступа к боту с данным ID.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlainError'
         "404":
           description: Бот с данным ID не найден.
           content:
@@ -303,12 +267,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlainError'
-        "403":
-          description: Нет доступа к боту с данным ID.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         "404":
           description: Бот с данным ID не найден.
           content:
