@@ -77,6 +77,19 @@ func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (s *Server) DeleteBot(w http.ResponseWriter, r *http.Request, id string) {
+	err := s.app.Commands.DeleteBot.Handle(r.Context(), request.DeleteBotCommand{BotID: id})
+	if errors.Is(err, port.ErrBotNotFound) {
+		renderPlainError(w, r, err, http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		renderPlainError(w, r, err, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
 	bot, err := s.app.Queries.GetBot.Handle(r.Context(), request.GetBotQuery{ID: id})
 	if errors.Is(err, port.ErrBotNotFound) {
@@ -111,6 +124,7 @@ func (s *Server) StartBot(w http.ResponseWriter, r *http.Request, id string) {
 		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) StopBot(w http.ResponseWriter, r *http.Request, id string) {
@@ -127,6 +141,7 @@ func (s *Server) StopBot(w http.ResponseWriter, r *http.Request, id string) {
 		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) DisableBot(w http.ResponseWriter, r *http.Request, botID string) {
@@ -139,6 +154,7 @@ func (s *Server) DisableBot(w http.ResponseWriter, r *http.Request, botID string
 		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) EnableBot(w http.ResponseWriter, r *http.Request, botID string) {
@@ -151,6 +167,7 @@ func (s *Server) EnableBot(w http.ResponseWriter, r *http.Request, botID string)
 		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) GetBot(w http.ResponseWriter, r *http.Request, id string) {

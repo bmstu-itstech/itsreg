@@ -7,6 +7,7 @@ import (
 
 type Commands struct {
 	CreateBot    command.CreateBotHandler
+	DeleteBot    command.DeleteBotHandler
 	DisableBot   command.DisableBotHandler
 	EnableBot    command.EnableBotHandler
 	Entry        command.EntryHandler

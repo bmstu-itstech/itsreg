@@ -79,6 +79,14 @@ func (r *Repository) UpsertBot(ctx context.Context, bot *bots.Bot) error {
 	})
 }
 
+func (r *Repository) DeleteBot(ctx context.Context, id bots.BotID) error {
+	err := r.softDeleteBotRow(ctx, r.db, string(id))
+	if errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("%w: %s", port.ErrBotNotFound, string(id))
+	}
+	return err
+}
+
 //
 //
 // ОПЕРАЦИИ НАД СУЩНОСТЯМИ ВНУТРИ АГГРЕГАТА

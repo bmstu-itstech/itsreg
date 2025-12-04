@@ -474,3 +474,31 @@ func TestPostgresBotRepository_UpdateNodeAndEntry(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, updatedBot, recv)
 }
+
+func TestPostgresBotRepository_DeleteBot(t *testing.T) {
+	r, closeFn := setupRepository()
+	t.Cleanup(closeFn)
+
+	ctx := context.Background()
+
+	id := bots.BotID(gofakeit.AppName())
+	bot := bots.MustNewBot(id, "token", bots.UserID(1), bots.MustNewScript(
+		[]bots.Node{
+			bots.MustNewNode(bots.MustNewState(1), "Greeting", nil, []bots.Message{
+				bots.MustNewMessage("Hello, world!"),
+			}, nil),
+		},
+		[]bots.Entry{
+			bots.MustNewEntry("start", bots.MustNewState(1)),
+		},
+	))
+
+	err := r.UpsertBot(ctx, bot)
+	require.NoError(t, err)
+
+	err = r.DeleteBot(ctx, id)
+	require.NoError(t, err)
+
+	_, err = r.Bot(ctx, id)
+	require.ErrorIs(t, err, port.ErrBotNotFound)
+}

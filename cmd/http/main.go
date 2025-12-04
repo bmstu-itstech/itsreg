@@ -52,6 +52,7 @@ func main() {
 	a := app.Application{
 		Commands: app.Commands{
 			CreateBot:    command.NewCreateBotHandler(repos, l, mc),
+			DeleteBot:    command.NewDeleteBotHandler(repos, l, mc),
 			DisableBot:   command.NewDisableBotHandler(repos, l, mc),
 			EnableBot:    command.NewEnableBotHandler(repos, instanceManager, l, mc),
 			Entry:        command.NewEntryHandler(repos, repos, sender, l, mc),

@@ -27,6 +27,7 @@ func (r *Repository) getBotRow(
 		FROM bots
 		WHERE
 			id = $1
+			AND deleted_at IS NULL
 		`,
 		botID,
 	)
@@ -52,6 +53,7 @@ func (r *Repository) selectBotRowsByAuthor(
 		FROM bots
 		WHERE
 			author = $1
+			AND deleted_at IS NULL
 		`,
 		author,
 	)
@@ -76,6 +78,7 @@ func (r *Repository) selectEnabledBotRows(
 		FROM bots
 		WHERE
 			enabled = true
+			AND deleted_at IS NULL
 		`,
 	)
 	if err != nil {
@@ -839,6 +842,32 @@ func (r *Repository) deleteAnswerRows(
 			l.ErrorContext(ctx, "failed to delete answer rows", slog.String("error", err.Error()))
 			return fmt.Errorf("deleting answer rows: %w", err)
 		}
+	}
+	return nil
+}
+
+func (r *Repository) softDeleteBotRow(
+	ctx context.Context,
+	ec sqlx.ExtContext,
+	botID string,
+) error {
+	const op = "PostgresRepository.softDeleteBotRow"
+	l := r.l.With(
+		slog.String("op", op),
+		slog.String("bot_id", botID),
+	)
+
+	l.DebugContext(ctx, "deleting bot row")
+	err := pgutils.RequireAffected(pgutils.Exec(ctx, ec, `
+		UPDATE bots
+		SET deleted_at = now()
+		WHERE id = $1
+		`,
+		botID,
+	))
+	if err != nil {
+		l.ErrorContext(ctx, "failed to soft delete bot", slog.String("error", err.Error()))
+		return fmt.Errorf("deleting bot row: %w", err)
 	}
 	return nil
 }
