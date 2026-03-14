@@ -35,7 +35,7 @@ func (h getThreadsHandler) Handle(ctx context.Context, q request.GetThreadsQuery
 		} else if err2 != nil {
 			return nil, err2
 		}
-		res[i] = dto.ThreadToDto(thread.Thread(), string(username))
+		res[i] = dto.ThreadToDto(thread.Thread(), prtID.UserID(), string(username))
 	}
 	return res, nil
 }

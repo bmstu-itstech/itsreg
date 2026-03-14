@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/render"
 
@@ -225,8 +226,6 @@ func (s *Server) Mailing(w http.ResponseWriter, r *http.Request, botID string) {
 	}
 }
 
-const offset = 3
-
 func renderCsvAnswers(w http.ResponseWriter, nodes []dto.Node, threads []dto.Thread) error {
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 
@@ -271,15 +270,18 @@ func makeMapStateToIndex(threads []dto.Thread) map[int]int {
 }
 
 const answerThreadIDHeadName = "#"
-const answerTimestampHeadName = "Отметка времени"
+const answerUserIDHeadName = "UID"
 const answerUsernameHeadName = "Никнейм"
+const answerTimestampHeadName = "Отметка времени"
+const offset = 4
 
 func makeAnswersTHead(nodes []dto.Node, stateToIndex map[int]int) []string {
 	head := make([]string, len(stateToIndex)+offset)
 
 	head[0] = answerThreadIDHeadName
-	head[1] = answerTimestampHeadName
+	head[1] = answerUserIDHeadName
 	head[2] = answerUsernameHeadName
+	head[3] = answerTimestampHeadName
 
 	for _, node := range nodes {
 		idx, ok := stateToIndex[node.State]
@@ -295,8 +297,9 @@ func makeAnswersTRow(thread dto.Thread, stateToIndex map[int]int) []string {
 	row := make([]string, len(stateToIndex)+offset)
 
 	row[0] = thread.ID
-	row[1] = thread.StartedAt.Format("2006-01-02 15:04:05")
+	row[1] = strconv.FormatInt(thread.UserID, 10)
 	row[2] = thread.Username
+	row[3] = thread.StartedAt.Format("2006-01-02 15:04:05")
 
 	for state, ans := range thread.Answers {
 		idx, ok := stateToIndex[state]
