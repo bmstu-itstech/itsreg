@@ -683,12 +683,12 @@ func (r *Repository) selectThreadTableRows(
   			t.id, 
   			t.key,
 			t.user_id, 
-			u.username, 
+			coalesce(u.username, ''), 
 			t.started_at AS ts,
 			n.title AS Header,
   			a.text AS Value
 		FROM threads t
-		JOIN users u
+		LEFT JOIN users u
 			ON u.id = t.user_id
 		JOIN nodes n
 			ON n.bot_id = t.bot_id
