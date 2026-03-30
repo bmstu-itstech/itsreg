@@ -46,7 +46,7 @@ func main() {
 	sender := telegram.NewMessageSender(l)
 
 	process := ProcessHandlerAdapter{command.NewProcessHandler(repos, repos, sender, l, mc)}
-	entry := EntryHandlerAdapter{command.NewEntryHandler(repos, repos, sender, l, mc)}
+	entry := EntryHandlerAdapter{command.NewEntryHandler(repos, repos, repos, sender, l, mc)}
 	instanceManager := telegram.NewInstanceManager(l, process, entry)
 
 	a := app.Application{
@@ -55,7 +55,7 @@ func main() {
 			DeleteBot:    command.NewDeleteBotHandler(repos, l, mc),
 			DisableBot:   command.NewDisableBotHandler(repos, l, mc),
 			EnableBot:    command.NewEnableBotHandler(repos, instanceManager, l, mc),
-			Entry:        command.NewEntryHandler(repos, repos, sender, l, mc),
+			Entry:        command.NewEntryHandler(repos, repos, repos, sender, l, mc),
 			Mailing:      command.NewMailingHandler(repos, repos, sender, l, mc),
 			Process:      command.NewProcessHandler(repos, repos, sender, l, mc),
 			Start:        command.NewStartHandler(instanceManager, repos, l, mc),
@@ -64,10 +64,10 @@ func main() {
 			UpdateBot:    command.NewUpdateBotHandler(repos, l, mc),
 		},
 		Queries: app.Queries{
-			GetBot:      query.NewGetBotHandler(repos, l, mc),
-			GetStatus:   query.NewGetStatusHandler(instanceManager, repos, l, mc),
-			GetThreads:  query.NewGetThreadsHandler(repos, instanceManager, l, mc),
-			GetUserBots: query.NewGetUserBotsHandler(repos, l, mc),
+			GetBot:          query.NewGetBotHandler(repos, l, mc),
+			GetStatus:       query.NewGetStatusHandler(instanceManager, repos, l, mc),
+			GetThreadsTable: query.NewGetThreadsTableHandler(repos, repos, l, mc),
+			GetUserBots:     query.NewGetUserBotsHandler(repos, l, mc),
 		},
 	}
 
@@ -102,10 +102,17 @@ type EntryHandlerAdapter struct {
 	H command.EntryHandler
 }
 
-func (a EntryHandlerAdapter) Entry(ctx context.Context, botID bots.BotID, userID bots.UserID, key bots.EntryKey) error {
+func (a EntryHandlerAdapter) Entry(
+	ctx context.Context,
+	botID bots.BotID,
+	userID bots.UserID,
+	username bots.Username,
+	key bots.EntryKey,
+) error {
 	return a.H.Handle(ctx, request.EntryCommand{
-		BotID:  string(botID),
-		UserID: int64(userID),
-		Key:    string(key),
+		BotID:    string(botID),
+		UserID:   int64(userID),
+		Username: string(username),
+		EntryKey: string(key),
 	})
 }

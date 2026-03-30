@@ -14,13 +14,12 @@ type MailingHandler decorator.CommandHandler[request.MailingCommand]
 
 type mailingHandler struct {
 	bp port.BotProvider
-	pr port.ParticipantRepository
+	tr port.ThreadRepository
 	ms port.MessageSender
 }
 
 func (h mailingHandler) Handle(ctx context.Context, cmd request.MailingCommand) error {
 	botID := bots.BotID(cmd.BotID)
-	entryKey := bots.EntryKey(cmd.EntryKey)
 
 	bot, err := h.bp.Bot(ctx, botID)
 	if err != nil {
@@ -31,22 +30,29 @@ func (h mailingHandler) Handle(ctx context.Context, cmd request.MailingCommand) 
 
 	var errs bots.MultiError
 	for _, user := range cmd.Users {
-		prtID := bots.NewParticipantID(bots.UserID(user), botID)
+		userID := bots.UserID(user)
 
+		var thread *bots.Thread
 		var response []bots.BotMessage
-		err = h.pr.UpdateOrCreateParticipant(ctx, prtID, func(
-			_ context.Context, prt *bots.Participant,
-		) error {
-			response, err = script.Entry(prt, entryKey)
-			return err
-		})
+		thread, response, err = script.Entry(botID, userID, bots.EntryKey(cmd.EntryKey))
 		if err != nil {
-			// Ошибка в операции над участником критична, возвращаем ошибку сразу
+			return err
+		}
+
+		err = h.tr.SaveThread(ctx, thread)
+		if err != nil {
 			return err
 		}
 
 		for _, msg := range response {
-			err = h.ms.Send(ctx, bot.Token(), prtID.UserID(), msg)
+			err = h.ms.Send(ctx, bot.Token(), userID, msg)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, msg := range response {
+			err = h.ms.Send(ctx, bot.Token(), userID, msg)
 			if err != nil {
 				// Если ошибка отправки конкретному пользователю, это не должно повлиять на ход рассылки
 				errs.Append(err)
@@ -62,10 +68,10 @@ func (h mailingHandler) Handle(ctx context.Context, cmd request.MailingCommand) 
 
 func NewMailingHandler(
 	bp port.BotProvider,
-	pr port.ParticipantRepository,
+	tr port.ThreadRepository,
 	ms port.MessageSender,
 	l *slog.Logger,
 	mc decorator.MetricsClient,
 ) MailingHandler {
-	return decorator.ApplyCommandDecorators(mailingHandler{bp, pr, ms}, l, mc)
+	return decorator.ApplyCommandDecorators(mailingHandler{bp, tr, ms}, l, mc)
 }

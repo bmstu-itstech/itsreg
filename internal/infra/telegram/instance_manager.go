@@ -147,7 +147,13 @@ func (i *botInstance) handleUpdate(ctx context.Context, upd tgbotapi.Update) {
 
 	var err error
 	if upd.Message.IsCommand() {
-		err = i.entry.Entry(ctx, i.botID, bots.UserID(upd.Message.Chat.ID), bots.EntryKey(upd.Message.Command()))
+		err = i.entry.Entry(
+			ctx,
+			i.botID,
+			bots.UserID(upd.Message.Chat.ID),
+			bots.Username(upd.Message.From.UserName),
+			bots.EntryKey(upd.Message.Command()),
+		)
 	} else {
 		if msg, err2 := bots.NewMessage(upd.Message.Text); err2 == nil {
 			err = i.process.Process(ctx, i.botID, bots.UserID(upd.Message.Chat.ID), msg)

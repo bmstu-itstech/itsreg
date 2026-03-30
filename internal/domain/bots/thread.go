@@ -2,31 +2,32 @@ package bots
 
 import (
 	"errors"
-	"maps"
 	"time"
 
 	"github.com/bmstu-itstech/itsreg-bots/pkg/uuid"
 )
 
-type ThreadID string
-
-// Thread есть цепочка ответов Participant от Entry до конечного State или
+// Thread есть цепочка ответов пользователя от Entry до конечного State или
 // до следующего Entry.
 type Thread struct {
 	id        ThreadID
+	botID     BotID
+	userID    UserID
 	key       EntryKey
 	state     State
 	answers   map[State]Message
 	startedAt time.Time
 }
 
-func NewThread(entry Entry) (*Thread, error) {
+func NewThread(botID BotID, userID UserID, entry Entry) (*Thread, error) {
 	if entry.IsZero() {
 		return nil, errors.New("entry is empty")
 	}
 
 	return &Thread{
 		id:        ThreadID(uuid.Generate()),
+		botID:     botID,
+		userID:    userID,
 		key:       entry.Key(),
 		state:     entry.Start(),
 		answers:   make(map[State]Message),
@@ -34,30 +35,48 @@ func NewThread(entry Entry) (*Thread, error) {
 	}, nil
 }
 
-func MustNewThread(entry Entry) *Thread {
-	t, err := NewThread(entry)
+func MustNewThread(botID BotID, userID UserID, entry Entry) *Thread {
+	t, err := NewThread(botID, userID, entry)
 	if err != nil {
 		panic(err)
 	}
 	return t
 }
 
-func (t *Thread) Clone() *Thread {
-	return &Thread{
-		id:        t.id,
-		key:       t.key,
-		state:     t.state,
-		answers:   maps.Clone(t.answers),
-		startedAt: t.startedAt,
+func RestoreThread(
+	id ThreadID,
+	botID BotID,
+	userID UserID,
+	key EntryKey,
+	state State,
+	answers map[State]Message,
+	startedAt time.Time,
+) (*Thread, error) {
+	if id.IsZero() {
+		return nil, errors.New("id is empty")
 	}
-}
 
-func (t *Thread) Equals(other *Thread) bool {
-	return t.id == other.id &&
-		t.key == other.key &&
-		t.state == other.state &&
-		maps.Equal(t.answers, other.answers) &&
-		t.startedAt.Equal(other.startedAt)
+	if key == "" {
+		return nil, errors.New("key is empty")
+	}
+
+	if answers == nil {
+		answers = make(map[State]Message)
+	}
+
+	if startedAt.IsZero() {
+		return nil, errors.New("startedAt is empty")
+	}
+
+	return &Thread{
+		id:        id,
+		botID:     botID,
+		userID:    userID,
+		key:       key,
+		state:     state,
+		answers:   answers,
+		startedAt: startedAt,
+	}, nil
 }
 
 func (t *Thread) StepTo(to State) {
@@ -85,6 +104,14 @@ func (t *Thread) ID() ThreadID {
 	return t.id
 }
 
+func (t *Thread) BotID() BotID {
+	return t.botID
+}
+
+func (t *Thread) UserID() UserID {
+	return t.userID
+}
+
 func (t *Thread) Key() EntryKey {
 	return t.key
 }
@@ -99,67 +126,4 @@ func (t *Thread) Answers() map[State]Message {
 
 func (t *Thread) StartedAt() time.Time {
 	return t.startedAt
-}
-
-type BotThread struct {
-	thread *Thread
-	botID  BotID
-	userID UserID
-}
-
-func NewBotThread(thread *Thread, botID BotID, userID UserID) BotThread {
-	return BotThread{
-		thread: thread,
-		botID:  botID,
-		userID: userID,
-	}
-}
-
-func (bt *BotThread) BotID() BotID {
-	return bt.botID
-}
-
-func (bt *BotThread) UserID() UserID {
-	return bt.userID
-}
-
-func (bt *BotThread) Thread() *Thread {
-	return bt.thread
-}
-
-func UnmarshallThread(
-	id string,
-	key string,
-	state int,
-	answers map[State]Message,
-	startedAt time.Time,
-) (*Thread, error) {
-	if id == "" {
-		return nil, errors.New("id is empty")
-	}
-
-	if key == "" {
-		return nil, errors.New("key is empty")
-	}
-
-	s, err := NewState(state)
-	if err != nil {
-		return nil, err
-	}
-
-	if answers == nil {
-		answers = make(map[State]Message)
-	}
-
-	if startedAt.IsZero() {
-		return nil, errors.New("startedAt is empty")
-	}
-
-	return &Thread{
-		id:        ThreadID(id),
-		key:       EntryKey(key),
-		state:     s,
-		answers:   answers,
-		startedAt: startedAt,
-	}, nil
 }

@@ -5,12 +5,6 @@ import (
 	"time"
 )
 
-// BotID есть уникальный идентификатор бота.
-type BotID string
-
-// Token есть Telegram токен для бота.
-type Token string
-
 type Bot struct {
 	id        BotID
 	token     Token

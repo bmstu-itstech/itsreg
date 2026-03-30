@@ -157,27 +157,14 @@ func optionsToRows(botID bots.BotID, state bots.State, opts []bots.Option) []opt
 	return res
 }
 
-func participantToRow(prt *bots.Participant) participantRow {
-	var activeThreadID *string
-	if thread := prt.ActiveThread(); thread != nil {
-		s := string(thread.ID())
-		activeThreadID = &s
-	}
-	return participantRow{
-		BotID:        string(prt.ID().BotID()),
-		UserID:       int64(prt.ID().UserID()),
-		ActiveThread: activeThreadID,
-	}
-}
-
-func threadToRow(botID bots.BotID, userID bots.UserID, thread *bots.Thread) threadRow {
+func threadToRow(t *bots.Thread) threadRow {
 	return threadRow{
-		ID:        string(thread.ID()),
-		BotID:     string(botID),
-		UserID:    int64(userID),
-		Key:       string(thread.Key()),
-		State:     thread.State().Int(),
-		StartedAt: thread.StartedAt(),
+		ID:        t.ID().String(),
+		BotID:     t.BotID().String(),
+		UserID:    t.UserID().Int64(),
+		Key:       t.Key().String(),
+		State:     t.State().Int(),
+		StartedAt: t.StartedAt(),
 	}
 }
 

@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/zhikh23/pgutils"
@@ -102,7 +101,7 @@ func (r *Repository) upsertBotRow(
 				created_at
 			)
 		VALUES (
-		    :id,
+		    :ID,
 			:token,
 			:author,
 			:enabled,
@@ -162,7 +161,7 @@ func (r *Repository) insertEntryRows(
 			) 
 		VALUES (
 			:bot_id,
-			:key,
+			:Key,
 			:start
 		)
 		`,
@@ -185,7 +184,7 @@ func (r *Repository) updateEntryRow(
 			start = :start
 		WHERE
 			bot_id = :bot_id
-			AND key = :key
+			AND Key = :Key
 		`,
 		row,
 	))
@@ -205,7 +204,7 @@ func (r *Repository) deleteEntryRows(
 			DELETE FROM entries
 			WHERE
 				bot_id = :bot_id
-				AND key = :key
+				AND Key = :Key
 			`,
 			row,
 		))
@@ -535,93 +534,11 @@ func (r *Repository) deleteOptionRows(
 	return nil
 }
 
-func (r *Repository) getParticipantRow(
-	ctx context.Context,
-	qc sqlx.QueryerContext,
-	botID string,
-	userID int64,
-) (participantRow, error) {
-	const op = "PostgresRepository.getParticipantRow"
-	l := r.l.With(
-		slog.String("op", op),
-		slog.String("bot_id", botID),
-		slog.Int64("user_id", userID),
-	)
-
-	l.DebugContext(ctx, "querying participant row")
-	var row participantRow
-	err := pgutils.Get(ctx, qc, &row, `
-		SELECT
-			bot_id,
-			user_id,
-			active_thread
-		FROM participants
-		WHERE
-			bot_id = $1
-			AND user_id = $2
-		`,
-		botID,
-		userID,
-	)
-	if err != nil {
-		l.ErrorContext(ctx, "failed to get participant row", slog.String("error", err.Error()))
-		return participantRow{}, fmt.Errorf("getting participant row: %w", err)
-	}
-	return row, nil
-}
-
-func (r *Repository) upsertParticipantRow(
-	ctx context.Context,
-	ec sqlx.ExtContext,
-	row participantRow,
-) error {
-	const op = "PostgresRepository.upsertParticipantRow"
-	l := r.l.With(
-		slog.String("op", op),
-		slog.String("bot_id", row.BotID),
-		slog.Int64("user_id", row.UserID),
-	)
-
-	l.DebugContext(ctx, "upserting participant row")
-	err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
-		INSERT INTO
-			participants (
-				bot_id, 
-				user_id,
-				active_thread
-			)
-		VALUES (
-		    :bot_id,
-			:user_id,
-			:active_thread
-		)
-		ON CONFLICT 
-			(bot_id, user_id)
-		DO UPDATE 
-		SET
-			active_thread = :active_thread
-		`,
-		row,
-	))
-	if err != nil {
-		l.ErrorContext(ctx, "failed to upsert participant row", slog.String("error", err.Error()))
-		return fmt.Errorf("upserting participant row: %w", err)
-	}
-	return nil
-}
-
 func (r *Repository) getThreadRow(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
 	threadID string,
 ) (threadRow, error) {
-	const op = "PostgresRepository.getThreadRow"
-	l := r.l.With(
-		slog.String("op", op),
-		slog.String("thread_id", threadID),
-	)
-
-	l.DebugContext(ctx, "querying thread row")
 	var row threadRow
 	err := pgutils.Get(ctx, qc, &row, `
 		SELECT
@@ -637,11 +554,35 @@ func (r *Repository) getThreadRow(
 		`,
 		threadID,
 	)
-	if err != nil {
-		l.ErrorContext(ctx, "failed to query thread row", slog.String("error", err.Error()))
-		return threadRow{}, fmt.Errorf("querying thread row: %w", err)
-	}
-	return row, nil
+	return row, err
+}
+
+func (r *Repository) getLastUserThreadRow(
+	ctx context.Context,
+	qc sqlx.QueryerContext,
+	botID string,
+	userID int64,
+) (threadRow, error) {
+	var row threadRow
+	err := pgutils.Get(ctx, qc, &row, `
+		SELECT
+			id,
+			bot_id,
+			user_id,
+			key,
+			state,
+			started_at
+		FROM threads
+		WHERE
+			bot_id = $1
+			AND user_id = $2
+		ORDER BY started_at DESC
+		LIMIT 1
+		`,
+		botID,
+		userID,
+	)
+	return row, err
 }
 
 func (r *Repository) selectBotThreadsRows(
@@ -649,13 +590,6 @@ func (r *Repository) selectBotThreadsRows(
 	qc sqlx.QueryerContext,
 	botID string,
 ) ([]threadRow, error) {
-	const op = "PostgresRepository.selectBotThreadsRows"
-	l := r.l.With(
-		slog.String("op", op),
-		slog.String("bot_id", botID),
-	)
-
-	l.DebugContext(ctx, "querying bot thread rows")
 	var rows []threadRow
 	err := pgutils.Select(ctx, qc, &rows, `
 		SELECT
@@ -672,32 +606,21 @@ func (r *Repository) selectBotThreadsRows(
 		`,
 		botID,
 	)
-	if err != nil {
-		l.ErrorContext(ctx, "failed to query bot thread rows", slog.String("error", err.Error()))
-		return nil, fmt.Errorf("selecting bot thread rows: %w", err)
-	}
-	return rows, nil
+	return rows, err
 }
 
-func (r *Repository) upsertThreadRow(
+func (r *Repository) insertThreadRow(
 	ctx context.Context,
 	ec sqlx.ExtContext,
 	row threadRow,
 ) error {
-	const op = "PostgresRepository.upsertThreadRow"
-	l := r.l.With(
-		slog.String("op", op),
-		slog.String("id", row.ID),
-	)
-
-	l.DebugContext(ctx, "upserting thread row")
-	err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
+	return pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		INSERT INTO 
 			threads (
 				id, 
 				bot_id, 
 				user_id, 
-				key, 
+				Key, 
 				state, 
 				started_at
 			)	 
@@ -709,17 +632,24 @@ func (r *Repository) upsertThreadRow(
 			:state,
 			:started_at
 		)
-		ON CONFLICT (id)
-		DO UPDATE SET
-			state = :state
 		`,
 		row,
 	))
-	if err != nil {
-		l.ErrorContext(ctx, "failed to upsert thread row", slog.String("error", err.Error()))
-		return fmt.Errorf("upserting thread row: %w", err)
-	}
-	return nil
+}
+
+func (r *Repository) updateThreadRow(
+	ctx context.Context,
+	ec sqlx.ExtContext,
+	row threadRow,
+) error {
+	return pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
+		UPDATE threads
+		SET
+			state = :state
+		WHERE id = :id
+		`,
+		row,
+	))
 }
 
 func (r *Repository) selectAnswerRows(
@@ -727,13 +657,6 @@ func (r *Repository) selectAnswerRows(
 	qc sqlx.QueryerContext,
 	threadID string,
 ) ([]answerRow, error) {
-	const op = "PostgresRepository.selectAnswerRows"
-	l := r.l.With(
-		slog.String("op", op),
-		slog.String("thread_id", threadID),
-	)
-
-	l.DebugContext(ctx, "querying answer rows")
 	var rows []answerRow
 	err := pgutils.Select(ctx, qc, &rows, `
 		SELECT
@@ -746,11 +669,38 @@ func (r *Repository) selectAnswerRows(
 		`,
 		threadID,
 	)
-	if err != nil {
-		l.ErrorContext(ctx, "failed to query answer rows", slog.String("error", err.Error()))
-		return nil, fmt.Errorf("selecting answer rows: %w", err)
-	}
-	return rows, nil
+	return rows, err
+}
+
+func (r *Repository) selectThreadTableRows(
+	ctx context.Context,
+	qc sqlx.QueryerContext,
+	botID string,
+) ([]threadTableRow, error) {
+	var rows []threadTableRow
+	err := pgutils.Select(ctx, qc, &rows, `
+		SELECT
+  			t.id, 
+  			t.key,
+			t.user_id, 
+			u.username, 
+			t.started_at AS ts,
+			n.title AS Header,
+  			a.text AS Value
+		FROM threads t
+		JOIN users u
+			ON u.id = t.user_id
+		JOIN nodes n
+			ON n.bot_id = t.bot_id
+		LEFT JOIN answers a 
+			ON a.thread_id = t.id
+			AND a.state = n.state
+		WHERE t.bot_id = $1
+		ORDER BY t.id, n.state;
+		`,
+		botID,
+	)
+	return rows, err
 }
 
 func (r *Repository) insertAnswerRows(
@@ -758,14 +708,10 @@ func (r *Repository) insertAnswerRows(
 	ec sqlx.ExtContext,
 	rows []answerRow,
 ) error {
-	const op = "PostgresRepository.insertAnswerRows"
-	l := r.l.With(
-		slog.String("op", op),
-		slog.Int("rows", len(rows)),
-	)
-
-	l.DebugContext(ctx, "inserting answer rows")
-	err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
+	if len(rows) == 0 {
+		return nil
+	}
+	return pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		INSERT INTO
 			answers (
 				thread_id, 
@@ -780,11 +726,6 @@ func (r *Repository) insertAnswerRows(
 		`,
 		rows,
 	))
-	if err != nil {
-		l.ErrorContext(ctx, "failed to insert answer rows", slog.String("error", err.Error()))
-		return fmt.Errorf("inserting answer rows: %w", err)
-	}
-	return nil
 }
 
 func (r *Repository) updateAnswerRow(
@@ -792,15 +733,7 @@ func (r *Repository) updateAnswerRow(
 	ec sqlx.ExtContext,
 	row answerRow,
 ) error {
-	const op = "PostgresRepository.updateAnswerRow"
-	l := r.l.With(
-		slog.String("op", op),
-		slog.String("thread_id", row.ThreadID),
-		slog.Int("state", row.State),
-	)
-
-	l.DebugContext(ctx, "updating answer row")
-	err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
+	return pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		UPDATE answers
 		SET
 			text = :text
@@ -810,11 +743,6 @@ func (r *Repository) updateAnswerRow(
 		`,
 		row,
 	))
-	if err != nil {
-		l.ErrorContext(ctx, "failed to update answer row", slog.String("error", err.Error()))
-		return fmt.Errorf("updating answer rows: %w", err)
-	}
-	return nil
 }
 
 func (r *Repository) deleteAnswerRows(
@@ -822,13 +750,6 @@ func (r *Repository) deleteAnswerRows(
 	ec sqlx.ExtContext,
 	rows []answerRow,
 ) error {
-	const op = "PostgresRepository.deleteAnswerRows"
-	l := r.l.With(
-		slog.String("op", op),
-		slog.Int("rows", len(rows)),
-	)
-
-	l.DebugContext(ctx, "deleting answer rows")
 	for _, row := range rows {
 		err := pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 			DELETE FROM answers
@@ -839,7 +760,6 @@ func (r *Repository) deleteAnswerRows(
 			row,
 		))
 		if err != nil {
-			l.ErrorContext(ctx, "failed to delete answer rows", slog.String("error", err.Error()))
 			return fmt.Errorf("deleting answer rows: %w", err)
 		}
 	}
@@ -851,23 +771,36 @@ func (r *Repository) softDeleteBotRow(
 	ec sqlx.ExtContext,
 	botID string,
 ) error {
-	const op = "PostgresRepository.softDeleteBotRow"
-	l := r.l.With(
-		slog.String("op", op),
-		slog.String("bot_id", botID),
-	)
-
-	l.DebugContext(ctx, "deleting bot row")
-	err := pgutils.RequireAffected(pgutils.Exec(ctx, ec, `
+	return pgutils.RequireAffected(pgutils.Exec(ctx, ec, `
 		UPDATE bots
 		SET deleted_at = now()
 		WHERE id = $1
 		`,
 		botID,
 	))
-	if err != nil {
-		l.ErrorContext(ctx, "failed to soft delete bot", slog.String("error", err.Error()))
-		return fmt.Errorf("deleting bot row: %w", err)
-	}
-	return nil
+}
+
+func (r *Repository) updateUsername(
+	ctx context.Context,
+	ec sqlx.ExtContext,
+	userID int64,
+	username string,
+) error {
+	return pgutils.RequireAffected(pgutils.Exec(ctx, ec, `
+		INSERT INTO 
+			users (
+				id, 
+				username, 
+				updated_at
+			) 
+		VALUES 
+			($1, $2, now())	
+		ON CONFLICT (id)
+			DO UPDATE SET 
+				username = $2, 
+				updated_at = now()
+		`,
+		userID,
+		username,
+	))
 }

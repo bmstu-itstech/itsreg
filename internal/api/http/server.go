@@ -14,7 +14,6 @@ import (
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
 	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
 	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
-	"github.com/bmstu-itstech/itsreg-bots/pkg/salad"
 )
 
 type Server struct {
@@ -92,7 +91,10 @@ func (s *Server) DeleteBot(w http.ResponseWriter, r *http.Request, id string) {
 }
 
 func (s *Server) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
-	bot, err := s.app.Queries.GetBot.Handle(r.Context(), request.GetBotQuery{ID: id})
+	threads, err := s.app.Queries.GetThreadsTable.Handle(r.Context(), request.GetThreadsTableQuery{
+		Author: 1,
+		BotID:  id,
+	})
 	if errors.Is(err, port.ErrBotNotFound) {
 		renderPlainError(w, r, err, http.StatusNotFound)
 		return
@@ -102,13 +104,7 @@ func (s *Server) GetAnswers(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 
-	threads, err := s.app.Queries.GetThreads.Handle(r.Context(), request.GetThreadsQuery{BotID: id})
-	if err != nil {
-		renderPlainError(w, r, err, http.StatusInternalServerError)
-		return
-	}
-
-	err = renderCsvAnswers(w, bot.Script.Nodes, threads)
+	err = renderCsvThreadsTable(w, threads)
 	if err != nil {
 		renderPlainError(w, r, err, http.StatusInternalServerError)
 		return
@@ -226,7 +222,17 @@ func (s *Server) Mailing(w http.ResponseWriter, r *http.Request, botID string) {
 	}
 }
 
-func renderCsvAnswers(w http.ResponseWriter, nodes []dto.Node, threads []dto.Thread) error {
+var threadsTableHeadMeta = []string{
+	"#",
+	"Key",
+	"UserID",
+	"Username",
+	"Timestamp",
+}
+
+const timestampFormat = "2006-01-02 15:04:05"
+
+func renderCsvThreadsTable(w http.ResponseWriter, data dto.ThreadsTable) error {
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 
 	utf8bom := []byte{0xEF, 0xBB, 0xBF}
@@ -234,87 +240,31 @@ func renderCsvAnswers(w http.ResponseWriter, nodes []dto.Node, threads []dto.Thr
 
 	writer := csv.NewWriter(w)
 
-	stateToIndex := makeMapStateToIndex(threads)
-	thead := makeAnswersTHead(nodes, stateToIndex)
-	tbody := makeAnswersTBody(threads, stateToIndex)
+	thead := make([]string, len(data.Head.Headers)+len(threadsTableHeadMeta))
+	for i, metaHeader := range threadsTableHeadMeta {
+		thead[i] = metaHeader
+	}
+	for i, header := range data.Head.Headers {
+		thead[len(threadsTableHeadMeta)+i] = header
+	}
 
 	if err := writer.Write(thead); err != nil {
 		return fmt.Errorf("failed to write CSV answers table: %w", err)
 	}
-	if err := writer.WriteAll(tbody); err != nil {
-		return fmt.Errorf("failed to write CSV answers table: %w", err)
+
+	for _, record := range data.Body {
+		row := make([]string, len(threadsTableHeadMeta), len(threadsTableHeadMeta)+len(record.Answers))
+		row[0] = record.ID
+		row[1] = record.EntryKey
+		row[2] = strconv.FormatInt(record.UserID, 10)
+		row[3] = record.Username
+		row[4] = record.Timestamp.Format(timestampFormat)
+		row = append(row, record.Answers...)
+		if err := writer.Write(row); err != nil {
+			return fmt.Errorf("failed to write CSV answers table: %w", err)
+		}
 	}
+	writer.Flush()
 
 	return nil
-}
-
-func makeMapStateToIndex(threads []dto.Thread) map[int]int {
-	states := make(map[int]bool)
-	for _, thread := range threads {
-		for state := range thread.Answers {
-			states[state] = true
-		}
-	}
-
-	sortedStates := make([]int, 0)
-	for state := range states {
-		sortedStates = salad.InsertSorted(sortedStates, state, func(x, y int) bool { return x < y })
-	}
-
-	m := make(map[int]int, len(sortedStates))
-	for idx, state := range sortedStates {
-		m[state] = idx
-	}
-
-	return m
-}
-
-const answerThreadIDHeadName = "#"
-const answerUserIDHeadName = "UID"
-const answerUsernameHeadName = "Никнейм"
-const answerTimestampHeadName = "Отметка времени"
-const offset = 4
-
-func makeAnswersTHead(nodes []dto.Node, stateToIndex map[int]int) []string {
-	head := make([]string, len(stateToIndex)+offset)
-
-	head[0] = answerThreadIDHeadName
-	head[1] = answerUserIDHeadName
-	head[2] = answerUsernameHeadName
-	head[3] = answerTimestampHeadName
-
-	for _, node := range nodes {
-		idx, ok := stateToIndex[node.State]
-		if ok {
-			head[idx+offset] = node.Title
-		}
-	}
-
-	return head
-}
-
-func makeAnswersTRow(thread dto.Thread, stateToIndex map[int]int) []string {
-	row := make([]string, len(stateToIndex)+offset)
-
-	row[0] = thread.ID
-	row[1] = strconv.FormatInt(thread.UserID, 10)
-	row[2] = thread.Username
-	row[3] = thread.StartedAt.Format("2006-01-02 15:04:05")
-
-	for state, ans := range thread.Answers {
-		idx, ok := stateToIndex[state]
-		if ok {
-			row[idx+offset] = ans.Text
-		}
-	}
-
-	return row
-}
-
-func makeAnswersTBody(threads []dto.Thread, stateToIndex map[int]int) [][]string {
-	body := make([][]string, len(threads))
-	for i, thread := range threads {
-		body[i] = makeAnswersTRow(thread, stateToIndex)
-	}
-	return body
 }

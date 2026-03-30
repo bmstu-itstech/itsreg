@@ -2,8 +2,6 @@ package bots
 
 import "errors"
 
-type EntryKey string
-
 type Entry struct {
 	key   EntryKey
 	start State

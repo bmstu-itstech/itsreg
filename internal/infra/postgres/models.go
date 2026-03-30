@@ -54,13 +54,6 @@ type optionRow struct {
 	Text  string `db:"text"`
 }
 
-type participantRow struct {
-	// PK(BotID, UserID)
-	BotID        string  `db:"bot_id"`
-	UserID       int64   `db:"user_id"`
-	ActiveThread *string `db:"active_thread"`
-}
-
 type threadRow struct {
 	// PK(ID)
 	ID        string    `db:"id"`
@@ -80,4 +73,14 @@ type answerRow struct {
 
 func answerIdentity(lhs, rhs answerRow) bool {
 	return lhs.ThreadID == rhs.ThreadID && lhs.State == rhs.State
+}
+
+type threadTableRow struct {
+	ID        string    `db:"id"`
+	Key       string    `db:"key"`
+	UserID    int64     `db:"user_id"`
+	Username  string    `db:"username"`
+	Timestamp time.Time `db:"ts"`
+	Header    string    `db:"header"`
+	Value     *string   `db:"value"`
 }

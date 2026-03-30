@@ -14,7 +14,8 @@ type EntryHandler decorator.CommandHandler[request.EntryCommand]
 
 type entryHandler struct {
 	bp port.BotProvider
-	pr port.ParticipantRepository
+	tr port.ThreadRepository
+	ur port.UserRepository
 	ms port.MessageSender
 }
 
@@ -25,21 +26,27 @@ func (h entryHandler) Handle(ctx context.Context, cmd request.EntryCommand) erro
 	}
 
 	script := bot.Script()
-	prtID := bots.NewParticipantID(bots.UserID(cmd.UserID), bots.BotID(cmd.BotID))
+	userID := bots.UserID(cmd.UserID)
 
-	var response []bots.BotMessage
-	err = h.pr.UpdateOrCreateParticipant(ctx, prtID, func(
-		_ context.Context, prt *bots.Participant,
-	) error {
-		response, err = script.Entry(prt, bots.EntryKey(cmd.Key))
+	err = h.ur.UpsertUsername(ctx, bots.UserID(cmd.UserID), bots.Username(cmd.Username))
+	if err != nil {
 		return err
-	})
+	}
+
+	var thread *bots.Thread
+	var response []bots.BotMessage
+	thread, response, err = script.Entry(bot.ID(), userID, bots.EntryKey(cmd.EntryKey))
+	if err != nil {
+		return err
+	}
+
+	err = h.tr.SaveThread(ctx, thread)
 	if err != nil {
 		return err
 	}
 
 	for _, msg := range response {
-		err = h.ms.Send(ctx, bot.Token(), prtID.UserID(), msg)
+		err = h.ms.Send(ctx, bot.Token(), userID, msg)
 		if err != nil {
 			return err
 		}
@@ -50,10 +57,11 @@ func (h entryHandler) Handle(ctx context.Context, cmd request.EntryCommand) erro
 
 func NewEntryHandler(
 	bp port.BotProvider,
-	pr port.ParticipantRepository,
+	tr port.ThreadRepository,
+	ur port.UserRepository,
 	ms port.MessageSender,
 	l *slog.Logger,
 	mc decorator.MetricsClient,
 ) EntryHandler {
-	return decorator.ApplyCommandDecorators(entryHandler{bp, pr, ms}, l, mc)
+	return decorator.ApplyCommandDecorators(entryHandler{bp, tr, ur, ms}, l, mc)
 }

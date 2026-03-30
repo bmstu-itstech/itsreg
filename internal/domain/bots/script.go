@@ -1,12 +1,9 @@
 package bots
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 )
-
-var ErrNoStartedThread = errors.New("has no started thread")
 
 type EntryNotFoundError struct {
 	key EntryKey
@@ -50,37 +47,32 @@ func (s Script) IsZero() bool {
 	return s.nodes == nil
 }
 
-func (s Script) Entry(prt *Participant, key EntryKey) ([]BotMessage, error) {
+func (s Script) Entry(botID BotID, userID UserID, key EntryKey) (*Thread, []BotMessage, error) {
 	entry, ok := s.entries[key]
 	if !ok {
-		return nil, EntryNotFoundError{key: key}
+		return nil, nil, EntryNotFoundError{key: key}
 	}
 
-	thread, err := prt.StartThread(entry)
+	thread, err := NewThread(botID, userID, entry)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	current, ok := s.nodes[thread.State()]
 	if !ok {
 		// Строго говоря, доменные правила запрещают появление такой ситуации, что
-		// Participant будет иметь несуществующий state.
-		return nil, fmt.Errorf("no bot node with state %d", thread.State())
+		// Thread будет иметь несуществующий state.
+		return nil, nil, fmt.Errorf("no bot node with state %d", thread.State())
 	}
 
-	return current.BotMessages(), nil
+	return thread, current.BotMessages(), nil
 }
 
-func (s Script) Process(prt *Participant, in Message) ([]BotMessage, error) {
-	thread := prt.ActiveThread()
-	if thread == nil {
-		return nil, ErrNoStartedThread
-	}
-
+func (s Script) Process(thread *Thread, in Message) ([]BotMessage, error) {
 	current, ok := s.nodes[thread.State()]
 	if !ok {
 		// Строго говоря, доменные правила запрещают появление такой ситуации, что
-		// Participant будет иметь несуществующий state.
+		// Thread будет иметь несуществующий state.
 		return nil, fmt.Errorf("no bot node with state %d", thread.State())
 	}
 

@@ -20,10 +20,10 @@ type Commands struct {
 }
 
 type Queries struct {
-	GetBot      query.GetBotHandler
-	GetStatus   query.GetStatusHandler
-	GetThreads  query.GetThreadsHandler
-	GetUserBots query.GetUserBotsHandler
+	GetBot          query.GetBotHandler
+	GetStatus       query.GetStatusHandler
+	GetThreadsTable query.GetThreadsTableHandler
+	GetUserBots     query.GetUserBotsHandler
 }
 
 type Application struct {

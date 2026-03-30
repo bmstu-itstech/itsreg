@@ -7,5 +7,5 @@ import (
 )
 
 type EntryHandler interface {
-	Entry(ctx context.Context, botID bots.BotID, userID bots.UserID, key bots.EntryKey) error
+	Entry(ctx context.Context, botID bots.BotID, userID bots.UserID, username bots.Username, key bots.EntryKey) error
 }

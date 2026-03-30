@@ -20,7 +20,10 @@ type getBotHandler struct {
 
 func (h getBotHandler) Handle(ctx context.Context, q request.GetBotQuery) (response.GetBotResponse, error) {
 	bot, err := h.bp.Bot(ctx, bots.BotID(q.ID))
-	return dto.BotToDto(bot), err
+	if err != nil {
+		return response.GetBotResponse{}, err
+	}
+	return dto.BotToDto(bot), nil
 }
 
 func NewGetBotHandler(bp port.BotProvider, l *slog.Logger, mc decorator.MetricsClient) GetBotHandler {
