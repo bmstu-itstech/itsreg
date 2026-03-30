@@ -683,7 +683,7 @@ func (r *Repository) selectThreadTableRows(
   			t.id, 
   			t.key,
 			t.user_id, 
-			coalesce(u.username, ''), 
+			coalesce(u.username, '') AS username,
 			t.started_at AS ts,
 			n.title AS Header,
   			a.text AS Value
