@@ -101,7 +101,7 @@ func (r *Repository) upsertBotRow(
 				created_at
 			)
 		VALUES (
-		    :ID,
+		    :id,
 			:token,
 			:author,
 			:enabled,
