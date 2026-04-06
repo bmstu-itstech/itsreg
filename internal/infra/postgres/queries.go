@@ -161,7 +161,7 @@ func (r *Repository) insertEntryRows(
 			) 
 		VALUES (
 			:bot_id,
-			:Key,
+			:key,
 			:start
 		)
 		`,
@@ -184,7 +184,7 @@ func (r *Repository) updateEntryRow(
 			start = :start
 		WHERE
 			bot_id = :bot_id
-			AND Key = :Key
+			AND key = :key
 		`,
 		row,
 	))
@@ -204,7 +204,7 @@ func (r *Repository) deleteEntryRows(
 			DELETE FROM entries
 			WHERE
 				bot_id = :bot_id
-				AND Key = :Key
+				AND key = :key
 			`,
 			row,
 		))
@@ -620,7 +620,7 @@ func (r *Repository) insertThreadRow(
 				id, 
 				bot_id, 
 				user_id, 
-				Key, 
+				key, 
 				state, 
 				started_at
 			)	 
