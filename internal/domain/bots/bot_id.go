@@ -1,12 +1,20 @@
 package bots
 
+import "github.com/bmstu-itstech/itsreg/pkg/nanoid"
+
+const BotIDLen = 6
+
 // BotID есть уникальный идентификатор бота.
 type BotID string
 
-func (b BotID) IsZero() bool {
-	return b == ""
+func NewBotID() BotID {
+	return BotID(nanoid.NewNanoID(BotIDLen))
 }
 
-func (b BotID) String() string {
-	return string(b)
+func (id BotID) IsZero() bool {
+	return id == ""
+}
+
+func (id BotID) String() string {
+	return string(id)
 }

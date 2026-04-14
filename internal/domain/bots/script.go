@@ -1,56 +1,155 @@
 package bots
 
 import (
+	"errors"
 	"fmt"
-	"strconv"
+	"time"
 )
 
-type EntryNotFoundError struct {
-	key EntryKey
-}
+const (
+	ErrorCodeScriptNodeIsNotConnected ErrorCode = "script-node-is-not-connected"
+	ErrorCodeScriptNodeNotFound       ErrorCode = "script-node-not-found"
+)
 
-func (e EntryNotFoundError) Error() string {
-	return fmt.Sprintf("entry not found: %s", e.key)
-}
+var (
+	ErrEntryNotFound = errors.New("entry not found")
+	ErrScriptDeleted = errors.New("bot deleted")
+)
 
-// Script есть орграф с заданным множеством входных узлов.
+// Script есть агрегат, содержащий информацию о текущем сценарии некоторого бота, и представляет
+// собой конечный автомат (орграф).
+// Требуется, чтобы все узлы были достижимы хотя бы из одного Entry.
 type Script struct {
-	nodes   map[State]Node
-	entries map[EntryKey]Entry
+	id        ScriptID
+	ownerID   UserID
+	desc      string
+	nodes     map[State]Node
+	entries   map[EntryKey]Entry
+	createdAt time.Time
+	updatedAt time.Time
+	deletedAt *time.Time
 }
 
-func NewScript(_nodes []Node, _entries []Entry) (Script, error) {
+func NewScript(
+	ownerID UserID,
+	desc string,
+	_nodes []Node,
+	_entries []Entry,
+) (*Script, error) {
+	if ownerID.IsZero() {
+		return nil, errors.New("zero owner id")
+	}
+
 	nodes := mapNodes(_nodes)
 	entries := mapEntries(_entries)
 
 	if err := checkConnectivity(nodes, entries); err != nil {
-		return Script{}, err
+		return nil, err
 	}
 
-	return Script{
-		nodes:   nodes,
-		entries: entries,
+	return &Script{
+		id:        NewScriptID(),
+		ownerID:   ownerID,
+		desc:      desc,
+		nodes:     nodes,
+		entries:   entries,
+		createdAt: time.Now(),
+		updatedAt: time.Now(),
+		deletedAt: nil,
 	}, nil
 }
 
-func MustNewScript(_nodes []Node, _entries []Entry) Script {
-	s, err := NewScript(_nodes, _entries)
+func MustNewScript(ownerID UserID, desc string, _nodes []Node, _entries []Entry) *Script {
+	s, err := NewScript(ownerID, desc, _nodes, _entries)
 	if err != nil {
 		panic(err)
 	}
 	return s
 }
 
-func (s Script) IsZero() bool {
-	// Достаточно быть пустому списку узлов, чтобы понять,
-	// что скрипт был проинициализирован значениями по умолчанию
-	return s.nodes == nil
+func RestoreScript(
+	id ScriptID,
+	ownerID UserID,
+	desc string,
+	_nodes []Node,
+	_entries []Entry,
+	createdAt time.Time,
+	updatedAt time.Time,
+	deletedAt *time.Time,
+) (*Script, error) {
+	if id.IsZero() {
+		return nil, errors.New("zero script id")
+	}
+
+	if ownerID.IsZero() {
+		return nil, errors.New("zero owner id")
+	}
+
+	if createdAt.IsZero() {
+		return nil, errors.New("zero script created")
+	}
+
+	if updatedAt.IsZero() {
+		return nil, errors.New("zero script updated")
+	}
+
+	if deletedAt != nil && deletedAt.IsZero() {
+		return nil, errors.New("zero script deleted")
+	}
+
+	nodes := mapNodes(_nodes)
+	entries := mapEntries(_entries)
+
+	return &Script{
+		id:        id,
+		ownerID:   ownerID,
+		desc:      desc,
+		nodes:     nodes,
+		entries:   entries,
+		createdAt: createdAt,
+		updatedAt: updatedAt,
+		deletedAt: deletedAt,
+	}, nil
 }
 
-func (s Script) Entry(botID BotID, userID UserID, key EntryKey) (*Thread, []BotMessage, error) {
+func (s *Script) Delete() error {
+	if s.Deleted() {
+		return fmt.Errorf("cannot delete script: %w", ErrScriptDeleted)
+	}
+	s.updatedAt = time.Now()
+	t := time.Now()
+	s.deletedAt = &t
+	return nil
+}
+
+func (s *Script) Replace(desc string, _nodes []Node, _entries []Entry) error {
+	if s.Deleted() {
+		return fmt.Errorf("cannot replace script: %w", ErrScriptDeleted)
+	}
+
+	nodes := mapNodes(_nodes)
+	entries := mapEntries(_entries)
+
+	if err := checkConnectivity(nodes, entries); err != nil {
+		return err
+	}
+
+	s.desc = desc
+	s.nodes = nodes
+	s.entries = entries
+	s.updatedAt = time.Now()
+
+	return nil
+}
+
+func (s *Script) Entry(botID BotID, userID UserID, key EntryKey) (*Thread, []BotMessage, error) {
+	if s.Deleted() {
+		return nil, nil, fmt.Errorf("cannot entry script: %w", ErrScriptDeleted)
+	}
+
 	entry, ok := s.entries[key]
 	if !ok {
-		return nil, nil, EntryNotFoundError{key: key}
+		return nil, nil, fmt.Errorf("%w: %s", ErrEntryNotFound, key)
 	}
 
 	thread, err := NewThread(botID, userID, entry)
@@ -68,7 +167,11 @@ func (s Script) Entry(botID BotID, userID UserID, key EntryKey) (*Thread, []BotM
 	return thread, current.BotMessages(), nil
 }
 
-func (s Script) Process(thread *Thread, in Message) ([]BotMessage, error) {
+func (s *Script) Process(thread *Thread, in Message) ([]BotMessage, error) {
+	if s.Deleted() {
+		return nil, fmt.Errorf("cannot process script: %w", ErrScriptDeleted)
+	}
+
 	current, ok := s.nodes[thread.State()]
 	if !ok {
 		// Строго говоря, доменные правила запрещают появление такой ситуации, что
@@ -96,7 +199,33 @@ func (s Script) Process(thread *Thread, in Message) ([]BotMessage, error) {
 	return next.BotMessages(), nil
 }
 
-func (s Script) Nodes() []Node {
+func (s *Script) EnsureActive() error {
+	if s.Deleted() {
+		return ErrScriptDeleted
+	}
+	return nil
+}
+
+func (s *Script) EnsureOwnedBy(userID UserID) error {
+	if s.ownerID != userID {
+		return ErrPermissionDenied
+	}
+	return nil
+}
+
+func (s *Script) ID() ScriptID {
+	return s.id
+}
+
+func (s *Script) OwnerID() UserID {
+	return s.ownerID
+}
+
+func (s *Script) Desc() string {
+	return s.desc
+}
+
+func (s *Script) Nodes() []Node {
 	nodes := make([]Node, 0, len(s.nodes))
 	for _, node := range s.nodes {
 		nodes = append(nodes, node)
@@ -104,12 +233,28 @@ func (s Script) Nodes() []Node {
 	return nodes
 }
 
-func (s Script) Entries() []Entry {
+func (s *Script) Entries() []Entry {
 	entries := make([]Entry, 0, len(s.entries))
 	for _, entry := range s.entries {
 		entries = append(entries, entry)
 	}
 	return entries
+}
+
+func (s *Script) CreatedAt() time.Time {
+	return s.createdAt
+}
+
+func (s *Script) UpdatedAt() time.Time {
+	return s.updatedAt
+}
+
+func (s *Script) DeletedAt() *time.Time {
+	return s.deletedAt
+}
+
+func (s *Script) Deleted() bool {
+	return s.deletedAt != nil
 }
 
 type color int
@@ -144,19 +289,31 @@ func mapEntries(entries []Entry) map[EntryKey]Entry {
 
 func checkConnectivity(nodes map[State]Node, entries map[EntryKey]Entry) error {
 	cns := coloredNodes(nodes)
-	for _, entry := range entries {
+	for key, entry := range entries {
+		_, ok := nodes[entry.Start()]
+		if !ok {
+			return NewValidationError(NewValidationErrorDetail(
+				"nodes",
+				ErrorCodeScriptNodeNotFound,
+				fmt.Sprintf("an entry with key=%q references to non-existent node[%d]", key, entry.Start().Int()),
+			))
+		}
 		err := colorize(entry.Start(), cns)
 		if err != nil {
 			return err
 		}
 	}
 
-	if ok, state := findWhiteNode(cns); ok {
-		return NewInvalidInputError(
-			"node-is-not-connected",
-			fmt.Sprintf("node %d is connected, marked as an error", state),
-			"state", strconv.Itoa(state.Int()),
-		)
+	whiteNodes := filterWhiteNodes(cns)
+	if len(whiteNodes) > 0 {
+		details := make([]ValidationErrorDetail, 0, len(whiteNodes))
+		for _, node := range whiteNodes {
+			details = append(details, NewValidationErrorDetail(
+				"nodes", ErrorCodeScriptNodeIsNotConnected,
+				fmt.Sprintf("nodes[%d] is not connected", node.State().Int()),
+			))
+		}
+		return NewValidationError(details...)
 	}
 
 	return nil
@@ -170,14 +327,15 @@ func coloredNodes(nodes map[State]Node) map[State]coloredNode {
 	return res
 }
 
+// Функция colorize раскрашивает nodes по следующим правилам:
+// 1. Закрашивает currentState в серый цвет.
+// 2. Если смежный узел - белый, то рекурсивно вызывает colorize для него, а затем закрашивает его в черный цвет.
+// Узел с currentState должен быть представлен в nodes.
 func colorize(currentState State, nodes map[State]coloredNode) error {
 	current, ok := nodes[currentState]
 	if !ok {
-		return NewInvalidInputError(
-			"node-not-found",
-			fmt.Sprintf("node %d is not found", currentState),
-			"state", strconv.Itoa(currentState.Int()),
-		)
+		// Существование currentState должно проверяться до вызова функции
+		return fmt.Errorf("nodes[%d] not found", currentState)
 	}
 
 	dye(nodes, currentState, grey)
@@ -185,11 +343,11 @@ func colorize(currentState State, nodes map[State]coloredNode) error {
 	for _, nextState := range current.Children() {
 		next, o := nodes[nextState]
 		if !o {
-			return NewInvalidInputError(
-				"node-not-found",
-				fmt.Sprintf("node %d is not found", currentState),
-				"state", strconv.Itoa(currentState.Int()),
-			)
+			return NewValidationError(NewValidationErrorDetail(
+				"nodes",
+				ErrorCodeScriptNodeNotFound,
+				fmt.Sprintf("nodes[%d] references to non-existent nodes[%d]", current.State().Int(), nextState.Int()),
+			))
 		}
 
 		if next.Color == white {
@@ -210,11 +368,12 @@ func dye(nodes map[State]coloredNode, state State, color color) {
 	nodes[state] = node
 }
 
-func findWhiteNode(nodes map[State]coloredNode) (bool, State) {
+func filterWhiteNodes(nodes map[State]coloredNode) map[State]coloredNode {
+	res := make(map[State]coloredNode)
 	for state, node := range nodes {
 		if node.Color == white {
-			return true, state
+			res[state] = node
 		}
 	}
-	return false, ZeroState
+	return res
 }

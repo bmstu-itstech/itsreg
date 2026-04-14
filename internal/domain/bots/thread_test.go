@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 const timeEps = time.Millisecond
@@ -14,7 +14,7 @@ const timeEps = time.Millisecond
 func TestNewThread(t *testing.T) {
 	t.Run("Valid entry", func(t *testing.T) {
 		entry := bots.MustNewEntry("start", bots.MustNewState(1))
-		thread, err := bots.NewThread(entry)
+		thread, err := bots.NewThread("bot-1", bots.UserID(2), entry)
 		require.NoError(t, err)
 		require.NotNil(t, thread)
 		require.NotZero(t, thread.ID())
@@ -24,31 +24,29 @@ func TestNewThread(t *testing.T) {
 		require.Less(t, time.Since(thread.StartedAt()), timeEps)
 	})
 
-	t.Run("Empty entry", func(t *testing.T) {
-		var entry bots.Entry
-		_, err := bots.NewThread(entry)
+	t.Run("Empty botID", func(t *testing.T) {
+		entry := bots.MustNewEntry("start", bots.MustNewState(1))
+		_, err := bots.NewThread("", bots.UserID(2), entry)
 		require.Error(t, err)
 	})
-}
 
-func TestThread_Clone(t *testing.T) {
-	state1 := bots.MustNewState(1)
-	entry := bots.MustNewEntry("start", state1)
-	thread := bots.MustNewThread(entry)
-	thread.SaveAnswer(bots.MustNewMessage("test"))
+	t.Run("Empty userID", func(t *testing.T) {
+		entry := bots.MustNewEntry("start", bots.MustNewState(1))
+		_, err := bots.NewThread("bot-1", 0, entry)
+		require.Error(t, err)
+	})
 
-	cloned := thread.Clone()
-	require.True(t, thread.Equals(cloned), "cloned thread didn't match original")
-
-	// Проверяем, что произошло глубокое копирование
-	thread.SaveAnswer(bots.MustNewMessage("updated"))
-	require.NotEqual(t, thread.Answers(), cloned.Answers())
+	t.Run("Empty entry", func(t *testing.T) {
+		var entry bots.Entry
+		_, err := bots.NewThread("bot-1", bots.UserID(2), entry)
+		require.Error(t, err)
+	})
 }
 
 func TestThread_SaveAnswer(t *testing.T) {
 	state1 := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state1)
-	thread := bots.MustNewThread(entry)
+	thread := bots.MustNewThread("bot-1", bots.UserID(2), entry)
 
 	msgA := bots.MustNewMessage("a")
 	thread.SaveAnswer(msgA)
@@ -73,7 +71,7 @@ func TestThread_SaveAnswer(t *testing.T) {
 func TestThread_AppendAnswer(t *testing.T) {
 	state1 := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state1)
-	thread := bots.MustNewThread(entry)
+	thread := bots.MustNewThread("bot-1", bots.UserID(2), entry)
 
 	msgA := bots.MustNewMessage("a")
 	thread.AppendAnswer(msgA)

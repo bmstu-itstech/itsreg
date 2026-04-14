@@ -5,6 +5,11 @@ import (
 	"slices"
 )
 
+const (
+	ErrorCodeNodeEmptyTitle    ErrorCode = "node-empty-title"
+	ErrorCodeNodeHasNoMessages ErrorCode = "node-has-no-messages"
+)
+
 // Node есть минимальная структурная единица Script.
 type Node struct {
 	state State     // Собственный State узла.
@@ -20,8 +25,11 @@ func NewNode(state State, title string, edges []Edge, msgs []Message, opts []Opt
 		return Node{}, errors.New("empty state")
 	}
 
+	var details []ValidationErrorDetail
 	if title == "" {
-		return Node{}, NewInvalidInputError("node-empty-title", "expected not empty title text", "field", "title")
+		details = append(details, NewValidationErrorDetail(
+			"title", ErrorCodeNodeEmptyTitle, "node title cannot be empty",
+		))
 	}
 
 	if edges == nil {
@@ -29,13 +37,17 @@ func NewNode(state State, title string, edges []Edge, msgs []Message, opts []Opt
 	}
 
 	if len(msgs) == 0 {
-		return Node{}, NewInvalidInputError(
-			"node-empty-messages", "expected at least one message in node", "field", "messages",
-		)
+		details = append(details, NewValidationErrorDetail(
+			"messages", ErrorCodeNodeHasNoMessages, "node must have at least one message",
+		))
 	}
 
 	if opts == nil {
 		opts = make([]Option, 0)
+	}
+
+	if len(details) > 0 {
+		return Node{}, NewValidationError(details...)
 	}
 
 	return Node{

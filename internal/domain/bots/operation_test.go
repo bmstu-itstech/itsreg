@@ -5,13 +5,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 func TestNoOp_Act(t *testing.T) {
 	state := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state)
-	thread := bots.MustNewThread(entry)
+	thread := bots.MustNewThread(bots.NewBotID(), bots.UserID(2), entry)
 	op := bots.NoOp{}
 
 	in := bots.MustNewMessage("op")
@@ -22,7 +22,7 @@ func TestNoOp_Act(t *testing.T) {
 func TestSaveOp_Act(t *testing.T) {
 	state := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state)
-	thread := bots.MustNewThread(entry)
+	thread := bots.MustNewThread(bots.NewBotID(), bots.UserID(2), entry)
 	op := bots.SaveOp{}
 
 	in1 := bots.MustNewMessage("op")
@@ -41,7 +41,7 @@ func TestSaveOp_Act(t *testing.T) {
 func TestSaveAppendOp_Act(t *testing.T) {
 	state := bots.MustNewState(1)
 	entry := bots.MustNewEntry("start", state)
-	thread := bots.MustNewThread(entry)
+	thread := bots.MustNewThread(bots.NewBotID(), bots.UserID(2), entry)
 	op := bots.AppendOp{}
 
 	in1 := bots.MustNewMessage("op")

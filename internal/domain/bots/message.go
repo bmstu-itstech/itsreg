@@ -2,13 +2,17 @@ package bots
 
 const messageMergeDelim = "\n"
 
+const ErrorCodeMessageEmptyText ErrorCode = "message-empty-text"
+
 type Message struct {
 	text string
 }
 
 func NewMessage(text string) (Message, error) {
 	if text == "" {
-		return Message{}, NewInvalidInputError("message-empty-text", "expected not empty message text", "field", "text")
+		return Message{}, NewValidationError(NewValidationErrorDetail(
+			"text", ErrorCodeMessageEmptyText, "message text cannot be empty",
+		))
 	}
 
 	return Message{

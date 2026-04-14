@@ -1,21 +1,20 @@
 package bots_test
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 func TestNewEntry(t *testing.T) {
 	tests := []struct {
-		name    string
-		key     bots.EntryKey
-		start   bots.State
-		wantErr bool
-		errCode string
+		name     string
+		key      bots.EntryKey
+		start    bots.State
+		wantErr  bool
+		errCheck func(t *testing.T, err error)
 	}{
 		{
 			name:    "Valid entry",
@@ -28,7 +27,11 @@ func TestNewEntry(t *testing.T) {
 			key:     "",
 			start:   bots.MustNewState(1),
 			wantErr: true,
-			errCode: "entry-empty-key",
+			errCheck: func(t *testing.T, err error) {
+				requireValidationErrorDetails(t, err, []rawDetail{
+					{"key", bots.ErrorCodeEntryEmptyKey},
+				})
+			},
 		},
 	}
 
@@ -37,16 +40,13 @@ func TestNewEntry(t *testing.T) {
 			entry, err := bots.NewEntry(tt.key, tt.start)
 			if tt.wantErr {
 				require.Error(t, err)
-				require.ErrorAs(t, err, &bots.InvalidInputError{})
-				var ierr bots.InvalidInputError
-				ok := errors.As(err, &ierr)
-				require.True(t, ok)
-				require.Equal(t, tt.errCode, ierr.Code)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.key, entry.Key())
-				require.Equal(t, tt.start, entry.Start())
+				tt.errCheck(t, err)
+				return
 			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.key, entry.Key())
+			require.Equal(t, tt.start, entry.Start())
 		})
 	}
 }

@@ -3,103 +3,145 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 
+	apiv3 "github.com/bmstu-itstech/itsreg/internal/api/v3"
+	"github.com/bmstu-itstech/itsreg/internal/api/v3/jwtauth"
+	"github.com/bmstu-itstech/itsreg/internal/app"
+	"github.com/bmstu-itstech/itsreg/internal/app/command"
+	"github.com/bmstu-itstech/itsreg/internal/app/dto"
+	"github.com/bmstu-itstech/itsreg/internal/config"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/infra/jwt"
+	"github.com/bmstu-itstech/itsreg/internal/infra/postgres"
+	"github.com/bmstu-itstech/itsreg/internal/infra/telegram"
+	"github.com/bmstu-itstech/itsreg/pkg/logs"
+	"github.com/bmstu-itstech/itsreg/pkg/logs/sl"
 	"github.com/go-chi/chi/v5"
-	"github.com/jmoiron/sqlx"
-
-	httpapi "github.com/bmstu-itstech/itsreg-bots/internal/api/http"
-	"github.com/bmstu-itstech/itsreg-bots/internal/app"
-	"github.com/bmstu-itstech/itsreg-bots/internal/app/command"
-	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto"
-	"github.com/bmstu-itstech/itsreg-bots/internal/app/dto/request"
-	"github.com/bmstu-itstech/itsreg-bots/internal/app/query"
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
-	"github.com/bmstu-itstech/itsreg-bots/internal/infra/postgres"
-	"github.com/bmstu-itstech/itsreg-bots/internal/infra/telegram"
-	"github.com/bmstu-itstech/itsreg-bots/pkg/logs"
-	"github.com/bmstu-itstech/itsreg-bots/pkg/metrics"
-	"github.com/bmstu-itstech/itsreg-bots/pkg/server"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
-func connectDB() (*sqlx.DB, error) {
-	uri := os.Getenv("DATABASE_URI")
-	if uri == "" {
-		return nil, errors.New("DATABASE_URI must be set")
-	}
-	return sqlx.Connect("postgres", uri)
-}
+const apiPrefix = "/api/v3"
 
 func main() {
-	l := logs.DefaultLogger()
-	mc := metrics.NoOp{}
-
-	db, err := connectDB()
-	if err != nil {
-		log.Fatal(err)
+	var cfgPath string
+	flag.StringVar(&cfgPath, "config", "", "path to config file")
+	flag.Parse()
+	if cfgPath == "" {
+		flag.Usage()
+		os.Exit(1)
 	}
+	cfg := config.MustLoad(cfgPath)
 
-	repos := postgres.NewRepository(db, l)
-	sender := telegram.NewMessageSender(l)
+	l := logs.NewLogger(cfg.Logging.Level)
 
-	process := ProcessHandlerAdapter{command.NewProcessHandler(repos, repos, sender, l, mc)}
-	entry := EntryHandlerAdapter{command.NewEntryHandler(repos, repos, repos, sender, l, mc)}
+	l.Debug(fmt.Sprintf("config: %+v", cfg))
+
+	repos := postgres.MustNewRepository(cfg.Postgres)
+	sender := telegram.NewMessageSender(l) // Надо убрать зависимость от логгера в инфре
+	// И убрать эти кошмарные адаптеры, заменив на ссылку на прикладной слой
+	process := ProcessHandlerAdapter{command.NewProcessHandler(repos, repos, repos, sender, l)}
+	entry := EntryHandlerAdapter{command.NewEntryHandler(repos, repos, repos, repos, sender, l)}
 	instanceManager := telegram.NewInstanceManager(l, process, entry)
+	ms := telegram.NewMessageSender(l)
+	tokenService := jwt.MustNewTokenService(cfg.JWT)
 
-	a := app.Application{
-		Commands: app.Commands{
-			CreateBot:    command.NewCreateBotHandler(repos, l, mc),
-			DeleteBot:    command.NewDeleteBotHandler(repos, l, mc),
-			DisableBot:   command.NewDisableBotHandler(repos, l, mc),
-			EnableBot:    command.NewEnableBotHandler(repos, instanceManager, l, mc),
-			Entry:        command.NewEntryHandler(repos, repos, repos, sender, l, mc),
-			Mailing:      command.NewMailingHandler(repos, repos, sender, l, mc),
-			Process:      command.NewProcessHandler(repos, repos, sender, l, mc),
-			Start:        command.NewStartHandler(instanceManager, repos, l, mc),
-			StartEnabled: command.NewStartEnabledHandler(instanceManager, repos, l, mc),
-			Stop:         command.NewStopHandler(instanceManager, l, mc),
-			UpdateBot:    command.NewUpdateBotHandler(repos, l, mc),
-		},
-		Queries: app.Queries{
-			GetBot:          query.NewGetBotHandler(repos, l, mc),
-			GetStatus:       query.NewGetStatusHandler(instanceManager, repos, l, mc),
-			GetThreadsTable: query.NewGetThreadsTableHandler(repos, repos, l, mc),
-			GetUserBots:     query.NewGetUserBotsHandler(repos, l, mc),
-		},
+	infra := app.Infra{
+		BotRepository:        repos,
+		InstanceManager:      instanceManager,
+		MessageSender:        ms,
+		RunRepository:        repos,
+		ScriptMetaProvider:   repos,
+		ScriptRepository:     repos,
+		ThreadRepository:     repos,
+		ThreadsTableProvider: repos,
+		UserRepository:       repos,
 	}
+	a := app.NewApplication(infra, l)
 
-	err = a.Commands.StartEnabled.Handle(context.Background(), request.StartEnabledBotsCommand{})
-	if err != nil {
-		l.ErrorContext(context.Background(), "failed to start enabled bots", slog.String("error", err.Error()))
-	}
+	// Инициализация HTTP сервера
 
-	server.RunHTTPServer(func(router chi.Router) http.Handler {
-		return httpapi.HandlerFromMux(httpapi.NewHTTPServer(&a), router)
+	root := chi.NewRouter()
+	root.Use(middleware.RequestID)
+	root.Use(middleware.RealIP)
+	root.Use(sl.NewLoggerMiddleware(l))
+	root.Use(middleware.Recoverer)
+	corsMiddleware := cors.New(cors.Options{
+		AllowedOrigins:   cfg.HTTP.CORSAllowOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           cfg.HTTP.CORSMaxAge,
 	})
+	root.Use(corsMiddleware.Handler)
+	root.Use(
+		middleware.SetHeader("X-Content-Type-Options", "nosniff"),
+		middleware.SetHeader("X-Frame-Options", "deny"),
+	)
+	root.Use(middleware.NoCache)
+	root.Use(jwtauth.NewMiddleware(tokenService).Handler)
+	s := http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.HTTP.Port),
+		Handler: apiv3.HandlerFromMuxWithBaseURL(apiv3.NewServer(a, apiPrefix), root, apiPrefix),
+	}
+
+	// Асинхронный запуск нескольких серверов.
+	// Так, добавление нового сервера (например, читающего из брокера), осуществляется запуском ещё одной горутины
+	// с записью ошибки в errCh.
+
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+	errCh := make(chan error, 1)
+
+	go func() {
+		l.Info("starting http server", slog.String("addr", s.Addr))
+		err := s.ListenAndServe()
+		errCh <- err
+	}()
+
+	var err error
+	select {
+	case <-ctx.Done():
+		l.Info("received cancel signal, gracefully shutting down")
+		err = s.Shutdown(context.Background())
+		if err != nil {
+			l.Error("error shutting down http server", "error", err)
+		}
+	case err = <-errCh:
+		if err != nil && !errors.Is(err, context.Canceled) {
+			l.Error("listen error", slog.String("error", err.Error()))
+			cancel()
+		}
+	}
 }
 
 // Страшно, очень страшно.
 // Как сделать иначе?
 
 type ProcessHandlerAdapter struct {
-	H command.ProcessHandler
+	H *command.ProcessHandler
 }
 
 func (a ProcessHandlerAdapter) Process(
 	ctx context.Context, botID bots.BotID, userID bots.UserID, msg bots.Message,
 ) error {
-	return a.H.Handle(ctx, request.ProcessCommand{
+	_, err := a.H.Handle(ctx, command.ProcessRequest{
 		BotID:   string(botID),
 		UserID:  int64(userID),
 		Message: dto.Message{Text: msg.Text()},
 	})
+	return err
 }
 
 type EntryHandlerAdapter struct {
-	H command.EntryHandler
+	H *command.EntryHandler
 }
 
 func (a EntryHandlerAdapter) Entry(
@@ -109,10 +151,11 @@ func (a EntryHandlerAdapter) Entry(
 	username bots.Username,
 	key bots.EntryKey,
 ) error {
-	return a.H.Handle(ctx, request.EntryCommand{
+	_, err := a.H.Handle(ctx, command.EntryRequest{
 		BotID:    string(botID),
 		UserID:   int64(userID),
 		Username: string(username),
 		EntryKey: string(key),
 	})
+	return err
 }

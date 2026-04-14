@@ -2,6 +2,8 @@ package bots
 
 import "errors"
 
+const ErrorCodeEntryEmptyKey = "entry-empty-key"
+
 type Entry struct {
 	key   EntryKey
 	start State
@@ -9,7 +11,9 @@ type Entry struct {
 
 func NewEntry(key EntryKey, start State) (Entry, error) {
 	if key == "" {
-		return Entry{}, NewInvalidInputError("entry-empty-key", "expected not empty entry key", "field", "key")
+		return Entry{}, NewValidationError(
+			NewValidationErrorDetail("key", ErrorCodeEntryEmptyKey, "entry key cannot be empty"),
+		)
 	}
 
 	if start == ZeroState {

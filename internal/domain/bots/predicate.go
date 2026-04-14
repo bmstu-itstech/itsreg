@@ -5,6 +5,12 @@ import (
 	"regexp"
 )
 
+const (
+	ErrorCodeExactMatchPredicateEmptyText ErrorCode = "exact-match-predicate-empty-text"
+	ErrorCodeRegexPredicateEmptyPattern   ErrorCode = "exact-match-predicate-empty-pattern"
+	ErrorCodeRegexPredicateInvalidPattern ErrorCode = "regex-predicate-invalid-pattern"
+)
+
 type Predicate interface {
 	Match(msg Message) bool
 }
@@ -21,9 +27,9 @@ type ExactMatchPredicate struct {
 
 func NewExactMatchPredicate(text string) (Predicate, error) {
 	if text == "" {
-		return nil, NewInvalidInputError(
-			"predicate-empty-text", "expected non-empty string for exact match predicate", "field", "text",
-		)
+		return nil, NewValidationError(NewValidationErrorDetail(
+			"text", ErrorCodeExactMatchPredicateEmptyText, "text field in exact match predicate cannot be empty",
+		))
 	}
 	return ExactMatchPredicate{text}, nil
 }
@@ -50,19 +56,17 @@ type RegexMatchPredicate struct {
 
 func NewRegexMatchPredicate(pattern string) (Predicate, error) {
 	if pattern == "" {
-		return nil, NewInvalidInputError(
-			"predicate-empty-pattern", "expected non-empty predicate pattern", "field", "pattern",
-		)
+		return nil, NewValidationError(NewValidationErrorDetail(
+			"pattern", ErrorCodeRegexPredicateEmptyPattern, "pattern field in regex predicate cannot be empty",
+		))
 	}
 
 	regex, err := regexp.Compile(pattern)
 	if err != nil {
-		return nil, NewInvalidInputError(
-			"predicate-invalid-pattern",
-			fmt.Sprintf("failed to compile regex pattern '%s': %s", pattern, err.Error()),
-			"field",
-			"pattern",
-		)
+		return nil, NewValidationError(NewValidationErrorDetail(
+			"pattern", ErrorCodeRegexPredicateInvalidPattern,
+			fmt.Sprintf("failed to compile regex pattern %q: %s", pattern, err.Error()),
+		))
 	}
 
 	return RegexMatchPredicate{regex}, nil

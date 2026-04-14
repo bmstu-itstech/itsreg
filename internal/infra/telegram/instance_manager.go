@@ -8,8 +8,8 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/app/port"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 type InstanceManager struct {

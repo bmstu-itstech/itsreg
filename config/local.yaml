@@ -1,0 +1,14 @@
+http:
+  port: 8400
+  cors_allow_origins:
+  cors_max_age: 300
+
+postgres:
+  uri:
+
+logging:
+  level: debug
+
+jwt:
+  secret:
+  access_ttl: 24h

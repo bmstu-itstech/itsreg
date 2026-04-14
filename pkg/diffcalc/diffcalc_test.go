@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bmstu-itstech/itsreg-bots/pkg/diffcalc"
+	"github.com/bmstu-itstech/itsreg/pkg/diffcalc"
 )
 
 type TestEntity struct {

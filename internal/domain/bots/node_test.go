@@ -5,21 +5,21 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 func TestNewNode(t *testing.T) {
 	edge := bots.NewEdge(bots.AlwaysTruePredicate{}, bots.MustNewState(2), bots.NoOp{})
 
 	tests := []struct {
-		name    string
-		state   bots.State
-		title   string
-		edges   []bots.Edge
-		msgs    []bots.Message
-		opts    []bots.Option
-		wantErr bool
-		errCode string
+		name     string
+		state    bots.State
+		title    string
+		edges    []bots.Edge
+		msgs     []bots.Message
+		opts     []bots.Option
+		wantErr  bool
+		errCheck func(t *testing.T, err error)
 	}{
 		{
 			name:    "Valid node with one message",
@@ -40,14 +40,16 @@ func TestNewNode(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Empty title - error",
+			name:    "Empty title",
 			state:   bots.MustNewState(1),
 			title:   "",
 			edges:   []bots.Edge{edge},
 			msgs:    []bots.Message{bots.MustNewMessage("test")},
 			opts:    nil,
 			wantErr: true,
-			errCode: "node-empty-title",
+			errCheck: func(t *testing.T, err error) {
+				requireValidationErrorDetails(t, err, []rawDetail{{"title", bots.ErrorCodeNodeEmptyTitle}})
+			},
 		},
 		{
 			name:    "Empty messages - error",
@@ -56,7 +58,11 @@ func TestNewNode(t *testing.T) {
 			edges:   []bots.Edge{},
 			msgs:    []bots.Message{},
 			wantErr: true,
-			errCode: "node-empty-messages",
+			errCheck: func(t *testing.T, err error) {
+				requireValidationErrorDetails(
+					t, err, []rawDetail{{"messages", bots.ErrorCodeNodeHasNoMessages}},
+				)
+			},
 		},
 	}
 
@@ -65,16 +71,14 @@ func TestNewNode(t *testing.T) {
 			node, err := bots.NewNode(tt.state, tt.title, tt.edges, tt.msgs, tt.opts)
 			if tt.wantErr {
 				require.Error(t, err)
-				var iiErr bots.InvalidInputError
-				require.ErrorAs(t, err, &iiErr)
-				require.Equal(t, tt.errCode, iiErr.Code)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.state, node.State())
-				require.Equal(t, tt.title, node.Title())
-				require.Equal(t, tt.edges, node.Edges())
-				require.Equal(t, tt.msgs, node.Messages())
+				tt.errCheck(t, err)
+				return
 			}
+			require.NoError(t, err)
+			require.Equal(t, tt.state, node.State())
+			require.Equal(t, tt.title, node.Title())
+			require.Equal(t, tt.edges, node.Edges())
+			require.Equal(t, tt.msgs, node.Messages())
 		})
 	}
 }

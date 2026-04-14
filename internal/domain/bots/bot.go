@@ -2,119 +2,209 @@ package bots
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
+const (
+	ErrorCodeBotEmptyScriptID ErrorCode = "bot-empty-script-id"
+	ErrorCodeBotEmptyToken    ErrorCode = "bot-empty-token"
+)
+
+var ErrBotDeleted = errors.New("bot deleted")
+
 type Bot struct {
 	id        BotID
+	ownerID   UserID
+	scriptID  ScriptID
 	token     Token
-	author    UserID
-	enabled   bool
-	script    Script
+	desc      string
 	createdAt time.Time
+	updatedAt time.Time
+	deletedAt *time.Time
 }
 
-func NewBot(id BotID, token Token, author UserID, script Script) (*Bot, error) {
-	if id == "" {
-		return nil, NewInvalidInputError("bot-empty-id", "expected not empty bot id", "field", "id2")
+func NewBot(ownerID UserID, scriptID ScriptID, token Token, desc string) (*Bot, error) {
+	var details []ValidationErrorDetail
+	if ownerID.IsZero() {
+		// Ошибка не на стороне пользователя
+		return nil, errors.New("ownerID is zero")
 	}
 
-	if token == "" {
-		return nil, NewInvalidInputError("bot-empty-token", "expected not empty bot token", "field", "token")
+	if scriptID.IsZero() {
+		details = append(
+			details, NewValidationErrorDetail("scriptID", ErrorCodeBotEmptyScriptID, "scriptID cannot be zero"),
+		)
 	}
 
-	if author == 0 {
-		return nil, NewInvalidInputError("bot-empty-author-id", "expected not empty bot author", "field", "author")
+	if token.IsZero() {
+		details = append(details, NewValidationErrorDetail("token", ErrorCodeBotEmptyToken, "token cannot be zero"))
 	}
 
-	if script.IsZero() {
-		return nil, errors.New("empty script")
+	if len(details) > 0 {
+		return nil, NewValidationError(details...)
 	}
 
 	return &Bot{
-		id:        id,
+		id:        NewBotID(),
+		ownerID:   ownerID,
+		scriptID:  scriptID,
 		token:     token,
-		author:    author,
-		enabled:   false,
-		script:    script,
-		createdAt: time.Now().Truncate(time.Second),
+		desc:      desc,
+		createdAt: time.Now(),
+		updatedAt: time.Now(),
+		deletedAt: nil,
 	}, nil
 }
 
-func MustNewBot(id BotID, token Token, author UserID, script Script) *Bot {
-	b, err := NewBot(id, token, author, script)
+func MustNewBot(ownerID UserID, scriptID ScriptID, token Token, desc string) *Bot {
+	b, err := NewBot(ownerID, scriptID, token, desc)
 	if err != nil {
 		panic(err)
 	}
 	return b
 }
 
-func (b *Bot) Enable() {
-	b.enabled = true
+func RestoreBot(
+	id BotID,
+	ownerID UserID,
+	scriptID ScriptID,
+	token Token,
+	desc string,
+	createdAt time.Time,
+	updatedAt time.Time,
+	deletedAt *time.Time,
+) (*Bot, error) {
+	if id.IsZero() {
+		return nil, errors.New("id is zero")
+	}
+
+	if ownerID.IsZero() {
+		return nil, errors.New("ownerID is zero")
+	}
+
+	if scriptID.IsZero() {
+		return nil, errors.New("scriptID is zero")
+	}
+
+	if token.IsZero() {
+		return nil, errors.New("token is zero")
+	}
+
+	if createdAt.IsZero() {
+		return nil, errors.New("createdAt is zero")
+	}
+
+	if updatedAt.IsZero() {
+		return nil, errors.New("updatedAt is zero")
+	}
+
+	if deletedAt != nil && deletedAt.IsZero() {
+		return nil, errors.New("deletedAt is zero")
+	}
+
+	return &Bot{
+		id:        id,
+		ownerID:   ownerID,
+		scriptID:  scriptID,
+		token:     token,
+		desc:      desc,
+		createdAt: createdAt,
+		updatedAt: updatedAt,
+		deletedAt: deletedAt,
+	}, nil
 }
 
-func (b *Bot) Disable() {
-	b.enabled = false
+func (b *Bot) EnsureActive() error {
+	if b.Deleted() {
+		return ErrBotDeleted
+	}
+	return nil
+}
+
+func (b *Bot) EnsureOwnedBy(userID UserID) error {
+	if b.ownerID != userID {
+		return ErrPermissionDenied
+	}
+	return nil
+}
+
+func (b *Bot) Delete() error {
+	if b.Deleted() {
+		return fmt.Errorf("cannot delete bot: %w", ErrBotDeleted)
+	}
+	t := time.Now()
+	b.deletedAt = &t
+	return nil
+}
+
+func (b *Bot) SetScriptID(scriptID ScriptID) error {
+	if b.Deleted() {
+		return fmt.Errorf("cannot update bot: %w", ErrBotDeleted)
+	}
+	if scriptID.IsZero() {
+		return NewValidationError(
+			NewValidationErrorDetail("scriptID", ErrorCodeBotEmptyScriptID, "scriptID cannot be zero"),
+		)
+	}
+	b.scriptID = scriptID
+	b.updatedAt = time.Now()
+	return nil
+}
+
+func (b *Bot) SetToken(token Token) error {
+	if b.Deleted() {
+		return fmt.Errorf("cannot update bot: %w", ErrBotDeleted)
+	}
+	if token.IsZero() {
+		return NewValidationError(NewValidationErrorDetail("token", ErrorCodeBotEmptyToken, "token cannot be zero"))
+	}
+	b.token = token
+	b.updatedAt = time.Now()
+	return nil
+}
+
+func (b *Bot) SetDesc(desc string) error {
+	if b.Deleted() {
+		return fmt.Errorf("cannot update bot: %w", ErrBotDeleted)
+	}
+	b.desc = desc
+	b.updatedAt = time.Now()
+	return nil
 }
 
 func (b *Bot) ID() BotID {
 	return b.id
 }
 
+func (b *Bot) OwnerID() UserID {
+	return b.ownerID
+}
+
+func (b *Bot) ScriptID() ScriptID {
+	return b.scriptID
+}
+
 func (b *Bot) Token() Token {
 	return b.token
 }
 
-func (b *Bot) Author() UserID {
-	return b.author
-}
-
-func (b *Bot) Enabled() bool {
-	return b.enabled
-}
-
-func (b *Bot) Script() Script {
-	return b.script
+func (b *Bot) Desc() string {
+	return b.desc
 }
 
 func (b *Bot) CreatedAt() time.Time {
 	return b.createdAt
 }
 
-func UnmarshallBot(
-	id string,
-	token string,
-	author int64,
-	enabled bool,
-	script Script,
-	createdAt time.Time,
-) (*Bot, error) {
-	if id == "" {
-		return nil, errors.New("id is empty")
-	}
+func (b *Bot) UpdatedAt() time.Time {
+	return b.updatedAt
+}
 
-	if token == "" {
-		return nil, errors.New("token is empty")
-	}
+func (b *Bot) DeletedAt() *time.Time {
+	return b.deletedAt
+}
 
-	if author == 0 {
-		return nil, errors.New("author id is empty")
-	}
-
-	if script.IsZero() {
-		return nil, errors.New("script is empty")
-	}
-
-	if createdAt.IsZero() {
-		return nil, errors.New("createdAt is empty")
-	}
-
-	return &Bot{
-		id:        BotID(id),
-		token:     Token(token),
-		author:    UserID(author),
-		enabled:   enabled,
-		script:    script,
-		createdAt: createdAt,
-	}, nil
+func (b *Bot) Deleted() bool {
+	return b.deletedAt != nil
 }

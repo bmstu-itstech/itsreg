@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 func TestAlwaysTruePredicate(t *testing.T) {
@@ -26,8 +26,9 @@ func TestNewExactMatchPredicate(t *testing.T) {
 	t.Run("Empty text", func(t *testing.T) {
 		_, err := bots.NewExactMatchPredicate("")
 		require.Error(t, err)
-		require.ErrorContains(t, err, "expected non-empty string for exact match predicate")
-		require.ErrorAs(t, err, &bots.InvalidInputError{})
+		requireValidationErrorDetails(
+			t, err, []rawDetail{{"text", bots.ErrorCodeExactMatchPredicateEmptyText}},
+		)
 	})
 }
 
@@ -69,10 +70,10 @@ func TestExactMatchPredicate_Match(t *testing.T) {
 
 func TestNewRegexMatchPredicate(t *testing.T) {
 	tests := []struct {
-		name    string
-		pattern string
-		wantErr bool
-		errCode string
+		name     string
+		pattern  string
+		wantErr  bool
+		errCheck func(t *testing.T, err error)
 	}{
 		{
 			name:    "Valid regex pattern",
@@ -83,13 +84,19 @@ func TestNewRegexMatchPredicate(t *testing.T) {
 			name:    "Empty pattern",
 			pattern: "",
 			wantErr: true,
-			errCode: "predicate-empty-pattern",
+			errCheck: func(t *testing.T, err error) {
+				requireValidationErrorDetails(t, err, []rawDetail{{"pattern", bots.ErrorCodeRegexPredicateEmptyPattern}})
+			},
 		},
 		{
 			name:    "Invalid pattern",
 			pattern: "^[a-z",
 			wantErr: true,
-			errCode: "predicate-invalid-pattern",
+			errCheck: func(t *testing.T, err error) {
+				requireValidationErrorDetails(t, err, []rawDetail{
+					{"pattern", bots.ErrorCodeRegexPredicateInvalidPattern},
+				})
+			},
 		},
 	}
 
@@ -98,13 +105,11 @@ func TestNewRegexMatchPredicate(t *testing.T) {
 			p, err := bots.NewRegexMatchPredicate(tt.pattern)
 			if tt.wantErr {
 				require.Error(t, err)
-				var iiErr bots.InvalidInputError
-				require.ErrorAs(t, err, &iiErr)
-				require.Equal(t, tt.errCode, iiErr.Code)
-			} else {
-				require.NoError(t, err)
-				require.NotZero(t, p)
+				tt.errCheck(t, err)
+				return
 			}
+			require.NoError(t, err)
+			require.NotZero(t, p)
 		})
 	}
 }

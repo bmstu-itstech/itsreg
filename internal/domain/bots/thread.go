@@ -3,8 +3,6 @@ package bots
 import (
 	"errors"
 	"time"
-
-	"github.com/bmstu-itstech/itsreg-bots/pkg/uuid"
 )
 
 // Thread есть цепочка ответов пользователя от Entry до конечного State или
@@ -20,12 +18,20 @@ type Thread struct {
 }
 
 func NewThread(botID BotID, userID UserID, entry Entry) (*Thread, error) {
+	if botID.IsZero() {
+		return nil, errors.New("botID is zero")
+	}
+
+	if userID.IsZero() {
+		return nil, errors.New("userID is zero")
+	}
+
 	if entry.IsZero() {
 		return nil, errors.New("entry is empty")
 	}
 
 	return &Thread{
-		id:        ThreadID(uuid.Generate()),
+		id:        NewThreadID(),
 		botID:     botID,
 		userID:    userID,
 		key:       entry.Key(),
