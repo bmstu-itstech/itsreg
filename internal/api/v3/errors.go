@@ -4,10 +4,22 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 	"github.com/go-chi/render"
 )
 
 var ErrAuthorizationRequired = errors.New("authorization required")
+
+func renderValidationError(w http.ResponseWriter, r *http.Request, err bots.ValidationError) {
+	details := make([]ValidationErrorDetail, len(err.Details))
+	for i, d := range err.Details {
+		details[i].Field = d.Field
+		details[i].Code = string(d.Code)
+		details[i].Message = d.Message
+	}
+	render.Status(r, http.StatusBadRequest)
+	render.JSON(w, r, details)
+}
 
 func renderPlainError(w http.ResponseWriter, r *http.Request, inner error, code int) {
 	e := PlainError{Message: inner.Error()}
@@ -15,7 +27,7 @@ func renderPlainError(w http.ResponseWriter, r *http.Request, inner error, code 
 	render.JSON(w, r, e)
 }
 
-func renderInternalServerError(w http.ResponseWriter, r *http.Request) {
+func renderInternalServerError(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusInternalServerError)
 	_, _ = w.Write([]byte("internal server error"))

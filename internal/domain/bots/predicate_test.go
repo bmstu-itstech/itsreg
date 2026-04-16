@@ -85,7 +85,9 @@ func TestNewRegexMatchPredicate(t *testing.T) {
 			pattern: "",
 			wantErr: true,
 			errCheck: func(t *testing.T, err error) {
-				requireValidationErrorDetails(t, err, []rawDetail{{"pattern", bots.ErrorCodeRegexPredicateEmptyPattern}})
+				requireValidationErrorDetails(t, err, []rawDetail{
+					{"pattern", bots.ErrorCodeRegexPredicateEmptyPattern},
+				})
 			},
 		},
 		{

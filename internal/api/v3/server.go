@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/command"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 
 	"github.com/go-chi/render"
 
@@ -98,13 +99,71 @@ func (s *Server) GetScripts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	uid, ok := jwtauth.FromContext(r.Context())
+	if !ok {
+		renderPlainError(w, r, ErrAuthorizationRequired, http.StatusUnauthorized)
+		return
+	}
+
+	var req CreateBotRequest
+	if err := render.DecodeJSON(r.Body, &req); err != nil {
+		renderPlainError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	res, err := s.app.Commands.CreateBot.Handle(r.Context(), command.CreateBotRequest{
+		ActorID:  uid,
+		ScriptID: req.ScriptID,
+		Token:    req.Token,
+		Desc:     req.Desc,
+	})
+	var vErr bots.ValidationError
+	if errors.As(err, &vErr) {
+		renderValidationError(w, r, vErr)
+		return
+	}
+	if errors.Is(err, port.ErrBotAlreadyExists) {
+		renderPlainError(w, r, err, http.StatusConflict)
+		return
+	}
+	if errors.Is(err, port.ErrScriptNotFound) {
+		renderPlainError(w, r, err, http.StatusUnprocessableEntity)
+		return
+	}
+	if err != nil {
+		renderInternalServerError(w, r)
+		return
+	}
+
+	body := CreateBotResponse{BotID: res.BotID}
+	w.Header().Set("Content-Location", fmt.Sprintf("%s/bots/%s", s.prefix, res.BotID))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	render.JSON(w, r, body)
 }
 
 func (s *Server) GetBot(w http.ResponseWriter, r *http.Request, id string) {
-	//TODO implement me
-	panic("implement me")
+	uid, ok := jwtauth.FromContext(r.Context())
+	if !ok {
+		renderPlainError(w, r, ErrAuthorizationRequired, http.StatusUnauthorized)
+		return
+	}
+
+	res, err := s.app.Queries.GetBot.Handle(r.Context(), query.GetBotRequest{
+		ActorID: uid,
+		BotID:   id,
+	})
+	if errors.Is(err, port.ErrBotNotFound) {
+		renderPlainError(w, r, err, http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		renderInternalServerError(w, r)
+		return
+	}
+
+	body := botToAPI(res)
+	render.JSON(w, r, body)
 }
 
 func (s *Server) CreateScript(w http.ResponseWriter, r *http.Request) {
@@ -126,6 +185,11 @@ func (s *Server) CreateScript(w http.ResponseWriter, r *http.Request) {
 		Nodes:   nodesFromAPI(req.Nodes),
 		Entries: entriesFromAPI(req.Entries),
 	})
+	var vErr bots.ValidationError
+	if errors.As(err, &vErr) {
+		renderValidationError(w, r, vErr)
+		return
+	}
 	if errors.Is(err, port.ErrScriptAlreadyExists) {
 		renderPlainError(w, r, err, http.StatusConflict)
 		return

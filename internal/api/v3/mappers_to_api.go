@@ -109,3 +109,14 @@ func scriptsToAPI(ds []dto.Script) []Script {
 	}
 	return res
 }
+
+func botToAPI(d dto.Bot) Bot {
+	return Bot{
+		CreatedAt: d.CreatedAt,
+		Desc:      d.Desc,
+		Id:        d.ID,
+		OwnerID:   d.OwnerID,
+		ScriptID:  d.ScriptID,
+		UpdatedAt: d.UpdatedAt,
+	}
+}

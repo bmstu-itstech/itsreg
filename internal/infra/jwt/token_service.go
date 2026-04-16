@@ -15,9 +15,9 @@ import (
 )
 
 type claims struct {
-	UID int64 `json:"uid"`
-
 	jwt.RegisteredClaims
+
+	UID int64 `json:"uid"`
 }
 
 type TokenService struct {

@@ -22,24 +22,6 @@ func operationFromDTO(d string) (bots.Operation, error) {
 	}
 }
 
-func operationsFromDTOPrefixed(ds []string, prefix string) ([]bots.Operation, error) {
-	var vErr bots.ValidationError
-
-	ops := make([]bots.Operation, len(ds))
-	for i, d := range ds {
-		op, err := operationFromDTO(d)
-		if err != nil {
-			vErr = vErr.AppendPrefixed(err, fmt.Sprintf("%s[%d]", prefix, i))
-		}
-		ops[i] = op
-	}
-
-	if vErr.OrError() != nil {
-		return nil, vErr
-	}
-	return ops, nil
-}
-
 func operationToDTO(op bots.Operation) string {
 	switch op.(type) {
 	case bots.NoOp:

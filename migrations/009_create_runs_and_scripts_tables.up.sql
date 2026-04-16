@@ -1,9 +1,9 @@
 ALTER SCHEMA public
     RENAME TO old;
 
-CREATE SCHEMA public;
+CREATE SCHEMA IF NOT EXISTS public;
 
-ALTER TABLE old.schema_migrations
+ALTER TABLE IF EXISTS old.schema_migrations
     SET SCHEMA public;
 
 

@@ -73,8 +73,12 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 		bots.Token(req.Token),
 		req.Desc,
 	)
+	if errors.As(err, &bots.ValidationError{}) {
+		l.WarnContext(ctx, "failed to validate bot", slog.String("error", err.Error()))
+		return CreateBotResponse{}, err
+	}
 	if err != nil {
-		l.WarnContext(ctx, "failed to create bot", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to create bot", slog.String("error", err.Error()))
 		return CreateBotResponse{}, err
 	}
 

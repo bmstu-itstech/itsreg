@@ -49,7 +49,8 @@ func (h *DeleteScriptHandler) Handle(ctx context.Context, req DeleteScriptReques
 
 	if err = script.EnsureActive(); err != nil {
 		l.WarnContext(ctx, "failed to ensure active script", slog.String("error", err.Error()))
-		return DeleteScriptResponse{}, port.ErrScriptNotFound
+		l.WarnContext(ctx, "script already deleted")
+		return DeleteScriptResponse{}, nil
 	}
 
 	if err = script.EnsureOwnedBy(bots.UserID(req.ActorID)); err != nil {

@@ -48,40 +48,40 @@ type AlwaysPredicateType string
 // Bot Сущность, связывающая между собой сценарий (Script) и запуски телеграм-бота (Run).
 type Bot struct {
 	// CreatedAt Метка времени создания бота.
-	CreatedAt *time.Time `json:"createdAt,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
 
 	// Desc Человекочитаемое описание назначения бота.
-	Desc *string `json:"desc,omitempty"`
+	Desc string `json:"desc"`
 
 	// Id Уникальный ID бота.
-	Id *string `json:"id,omitempty"`
+	Id string `json:"id"`
 
 	// OwnerID ID владельца бота.
-	OwnerID *int64 `json:"ownerID,omitempty"`
+	OwnerID int64 `json:"ownerID"`
 
 	// ScriptID ID сценария для бота.
-	ScriptID *string `json:"scriptID,omitempty"`
+	ScriptID string `json:"scriptID"`
 
 	// UpdatedAt Метка времени последнего обновления бота.
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // CreateBotRequest defines model for CreateBotRequest.
 type CreateBotRequest struct {
 	// Desc Человекочитаемое описание назначения бота.
-	Desc *string `json:"desc,omitempty"`
+	Desc string `json:"desc"`
 
 	// ScriptID ID сценария для бота.
 	ScriptID string `json:"scriptID"`
 
 	// Token Telegram-токен бота, полученный через @BotFather.
-	Token *Token `json:"token,omitempty"`
+	Token Token `json:"token"`
 }
 
 // CreateBotResponse defines model for CreateBotResponse.
 type CreateBotResponse struct {
-	// ScriptID Уникальный ID бота.
-	ScriptID *string `json:"scriptID,omitempty"`
+	// BotID Уникальный ID бота.
+	BotID string `json:"botID"`
 }
 
 // CreateScriptRequest defines model for CreateScriptRequest.
@@ -210,6 +210,21 @@ type Script struct {
 
 // Token Telegram-токен бота, полученный через @BotFather.
 type Token = string
+
+// ValidationError defines model for ValidationError.
+type ValidationError = []ValidationErrorDetail
+
+// ValidationErrorDetail defines model for ValidationErrorDetail.
+type ValidationErrorDetail struct {
+	// Code Код ошибки валидации для данного поля.
+	Code string `json:"code"`
+
+	// Field Название поля, вызвавшего ошибку валидации.
+	Field string `json:"field"`
+
+	// Message Сообщение об ошибке валидации для данного поля.
+	Message string `json:"message"`
+}
 
 // CreateBotJSONRequestBody defines body for CreateBot for application/json ContentType.
 type CreateBotJSONRequestBody = CreateBotRequest

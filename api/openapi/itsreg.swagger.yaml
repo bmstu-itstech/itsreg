@@ -31,7 +31,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlainError'
+                oneOf:
+                  - $ref: '#/components/schemas/PlainError'
+                  - $ref: '#/components/schemas/ValidationError'
         "401":
           description: Не был указан JWT токен.
           content:
@@ -91,7 +93,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlainError'
+                oneOf:
+                  - $ref: '#/components/schemas/PlainError'
+                  - $ref: '#/components/schemas/ValidationError'
         "401":
           description: Не был указан JWT токен.
           content:
@@ -191,8 +195,8 @@ components:
           description: Человекочитаемое описание назначения бота.
       required:
         - scriptID
-        - nodes
-        - entries
+        - token
+        - desc
 
     CreateScriptRequest:
       type: object
@@ -218,7 +222,7 @@ components:
     CreateBotResponse:
       type: object
       properties:
-        scriptID:
+        botID:
           type: string
           description: Уникальный ID бота.
           example: 123abc
@@ -274,6 +278,13 @@ components:
           type: string
           format: date-time
           description: Метка времени последнего обновления бота.
+      required:
+        - id
+        - ownerID
+        - scriptID
+        - desc
+        - createdAt
+        - updatedAt
 
     Script:
       type: object
@@ -462,4 +473,29 @@ components:
           description: Сообщение об ошибке.
           example: some error message
       required:
+        - message
+
+    ValidationError:
+      type: array
+      items:
+        $ref: '#/components/schemas/ValidationErrorDetail'
+
+    ValidationErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+          description: Название поля, вызвавшего ошибку валидации.
+          example: scriptID
+        code:
+          type: string
+          description: Код ошибки валидации для данного поля.
+          example: script-id-required
+        message:
+          type: string
+          description: Сообщение об ошибке валидации для данного поля.
+          example: scriptID is required
+      required:
+        - field
+        - code
         - message
