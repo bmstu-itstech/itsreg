@@ -52,27 +52,19 @@ func (h *EntryHandler) Handle(ctx context.Context, req EntryRequest) (EntryRespo
 	// на чтение read-модели(ей)
 
 	bot, err := h.br.Bot(ctx, bots.BotID(req.BotID))
-	if errors.Is(err, port.ErrBotNotFound) {
-		l.ErrorContext(ctx, "bot not found", slog.String("error", err.Error()))
-		return EntryResponse{}, err
-	}
 	if err != nil {
 		l.ErrorContext(ctx, "failed to fetch bot", slog.String("error", err.Error()))
 		return EntryResponse{}, err
 	}
 
 	if err = bot.EnsureActive(); err != nil {
-		l.ErrorContext(ctx, "failed to ensure active script", slog.String("error", err.Error()))
+		l.WarnContext(ctx, "failed to ensure active script", slog.String("error", err.Error()))
 		return EntryResponse{}, err
 	}
 
 	l = l.With(slog.String("script_id", bot.ScriptID().String()))
 
 	script, err := h.sr.Script(ctx, bot.ScriptID())
-	if errors.Is(err, port.ErrScriptNotFound) {
-		l.ErrorContext(ctx, "script not found", slog.String("error", err.Error()))
-		return EntryResponse{}, err
-	}
 	if err != nil {
 		l.ErrorContext(ctx, "failed to fetch script", slog.String("error", err.Error()))
 		return EntryResponse{}, err

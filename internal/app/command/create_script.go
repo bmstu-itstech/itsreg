@@ -41,13 +41,13 @@ func (h *CreateScriptHandler) Handle(ctx context.Context, req CreateScriptReques
 
 	nodes, err := mappers.NodesFromDTOPrefixed(req.Nodes, "nodes")
 	if err != nil {
-		l.WarnContext(ctx, "failed to map nodes from DTO", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "failed to map nodes from DTO", slog.String("error", err.Error()))
 		vErr = vErr.AppendError(err)
 	}
 
 	entries, err := mappers.EntriesFromDTOPrefixed(req.Entries, "entries")
 	if err != nil {
-		l.WarnContext(ctx, "failed to map entries from DTO", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "failed to map entries from DTO", slog.String("error", err.Error()))
 		vErr = vErr.AppendError(err)
 	}
 
@@ -57,7 +57,7 @@ func (h *CreateScriptHandler) Handle(ctx context.Context, req CreateScriptReques
 
 	script, err := bots.NewScript(bots.UserID(req.ActorID), req.Desc, nodes, entries)
 	if err != nil {
-		l.WarnContext(ctx, "failed to create script", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "failed to create script", slog.String("error", err.Error()))
 		return CreateScriptResponse{}, err
 	}
 

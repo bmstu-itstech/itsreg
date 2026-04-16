@@ -38,7 +38,7 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 
 	script, err := h.smp.ScriptMeta(ctx, bots.ScriptID(req.ScriptID))
 	if errors.Is(err, port.ErrScriptNotFound) {
-		l.WarnContext(ctx, "script not found",
+		l.InfoContext(ctx, "script not found",
 			slog.String("script_id", req.ScriptID),
 			slog.String("error", err.Error()),
 		)
@@ -53,14 +53,14 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 	}
 
 	if script.Deleted {
-		l.WarnContext(ctx, "script already deleted",
+		l.InfoContext(ctx, "script already deleted",
 			slog.String("script_id", req.ScriptID),
 		)
 		return CreateBotResponse{}, bots.ErrScriptDeleted
 	}
 
 	if req.ActorID != script.OwnerID {
-		l.WarnContext(ctx, "actor cannot create bot with the script",
+		l.InfoContext(ctx, "actor cannot create bot with the script",
 			slog.String("script_id", req.ScriptID),
 			slog.Int64("owner_id", script.OwnerID),
 		)
@@ -74,7 +74,7 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 		req.Desc,
 	)
 	if errors.As(err, &bots.ValidationError{}) {
-		l.WarnContext(ctx, "failed to validate bot", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "failed to validate bot", slog.String("error", err.Error()))
 		return CreateBotResponse{}, err
 	}
 	if err != nil {
@@ -93,7 +93,7 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 		l.ErrorContext(ctx, "failed to save bot", slog.String("error", err.Error()))
 		return CreateBotResponse{}, err
 	}
-	l.InfoContext(ctx, "bot saved")
+	l.DebugContext(ctx, "bot saved")
 
 	return CreateBotResponse{
 		BotID: bot.ID().String(),

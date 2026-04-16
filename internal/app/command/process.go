@@ -56,27 +56,19 @@ func (h *ProcessHandler) Handle(ctx context.Context, req ProcessRequest) (Proces
 	// на чтение read-модели(ей)
 
 	bot, err := h.br.Bot(ctx, bots.BotID(req.BotID))
-	if errors.Is(err, port.ErrBotNotFound) {
-		l.ErrorContext(ctx, "bot not found", slog.String("error", err.Error()))
-		return ProcessResponse{}, err
-	}
 	if err != nil {
 		l.ErrorContext(ctx, "failed to fetch bot", slog.String("error", err.Error()))
 		return ProcessResponse{}, err
 	}
 
 	if err = bot.EnsureActive(); err != nil {
-		l.ErrorContext(ctx, "failed to ensure active script", slog.String("error", err.Error()))
+		l.WarnContext(ctx, "failed to ensure active script", slog.String("error", err.Error()))
 		return ProcessResponse{}, err
 	}
 
 	l = l.With(slog.String("script_id", bot.ScriptID().String()))
 
 	script, err := h.sr.Script(ctx, bot.ScriptID())
-	if errors.Is(err, port.ErrScriptNotFound) {
-		l.ErrorContext(ctx, "script not found", slog.String("error", err.Error()))
-		return ProcessResponse{}, err
-	}
 	if err != nil {
 		l.ErrorContext(ctx, "failed to fetch script", slog.String("error", err.Error()))
 		return ProcessResponse{}, err
@@ -91,7 +83,7 @@ func (h *ProcessHandler) Handle(ctx context.Context, req ProcessRequest) (Proces
 
 	thread, err := h.tr.LastUserThread(ctx, bot.ID(), bots.UserID(req.UserID))
 	if errors.Is(err, port.ErrUserHasNotThreads) {
-		l.WarnContext(ctx, "user has not any threads", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "user has not any threads", slog.String("error", err.Error()))
 		// Ошибки нет, сообщение игнорируется
 		return ProcessResponse{}, nil
 	}

@@ -36,7 +36,7 @@ func (h *GetScriptHandler) Handle(ctx context.Context, req GetScriptRequest) (Ge
 
 	script, err := h.sr.Script(ctx, bots.ScriptID(req.ScriptID))
 	if errors.Is(err, port.ErrScriptNotFound) {
-		l.WarnContext(ctx, "script not found", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "script not found", slog.String("error", err.Error()))
 		return GetScriptResponse{}, err
 	}
 	if err != nil {
@@ -47,12 +47,12 @@ func (h *GetScriptHandler) Handle(ctx context.Context, req GetScriptRequest) (Ge
 	l.InfoContext(ctx, "fetched script from repository")
 
 	if err = script.EnsureActive(); err != nil {
-		l.WarnContext(ctx, "failed to ensure active script", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "failed to ensure active script", slog.String("error", err.Error()))
 		return GetScriptResponse{}, port.ErrScriptNotFound
 	}
 
 	if err = script.EnsureOwnedBy(bots.UserID(req.ActorID)); err != nil {
-		l.WarnContext(ctx, "failed to ensure owned by script", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "failed to ensure owned by script", slog.String("error", err.Error()))
 		return GetScriptResponse{}, port.ErrScriptNotFound
 	}
 

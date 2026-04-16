@@ -36,7 +36,7 @@ func (h *GetBotHandler) Handle(ctx context.Context, req GetBotRequest) (GetBotRe
 
 	bot, err := h.br.Bot(ctx, bots.BotID(req.BotID))
 	if errors.Is(err, port.ErrBotNotFound) {
-		l.WarnContext(ctx, "bot not found", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "bot not found", slog.String("error", err.Error()))
 		return GetBotResponse{}, err
 	}
 	if err != nil {
@@ -47,12 +47,12 @@ func (h *GetBotHandler) Handle(ctx context.Context, req GetBotRequest) (GetBotRe
 	l.InfoContext(ctx, "fetched bot from repository")
 
 	if err = bot.EnsureActive(); err != nil {
-		l.WarnContext(ctx, "failed to ensure active bot", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "failed to ensure active bot", slog.String("error", err.Error()))
 		return GetBotResponse{}, port.ErrBotNotFound
 	}
 
 	if err = bot.EnsureOwnedBy(bots.UserID(req.ActorID)); err != nil {
-		l.WarnContext(ctx, "failed to ensure owned by bot", slog.String("error", err.Error()))
+		l.InfoContext(ctx, "failed to ensure owned by bot", slog.String("error", err.Error()))
 		return GetBotResponse{}, port.ErrBotNotFound
 	}
 
