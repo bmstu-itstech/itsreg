@@ -56,7 +56,7 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 		l.InfoContext(ctx, "script already deleted",
 			slog.String("script_id", req.ScriptID),
 		)
-		return CreateBotResponse{}, bots.ErrScriptDeleted
+		return CreateBotResponse{}, port.ErrScriptNotFound
 	}
 
 	if req.ActorID != script.OwnerID {
