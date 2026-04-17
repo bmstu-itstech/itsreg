@@ -44,6 +44,9 @@ type ServerInterface interface {
 
 	// (GET /scripts/{id})
 	GetScript(w http.ResponseWriter, r *http.Request, id string)
+
+	// (PUT /scripts/{id})
+	UpdateScript(w http.ResponseWriter, r *http.Request, id string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -97,6 +100,11 @@ func (_ Unimplemented) DeleteScript(w http.ResponseWriter, r *http.Request, id s
 
 // (GET /scripts/{id})
 func (_ Unimplemented) GetScript(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PUT /scripts/{id})
+func (_ Unimplemented) UpdateScript(w http.ResponseWriter, r *http.Request, id string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -345,6 +353,34 @@ func (siw *ServerInterfaceWrapper) GetScript(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// UpdateScript operation middleware
+func (siw *ServerInterfaceWrapper) UpdateScript(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateScript(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -487,6 +523,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/scripts/{id}", wrapper.GetScript)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/scripts/{id}", wrapper.UpdateScript)
 	})
 
 	return r

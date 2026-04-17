@@ -18,6 +18,7 @@ type Commands struct {
 	Entry        *command.EntryHandler
 	Process      *command.ProcessHandler
 	UpdateBot    *command.UpdateBotHandler
+	UpdateScript *command.UpdateScriptHandler
 }
 
 type Queries struct {
@@ -66,7 +67,8 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 			Process: command.NewProcessHandler(
 				i.BotRepository, i.ScriptRepository, i.ThreadRepository, i.MessageSender, l,
 			),
-			UpdateBot: command.NewUpdateBotHandler(i.BotRepository, i.ScriptMetaProvider, l),
+			UpdateBot:    command.NewUpdateBotHandler(i.BotRepository, i.ScriptMetaProvider, l),
+			UpdateScript: command.NewUpdateScriptHandler(i.ScriptRepository, l),
 		},
 		Queries: Queries{
 			GetBot:     query.NewGetBotHandler(i.BotRepository, l),

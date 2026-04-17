@@ -93,12 +93,12 @@ func entriesToAPI(ds []dto.Entry) []Entry {
 
 func scriptToAPI(d dto.Script) Script {
 	return Script{
-		CreatedAt: d.CreatedAt,
+		CreatedAt: &d.CreatedAt,
 		Desc:      d.Desc,
 		Entries:   entriesToAPI(d.Entries),
-		Id:        d.ID,
+		Id:        &d.ID,
 		Nodes:     nodesToAPI(d.Nodes),
-		UpdatedAt: d.UpdatedAt,
+		UpdatedAt: &d.UpdatedAt,
 	}
 }
 

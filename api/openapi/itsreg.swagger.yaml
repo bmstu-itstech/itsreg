@@ -306,6 +306,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlainError'
 
+    put:
+      operationId: updateScript
+      tags:
+        - Scripts
+      description: Полностью обновить сценарий по указанному ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID сценария.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Script'
+      responses:
+        "200":
+          description: Сценарий успешно обновлён.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateScriptResponse'
+        "400":
+          description: Сценарий невалиден.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PlainError'
+                  - $ref: '#/components/schemas/ValidationError'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Сценарий не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
     delete:
       operationId: deleteScript
       tags:
@@ -421,6 +468,9 @@ components:
     UpdateBotResponse:
        $ref: '#/components/schemas/Bot'
 
+    UpdateScriptResponse:
+      $ref: '#/components/schemas/Script'
+
     GetBotResponse:
       $ref: '#/components/schemas/Bot'
 
@@ -521,6 +571,7 @@ components:
           type: string
           description: Уникальный ID сценария.
           example: 123abc
+          readOnly: true
         desc:
           type: string
           description: Человекочитаемое описание назначения сценария.
@@ -538,10 +589,12 @@ components:
           type: string
           format: date-time
           description: Метка времени создания сценария.
+          readOnly: true
         updatedAt:
           type: string
           format: date-time
           description: Метка времени последнего обновления сценария.
+          readOnly: true
       required:
         - id
         - desc

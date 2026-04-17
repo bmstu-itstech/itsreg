@@ -199,7 +199,7 @@ type RegexPredicateType string
 // Script Сценарий бота. Является объединением узлов (Node), точек входа (Entry). Гарантируется связность всех узлов относительно любой точки входа Entry.
 type Script struct {
 	// CreatedAt Метка времени создания сценария.
-	CreatedAt time.Time `json:"createdAt"`
+	CreatedAt *time.Time `json:"createdAt,omitempty"`
 
 	// Desc Человекочитаемое описание назначения сценария.
 	Desc string `json:"desc"`
@@ -208,13 +208,13 @@ type Script struct {
 	Entries []Entry `json:"entries"`
 
 	// Id Уникальный ID сценария.
-	Id string `json:"id"`
+	Id *string `json:"id,omitempty"`
 
 	// Nodes Неупорядоченный непустой массив узлов сценария.
 	Nodes []Node `json:"nodes"`
 
 	// UpdatedAt Метка времени последнего обновления сценария.
-	UpdatedAt time.Time `json:"updatedAt"`
+	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 }
 
 // Token Telegram-токен бота, полученный через @BotFather. Должен быть уникальным для всех ботов.
@@ -234,6 +234,9 @@ type UpdateBotRequest struct {
 
 // UpdateBotResponse Сущность, связывающая между собой сценарий (Script) и запуски телеграм-бота (Run).
 type UpdateBotResponse = Bot
+
+// UpdateScriptResponse Сценарий бота. Является объединением узлов (Node), точек входа (Entry). Гарантируется связность всех узлов относительно любой точки входа Entry.
+type UpdateScriptResponse = Script
 
 // ValidationError defines model for ValidationError.
 type ValidationError = []ValidationErrorDetail
@@ -258,6 +261,9 @@ type UpdateBotJSONRequestBody = UpdateBotRequest
 
 // CreateScriptJSONRequestBody defines body for CreateScript for application/json ContentType.
 type CreateScriptJSONRequestBody = CreateScriptRequest
+
+// UpdateScriptJSONRequestBody defines body for UpdateScript for application/json ContentType.
+type UpdateScriptJSONRequestBody = Script
 
 // AsAlwaysPredicate returns the union data inside the Predicate as a AlwaysPredicate
 func (t Predicate) AsAlwaysPredicate() (AlwaysPredicate, error) {

@@ -97,6 +97,44 @@ func (s *Server) GetScripts(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, body)
 }
 
+func (s *Server) UpdateScript(w http.ResponseWriter, r *http.Request, id string) {
+	uid, ok := jwtauth.FromContext(r.Context())
+	if !ok {
+		renderPlainError(w, r, ErrAuthorizationRequired, http.StatusUnauthorized)
+		return
+	}
+
+	var req Script
+	if err := render.DecodeJSON(r.Body, &req); err != nil {
+		renderPlainError(w, r, err, http.StatusBadRequest)
+		return
+	}
+
+	res, err := s.app.Commands.UpdateScript.Handle(r.Context(), command.UpdateScriptRequest{
+		ActorID:  uid,
+		ScriptID: id,
+		Desc:     req.Desc,
+		Nodes:    nodesFromAPI(req.Nodes),
+		Entries:  entriesFromAPI(req.Entries),
+	})
+	var vErr shared.ValidationError
+	if errors.As(err, &vErr) {
+		renderValidationError(w, r, vErr)
+		return
+	}
+	if errors.Is(err, port.ErrScriptNotFound) {
+		renderPlainError(w, r, err, http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		renderInternalServerError(w, r)
+		return
+	}
+
+	body := scriptToAPI(res)
+	render.JSON(w, r, body)
+}
+
 func (s *Server) DeleteScript(w http.ResponseWriter, r *http.Request, id string) {
 	uid, ok := jwtauth.FromContext(r.Context())
 	if !ok {
