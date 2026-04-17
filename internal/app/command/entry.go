@@ -12,7 +12,7 @@ import (
 type EntryRequest struct {
 	BotID    string
 	UserID   int64
-	Username string
+	Username *string
 	EntryKey string
 }
 
@@ -43,7 +43,6 @@ func (h *EntryHandler) Handle(ctx context.Context, req EntryRequest) (EntryRespo
 		slog.String("op", "command.EntryHandler.Handle"),
 		slog.String("bot_id", req.BotID),
 		slog.Int64("user_id", req.UserID),
-		slog.String("username", req.Username),
 		slog.String("entry_key", req.EntryKey),
 	)
 
@@ -78,10 +77,12 @@ func (h *EntryHandler) Handle(ctx context.Context, req EntryRequest) (EntryRespo
 	// Считаем, что пользователь меняет свой никнейм редко, поэтому один раз получаем его Username
 	// и запоминаем в БД
 
-	err = h.ur.UpsertUsername(ctx, bots.UserID(req.UserID), bots.Username(req.Username))
-	if err != nil {
-		l.ErrorContext(ctx, "failed to upsert username", slog.String("error", err.Error()))
-		return EntryResponse{}, err
+	if req.Username != nil {
+		err = h.ur.UpsertUsername(ctx, bots.UserID(req.UserID), bots.Username(*req.Username))
+		if err != nil {
+			l.ErrorContext(ctx, "failed to upsert username", slog.String("error", err.Error()))
+			return EntryResponse{}, err
+		}
 	}
 
 	// Непосредственно процедура входа в тред

@@ -14,11 +14,9 @@ import (
 	"github.com/bmstu-itstech/itsreg/internal/api/v3/jwtauth"
 	"github.com/bmstu-itstech/itsreg/internal/app"
 	"github.com/bmstu-itstech/itsreg/internal/app/bootstrap"
-	"github.com/bmstu-itstech/itsreg/internal/app/command"
-	"github.com/bmstu-itstech/itsreg/internal/app/dto"
+	"github.com/bmstu-itstech/itsreg/internal/app/dispatcher"
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/config"
-	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 	"github.com/bmstu-itstech/itsreg/internal/infra/inmemory"
 	"github.com/bmstu-itstech/itsreg/internal/infra/jwt"
 	"github.com/bmstu-itstech/itsreg/internal/infra/postgres"
@@ -48,12 +46,9 @@ func main() {
 
 	repos := postgres.MustNewRepository(cfg.Postgres)
 	bus := inmemory.NewEventBus(l)
-	sender := telegram.NewMessageSender(l) // Надо убрать зависимость от логгера в инфре
-	// И убрать эти кошмарные адаптеры, заменив на ссылку на прикладной слой
-	process := ProcessHandlerAdapter{command.NewProcessHandler(repos, repos, repos, sender, l)}
-	entry := EntryHandlerAdapter{command.NewEntryHandler(repos, repos, repos, repos, sender, l)}
-	instanceManager := telegram.NewInstanceManager(l, process, entry)
-	ms := telegram.NewMessageSender(l)
+	inbound := dispatcher.NewInboundDispatcher(l)
+	instanceManager := telegram.NewInstanceManager(inbound, l)
+	sender := telegram.NewMessageSender(l)
 	tokenService := jwt.MustNewTokenService(cfg.JWT)
 
 	infra := app.Infra{
@@ -61,7 +56,7 @@ func main() {
 		BotRepository:        repos,
 		EventBus:             bus,
 		InstanceManager:      instanceManager,
-		MessageSender:        ms,
+		MessageSender:        sender,
 		RunRepository:        repos,
 		ScriptMetaProvider:   repos,
 		ScriptRepository:     repos,
@@ -70,6 +65,11 @@ func main() {
 		UserRepository:       repos,
 	}
 	a := app.NewApplication(infra, l)
+
+	// Ленивое связывание
+
+	inbound.SetEntryHandler(a.Commands.Entry)
+	inbound.SetProcessHandler(a.Commands.Process)
 
 	// Регистрация обработчиков событий
 
@@ -87,7 +87,6 @@ func main() {
 	// Инициализация HTTP сервера
 
 	root := chi.NewRouter()
-	root.Use(middleware.RequestID)
 	root.Use(middleware.RealIP)
 	root.Use(sl.NewLoggerMiddleware(l))
 	root.Use(middleware.Recoverer)
@@ -139,44 +138,6 @@ func main() {
 			cancel()
 		}
 	}
-}
-
-// Страшно, очень страшно.
-// Как сделать иначе?
-
-type ProcessHandlerAdapter struct {
-	H *command.ProcessHandler
-}
-
-func (a ProcessHandlerAdapter) Process(
-	ctx context.Context, botID bots.BotID, userID bots.UserID, msg bots.Message,
-) error {
-	_, err := a.H.Handle(ctx, command.ProcessRequest{
-		BotID:   string(botID),
-		UserID:  int64(userID),
-		Message: dto.Message{Text: msg.Text()},
-	})
-	return err
-}
-
-type EntryHandlerAdapter struct {
-	H *command.EntryHandler
-}
-
-func (a EntryHandlerAdapter) Entry(
-	ctx context.Context,
-	botID bots.BotID,
-	userID bots.UserID,
-	username bots.Username,
-	key bots.EntryKey,
-) error {
-	_, err := a.H.Handle(ctx, command.EntryRequest{
-		BotID:    string(botID),
-		UserID:   int64(userID),
-		Username: string(username),
-		EntryKey: string(key),
-	})
-	return err
 }
 
 func mustSubscribe(bus port.EventBus, eventName string, h port.EventHandler) {
