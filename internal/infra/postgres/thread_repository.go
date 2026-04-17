@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/zhikh23/pgutils"
@@ -45,6 +46,7 @@ func (r *Repository) LastUserThread(ctx context.Context, botID bots.BotID, userI
 			state,
 			answers,
 			rThread.StartedAt,
+			rThread.UpdatedAt,
 		)
 		if err != nil {
 			return err
@@ -63,13 +65,11 @@ func (r *Repository) SaveThread(ctx context.Context, t *bots.Thread) error {
 			if pgutils.IsUniqueViolationError(err) {
 				return port.ErrThreadAlreadyExists
 			}
-			return err
+			return fmt.Errorf("insertThreadRow: %w", err)
 		}
 
-		if len(rAnswers) > 0 {
-			if err := r.upsertAnswersRows(ctx, tx, rAnswers); err != nil {
-				return err
-			}
+		if err := r.upsertAnswersRows(ctx, tx, rAnswers); err != nil {
+			return fmt.Errorf("upsertAnswersRows: %w", err)
 		}
 
 		return nil
@@ -82,15 +82,14 @@ func (r *Repository) UpdateThread(ctx context.Context, t *bots.Thread) error {
 		rAnswers := answersToRows(t.Answers(), t.ID())
 
 		if err := r.updateThreadRow(ctx, tx, rThread); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
+			if errors.Is(err, pgutils.ErrNoAffectedRows) {
 				return port.ErrThreadNotFound
 			}
+			return fmt.Errorf("updateThreadRow: %w", err)
 		}
 
-		if len(rAnswers) > 0 {
-			if err := r.upsertAnswersRows(ctx, tx, rAnswers); err != nil {
-				return err
-			}
+		if err := r.upsertAnswersRows(ctx, tx, rAnswers); err != nil {
+			return fmt.Errorf("upsertAnswersRows: %w", err)
 		}
 
 		return nil

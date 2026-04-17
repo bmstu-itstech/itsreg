@@ -15,6 +15,7 @@ type Thread struct {
 	state     State
 	answers   map[State]Message
 	startedAt time.Time
+	updatedAt time.Time
 }
 
 func NewThread(botID BotID, userID UserID, entry Entry) (*Thread, error) {
@@ -38,6 +39,7 @@ func NewThread(botID BotID, userID UserID, entry Entry) (*Thread, error) {
 		state:     entry.Start(),
 		answers:   make(map[State]Message),
 		startedAt: time.Now(),
+		updatedAt: time.Now(),
 	}, nil
 }
 
@@ -57,6 +59,7 @@ func RestoreThread(
 	state State,
 	answers map[State]Message,
 	startedAt time.Time,
+	updatedAt time.Time,
 ) (*Thread, error) {
 	if id.IsZero() {
 		return nil, errors.New("id is empty")
@@ -82,17 +85,20 @@ func RestoreThread(
 		state:     state,
 		answers:   answers,
 		startedAt: startedAt,
+		updatedAt: updatedAt,
 	}, nil
 }
 
 func (t *Thread) StepTo(to State) {
 	t.state = to
+	t.updatedAt = time.Now()
 }
 
 // SaveAnswer сохраняет Message пользователя для текущего состояния.
 // Если уже существует ответ для данного состояния, перезаписывает его.
 func (t *Thread) SaveAnswer(ans Message) {
 	t.answers[t.state] = ans
+	t.updatedAt = time.Now()
 }
 
 // AppendAnswer сохраняет Message пользователя для текущего состояния.
@@ -104,6 +110,7 @@ func (t *Thread) AppendAnswer(ans Message) {
 	} else {
 		t.answers[t.state] = ans
 	}
+	t.updatedAt = time.Now()
 }
 
 func (t *Thread) ID() ThreadID {
@@ -132,4 +139,8 @@ func (t *Thread) Answers() map[State]Message {
 
 func (t *Thread) StartedAt() time.Time {
 	return t.startedAt
+}
+
+func (t *Thread) UpdatedAt() time.Time {
+	return t.updatedAt
 }

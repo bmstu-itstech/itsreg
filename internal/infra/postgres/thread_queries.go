@@ -10,15 +10,20 @@ import (
 func (r *Repository) getLastUserThreadRow(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
-	scriptID string,
+	botID string,
 	userID int64,
 ) (threadRow, error) {
 	var row threadRow
 	err := pgutils.Get(ctx, qc, &row, `
 		SELECT
-			id, script_id, user_id, key, state, started_at, updated_at
+			id, bot_id, user_id, key, state, started_at, updated_at
 		FROM threads
-		`, scriptID, userID,
+		WHERE 
+			bot_id = $1
+			AND user_id = $2
+		ORDER BY started_at DESC
+		LIMIT 1
+		`, botID, userID,
 	)
 	return row, err
 }
@@ -30,9 +35,9 @@ func (r *Repository) insertThreadRow(
 ) error {
 	return pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		INSERT INTO threads 
-			(id, script_id, user_id, key, state, started_at, updated_at)
+			(id, bot_id, user_id, key, state, started_at, updated_at)
 		VALUES 
-			(:id, :script_id, :user_id, :key, :state, :started_at, :updated_at)
+			(:id, :bot_id, :user_id, :key, :state, :started_at, :updated_at)
 		`, row,
 	))
 }
@@ -46,7 +51,7 @@ func (r *Repository) updateThreadRow(
 		UPDATE threads
 		SET
 			state = :state,
-			updated_at = :updatedAt
+			updated_at = :updated_at
 		WHERE id = :id
 		`, row,
 	))
@@ -73,14 +78,17 @@ func (r *Repository) upsertAnswersRows(
 	ec sqlx.ExtContext,
 	rows []answerRow,
 ) error {
+	if len(rows) == 0 {
+		return nil
+	}
 	return pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		INSERT INTO answers
 			(thread_id, state, text)
 		VALUES
 			(:thread_id, :state, :text)
-		ON CONFLICT DO UPDATE 
+		ON CONFLICT (thread_id, state) DO UPDATE 
 		SET
-			text = :text
+			text = EXCLUDED.text
 		`, rows,
 	))
 }

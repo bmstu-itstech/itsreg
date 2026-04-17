@@ -28,7 +28,7 @@ func threadToRow(t *bots.Thread) threadRow {
 		Key:       t.Key().String(),
 		State:     t.State().Int(),
 		StartedAt: t.StartedAt(),
-		UpdatedAt: t.StartedAt(),
+		UpdatedAt: t.UpdatedAt(),
 	}
 }
 
