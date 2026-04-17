@@ -89,24 +89,7 @@ func main() {
 	// Инициализация HTTP сервера
 
 	root := chi.NewRouter()
-	root.Use(middleware.RealIP)
-	root.Use(sl.NewLoggerMiddleware(l))
-	root.Use(middleware.Recoverer)
-	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   cfg.HTTP.CORSAllowOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           cfg.HTTP.CORSMaxAge,
-	})
-	root.Use(corsMiddleware.Handler)
-	root.Use(
-		middleware.SetHeader("X-Content-Type-Options", "nosniff"),
-		middleware.SetHeader("X-Frame-Options", "deny"),
-	)
-	root.Use(middleware.NoCache)
-	root.Use(jwtauth.NewMiddleware(tokenService).Handler)
+	setupRouter(root, l, cfg.HTTP, tokenService)
 	s := http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HTTP.Port),
 		Handler: apiv3.HandlerFromMuxWithBaseURL(apiv3.NewServer(a, apiPrefix), root, apiPrefix),
@@ -140,6 +123,27 @@ func main() {
 			cancel()
 		}
 	}
+}
+
+func setupRouter(root *chi.Mux, l *slog.Logger, cfg config.HTTP, ts port.TokenService) {
+	root.Use(middleware.RealIP)
+	root.Use(sl.NewLoggerMiddleware(l))
+	root.Use(middleware.Recoverer)
+	corsMiddleware := cors.New(cors.Options{
+		AllowedOrigins:   cfg.CORSAllowOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           cfg.CORSMaxAge,
+	})
+	root.Use(corsMiddleware.Handler)
+	root.Use(
+		middleware.SetHeader("X-Content-Type-Options", "nosniff"),
+		middleware.SetHeader("X-Frame-Options", "deny"),
+	)
+	root.Use(middleware.NoCache)
+	root.Use(jwtauth.NewMiddleware(ts).Handler)
 }
 
 func proxyOrDefaultHTTPClient(proxyCfg config.Proxy) (*http.Client, error) {
