@@ -3,11 +3,13 @@ package bots
 import (
 	"errors"
 	"slices"
+
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 const (
-	ErrorCodeNodeEmptyTitle    ErrorCode = "node-empty-title"
-	ErrorCodeNodeHasNoMessages ErrorCode = "node-has-no-messages"
+	ErrorCodeNodeEmptyTitle    shared.ErrorCode = "node-empty-title"
+	ErrorCodeNodeHasNoMessages shared.ErrorCode = "node-has-no-messages"
 )
 
 // Node есть минимальная структурная единица Script.
@@ -25,9 +27,9 @@ func NewNode(state State, title string, edges []Edge, msgs []Message, opts []Opt
 		return Node{}, errors.New("empty state")
 	}
 
-	var details []ValidationErrorDetail
+	var details []shared.ValidationErrorDetail
 	if title == "" {
-		details = append(details, NewValidationErrorDetail(
+		details = append(details, shared.NewValidationErrorDetail(
 			"title", ErrorCodeNodeEmptyTitle, "node title cannot be empty",
 		))
 	}
@@ -37,7 +39,7 @@ func NewNode(state State, title string, edges []Edge, msgs []Message, opts []Opt
 	}
 
 	if len(msgs) == 0 {
-		details = append(details, NewValidationErrorDetail(
+		details = append(details, shared.NewValidationErrorDetail(
 			"messages", ErrorCodeNodeHasNoMessages, "node must have at least one message",
 		))
 	}
@@ -47,7 +49,7 @@ func NewNode(state State, title string, edges []Edge, msgs []Message, opts []Opt
 	}
 
 	if len(details) > 0 {
-		return Node{}, NewValidationError(details...)
+		return Node{}, shared.NewValidationError(details...)
 	}
 
 	return Node{

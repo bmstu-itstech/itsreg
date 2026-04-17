@@ -15,7 +15,7 @@ func (r *Repository) getRunRow(
 	var row runRow
 	err := pgutils.Get(ctx, qc, &row, `
 		SELECT
-			id, bot_id, status, error_msg, started_at, stopped_at
+			id, bot_id, token, status, error_msg, started_at, stopped_at
 		FROM runs
 		WHERE id = $1
 		`, runID,
@@ -31,7 +31,7 @@ func (r *Repository) selectRunsByBotIDRows(
 	var rows []runRow
 	err := pgutils.Select(ctx, qc, &rows, `
 		SELECT
-			id, bot_id, status, error_msg, started_at, stopped_at
+			id, bot_id, token, status, error_msg, started_at, stopped_at
 		FROM runs
 		WHERE
 		    bot_id = $1
@@ -48,7 +48,7 @@ func (r *Repository) selectRunsByOwnerIDRows(
 	var rows []runRow
 	err := pgutils.Select(ctx, qc, &rows, `
 		SELECT
-			r.id, r.bot_id, r.status, r.error_msg, r.started_at, r.stopped_at
+			r.id, r.bot_id, r.token, r.status, r.error_msg, r.started_at, r.stopped_at
 		FROM runs r
 		JOIN bots b
 			ON b.id = r.bot_id
@@ -60,6 +60,22 @@ func (r *Repository) selectRunsByOwnerIDRows(
 	return rows, err
 }
 
+func (r *Repository) selectRunsWithStatusStartingOrActive(
+	ctx context.Context,
+	qc sqlx.QueryerContext,
+) ([]runRow, error) {
+	var rows []runRow
+	err := pgutils.Select(ctx, qc, &rows, `
+		SELECT
+			id, bot_id, token, status, error_msg, started_at, stopped_at
+		FROM runs
+		WHERE
+    		status IN ('starting', 'active')
+    	`,
+	)
+	return rows, err
+}
+
 func (r *Repository) insertRunRow(
 	ctx context.Context,
 	ec sqlx.ExtContext,
@@ -67,9 +83,9 @@ func (r *Repository) insertRunRow(
 ) error {
 	return pgutils.RequireAffected(pgutils.NamedExec(ctx, ec, `
 		INSERT INTO runs
-			(id, bot_id, status, error_msg, started_at, stopped_at)
+			(id, bot_id, token, status, error_msg, started_at, stopped_at)
 		VALUES
-			(:id, :bot_id, :error_msg, :started_at, :stopped_at)
+			(:id, :bot_id, :token, :status, :error_msg, :started_at, :stopped_at)
 		`, row,
 	))
 }

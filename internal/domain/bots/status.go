@@ -7,22 +7,22 @@ type Status struct {
 }
 
 var (
-	Starting = Status{"starting"}
-	Active   = Status{"active"}
-	Stopped  = Status{"stopped"}
-	Failed   = Status{"failed"}
+	StatusStarting = Status{"starting"}
+	StatusActive   = Status{"active"}
+	StatusStopped  = Status{"stopped"}
+	StatusFailed   = Status{"failed"}
 )
 
 func StatusFromString(s string) (Status, error) {
 	switch s {
 	case "starting":
-		return Starting, nil
+		return StatusStarting, nil
 	case "active":
-		return Active, nil
+		return StatusActive, nil
 	case "stopped":
-		return Stopped, nil
+		return StatusStopped, nil
 	case "failed":
-		return Failed, nil
+		return StatusFailed, nil
 	default:
 		return Status{}, fmt.Errorf("unknown status: %s", s)
 	}

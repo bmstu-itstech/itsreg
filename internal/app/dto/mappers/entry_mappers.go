@@ -5,10 +5,11 @@ import (
 
 	"github.com/bmstu-itstech/itsreg/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 func entryFromDTO(d dto.Entry) (bots.Entry, error) {
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 
 	start, err := bots.NewState(d.Start)
 	if err != nil {
@@ -23,7 +24,7 @@ func entryFromDTO(d dto.Entry) (bots.Entry, error) {
 }
 
 func EntriesFromDTOPrefixed(ds []dto.Entry, prefix string) ([]bots.Entry, error) {
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 
 	entries := make([]bots.Entry, len(ds))
 	for i, d := range ds {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 type CreateBotRequest struct {
@@ -32,7 +33,7 @@ func NewCreateBotHandler(br port.BotRepository, smp port.ScriptMetaProvider, l *
 
 func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (CreateBotResponse, error) {
 	l := h.l.With(
-		slog.String("op", "command.CreateBotHandler.Handle"),
+		slog.String("op", "command.CreateBot.Handle"),
 		slog.Int64("actor_id", req.ActorID),
 	)
 
@@ -64,7 +65,7 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 			slog.String("script_id", req.ScriptID),
 			slog.Int64("owner_id", script.OwnerID),
 		)
-		return CreateBotResponse{}, bots.ErrPermissionDenied
+		return CreateBotResponse{}, shared.ErrPermissionDenied
 	}
 
 	bot, err := bots.NewBot(
@@ -73,7 +74,7 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 		bots.Token(req.Token),
 		req.Desc,
 	)
-	if errors.As(err, &bots.ValidationError{}) {
+	if errors.As(err, &shared.ValidationError{}) {
 		l.InfoContext(ctx, "failed to validate bot", slog.String("error", err.Error()))
 		return CreateBotResponse{}, err
 	}

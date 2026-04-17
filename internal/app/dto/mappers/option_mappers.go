@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 func optionsFromDTOPrefixed(ds []string, prefix string) ([]bots.Option, error) {
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 
 	options := make([]bots.Option, len(ds))
 	for i, d := range ds {

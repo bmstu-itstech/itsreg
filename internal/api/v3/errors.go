@@ -4,13 +4,13 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 	"github.com/go-chi/render"
 )
 
 var ErrAuthorizationRequired = errors.New("authorization required")
 
-func renderValidationError(w http.ResponseWriter, r *http.Request, err bots.ValidationError) {
+func renderValidationError(w http.ResponseWriter, r *http.Request, err shared.ValidationError) {
 	details := make([]ValidationErrorDetail, len(err.Details))
 	for i, d := range err.Details {
 		details[i].Field = d.Field

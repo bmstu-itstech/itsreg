@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
@@ -307,7 +308,7 @@ func TestBot_EnsureOwnedBy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := bot.EnsureOwnedBy(tt.userID)
 			if tt.wantErr {
-				require.ErrorIs(t, err, bots.ErrPermissionDenied)
+				require.ErrorIs(t, err, shared.ErrPermissionDenied)
 				return
 			}
 			require.NoError(t, err)

@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS runs
 (
     id          VARCHAR(6)              PRIMARY KEY,
     bot_id      VARCHAR(6)  NOT NULL,
+    token       VARCHAR     NOT NULL,
     status      RUN_STATUS  NOT NULL    DEFAULT 'starting',
     error_msg   VARCHAR                 DEFAULT NULL,
     started_at  TIMESTAMPTZ             DEFAULT NULL,

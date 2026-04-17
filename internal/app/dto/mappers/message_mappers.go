@@ -5,6 +5,7 @@ import (
 
 	"github.com/bmstu-itstech/itsreg/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 func MessageFromDTO(d dto.Message) (bots.Message, error) {
@@ -12,7 +13,7 @@ func MessageFromDTO(d dto.Message) (bots.Message, error) {
 }
 
 func messagesFromDTOPrefixed(ds []dto.Message, prefix string) ([]bots.Message, error) {
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 	res := make([]bots.Message, len(ds))
 	for i, d := range ds {
 		m, err := MessageFromDTO(d)

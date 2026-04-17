@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/command"
@@ -71,7 +72,7 @@ func TestCreateScriptHandler_Handle(t *testing.T) {
 			Entries: []dto.Entry{{Key: "start", Start: 1}},
 		})
 		require.Error(t, err)
-		var vErr bots.ValidationError
+		var vErr shared.ValidationError
 		require.ErrorAs(t, err, &vErr)
 		require.Equal(t, 0, repo.saveCalls)
 	})

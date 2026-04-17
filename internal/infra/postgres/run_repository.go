@@ -13,7 +13,7 @@ import (
 
 func (r *Repository) Run(ctx context.Context, id bots.RunID) (*bots.Run, error) {
 	rRun, err := r.getRunRow(ctx, r.db, id.String())
-	if errors.Is(sql.ErrNoRows, err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, port.ErrRunNotFound
 	}
 	if err != nil {
@@ -38,6 +38,14 @@ func (r *Repository) RunsByOwnerID(ctx context.Context, ownerID bots.UserID) ([]
 	return runsFromRows(rRuns)
 }
 
+func (r *Repository) ActiveRuns(ctx context.Context) ([]*bots.Run, error) {
+	rRuns, err := r.selectRunsWithStatusStartingOrActive(ctx, r.db)
+	if err != nil {
+		return nil, err
+	}
+	return runsFromRows(rRuns)
+}
+
 func (r *Repository) SaveRun(ctx context.Context, run *bots.Run) error {
 	rRun := runToRow(run)
 	err := r.insertRunRow(ctx, r.db, rRun)
@@ -52,7 +60,7 @@ func (r *Repository) SaveRun(ctx context.Context, run *bots.Run) error {
 func (r *Repository) UpdateRun(ctx context.Context, run *bots.Run) error {
 	rRun := runToRow(run)
 	err := r.updateRunRow(ctx, r.db, rRun)
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgutils.ErrNoAffectedRows) {
 		return port.ErrRunNotFound
 	}
 	return err

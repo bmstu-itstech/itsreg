@@ -7,16 +7,16 @@ import (
 	"github.com/zhikh23/pgutils"
 )
 
-func (r *Repository) getScriptMetaRow(
+func (r *Repository) getBotMetaRow(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
 	id string,
-) (scriptMetaRow, error) {
-	var row scriptMetaRow
+) (botMetaRow, error) {
+	var row botMetaRow
 	err := pgutils.Get(ctx, qc, &row, `
 		SELECT
-			id, owner_id, "desc", deleted_at IS NOT NULL AS deleted
-		FROM scripts
+			id, owner_id, script_id, token, deleted_at IS NOT NULL AS deleted
+		FROM bots
 		WHERE id = $1
 		`, id,
 	)

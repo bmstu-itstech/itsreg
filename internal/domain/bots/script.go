@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 const (
-	ErrorCodeScriptNodeIsNotConnected ErrorCode = "script-node-is-not-connected"
-	ErrorCodeScriptNodeNotFound       ErrorCode = "script-node-not-found"
+	ErrorCodeScriptNodeIsNotConnected shared.ErrorCode = "script-node-is-not-connected"
+	ErrorCodeScriptNodeNotFound       shared.ErrorCode = "script-node-not-found"
 )
 
 var (
@@ -208,7 +210,7 @@ func (s *Script) EnsureActive() error {
 
 func (s *Script) EnsureOwnedBy(userID UserID) error {
 	if s.ownerID != userID {
-		return ErrPermissionDenied
+		return shared.ErrPermissionDenied
 	}
 	return nil
 }
@@ -292,7 +294,7 @@ func checkConnectivity(nodes map[State]Node, entries map[EntryKey]Entry) error {
 	for key, entry := range entries {
 		_, ok := nodes[entry.Start()]
 		if !ok {
-			return NewValidationError(NewValidationErrorDetail(
+			return shared.NewValidationError(shared.NewValidationErrorDetail(
 				"nodes",
 				ErrorCodeScriptNodeNotFound,
 				fmt.Sprintf("an entry with key=%q references to non-existent node[%d]", key, entry.Start().Int()),
@@ -306,14 +308,14 @@ func checkConnectivity(nodes map[State]Node, entries map[EntryKey]Entry) error {
 
 	whiteNodes := filterWhiteNodes(cns)
 	if len(whiteNodes) > 0 {
-		details := make([]ValidationErrorDetail, 0, len(whiteNodes))
+		details := make([]shared.ValidationErrorDetail, 0, len(whiteNodes))
 		for _, node := range whiteNodes {
-			details = append(details, NewValidationErrorDetail(
+			details = append(details, shared.NewValidationErrorDetail(
 				"nodes", ErrorCodeScriptNodeIsNotConnected,
 				fmt.Sprintf("nodes[%d] is not connected", node.State().Int()),
 			))
 		}
-		return NewValidationError(details...)
+		return shared.NewValidationError(details...)
 	}
 
 	return nil
@@ -343,7 +345,7 @@ func colorize(currentState State, nodes map[State]coloredNode) error {
 	for _, nextState := range current.Children() {
 		next, o := nodes[nextState]
 		if !o {
-			return NewValidationError(NewValidationErrorDetail(
+			return shared.NewValidationError(shared.NewValidationErrorDetail(
 				"nodes",
 				ErrorCodeScriptNodeNotFound,
 				fmt.Sprintf("nodes[%d] references to non-existent nodes[%d]", current.State().Int(), nextState.Int()),

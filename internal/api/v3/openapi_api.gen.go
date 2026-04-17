@@ -18,6 +18,9 @@ type ServerInterface interface {
 	// (POST /bots)
 	CreateBot(w http.ResponseWriter, r *http.Request)
 
+	// (POST /bots/{botID}/runs)
+	CreateRun(w http.ResponseWriter, r *http.Request, botID string)
+
 	// (GET /bots/{id})
 	GetBot(w http.ResponseWriter, r *http.Request, id string)
 
@@ -40,6 +43,11 @@ type Unimplemented struct{}
 
 // (POST /bots)
 func (_ Unimplemented) CreateBot(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /bots/{botID}/runs)
+func (_ Unimplemented) CreateRun(w http.ResponseWriter, r *http.Request, botID string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -85,6 +93,34 @@ func (siw *ServerInterfaceWrapper) CreateBot(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateBot(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// CreateRun operation middleware
+func (siw *ServerInterfaceWrapper) CreateRun(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "botID" -------------
+	var botID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "botID", chi.URLParam(r, "botID"), &botID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "botID", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRun(w, r, botID)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -327,6 +363,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/bots", wrapper.CreateBot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/bots/{botID}/runs", wrapper.CreateRun)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/bots/{id}", wrapper.GetBot)

@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 const (
-	ErrorCodeBotEmptyScriptID ErrorCode = "bot-empty-script-id"
-	ErrorCodeBotEmptyToken    ErrorCode = "bot-empty-token"
+	ErrorCodeBotEmptyScriptID shared.ErrorCode = "bot-empty-script-id"
+	ErrorCodeBotEmptyToken    shared.ErrorCode = "bot-empty-token"
 )
 
 var ErrBotDeleted = errors.New("bot deleted")
@@ -25,7 +27,7 @@ type Bot struct {
 }
 
 func NewBot(ownerID UserID, scriptID ScriptID, token Token, desc string) (*Bot, error) {
-	var details []ValidationErrorDetail
+	var details []shared.ValidationErrorDetail
 	if ownerID.IsZero() {
 		// Ошибка не на стороне пользователя
 		return nil, errors.New("ownerID is zero")
@@ -33,16 +35,19 @@ func NewBot(ownerID UserID, scriptID ScriptID, token Token, desc string) (*Bot, 
 
 	if scriptID.IsZero() {
 		details = append(
-			details, NewValidationErrorDetail("scriptID", ErrorCodeBotEmptyScriptID, "scriptID cannot be zero"),
+			details, shared.NewValidationErrorDetail("scriptID", ErrorCodeBotEmptyScriptID, "scriptID cannot be zero"),
 		)
 	}
 
 	if token.IsZero() {
-		details = append(details, NewValidationErrorDetail("token", ErrorCodeBotEmptyToken, "token cannot be zero"))
+		details = append(
+			details,
+			shared.NewValidationErrorDetail("token", ErrorCodeBotEmptyToken, "token cannot be zero"),
+		)
 	}
 
 	if len(details) > 0 {
-		return nil, NewValidationError(details...)
+		return nil, shared.NewValidationError(details...)
 	}
 
 	return &Bot{
@@ -124,7 +129,7 @@ func (b *Bot) EnsureActive() error {
 
 func (b *Bot) EnsureOwnedBy(userID UserID) error {
 	if b.ownerID != userID {
-		return ErrPermissionDenied
+		return shared.ErrPermissionDenied
 	}
 	return nil
 }
@@ -143,8 +148,8 @@ func (b *Bot) SetScriptID(scriptID ScriptID) error {
 		return fmt.Errorf("cannot update bot: %w", ErrBotDeleted)
 	}
 	if scriptID.IsZero() {
-		return NewValidationError(
-			NewValidationErrorDetail("scriptID", ErrorCodeBotEmptyScriptID, "scriptID cannot be zero"),
+		return shared.NewValidationError(
+			shared.NewValidationErrorDetail("scriptID", ErrorCodeBotEmptyScriptID, "scriptID cannot be zero"),
 		)
 	}
 	b.scriptID = scriptID
@@ -157,7 +162,9 @@ func (b *Bot) SetToken(token Token) error {
 		return fmt.Errorf("cannot update bot: %w", ErrBotDeleted)
 	}
 	if token.IsZero() {
-		return NewValidationError(NewValidationErrorDetail("token", ErrorCodeBotEmptyToken, "token cannot be zero"))
+		return shared.NewValidationError(
+			shared.NewValidationErrorDetail("token", ErrorCodeBotEmptyToken, "token cannot be zero"),
+		)
 	}
 	b.token = token
 	b.updatedAt = time.Now()

@@ -3,20 +3,19 @@ package bots_test
 import (
 	"testing"
 
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 	"github.com/stretchr/testify/require"
-
-	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 type rawDetail struct {
 	Field string
-	Code  bots.ErrorCode
+	Code  shared.ErrorCode
 }
 
 func requireValidationErrorDetails(t *testing.T, err error, expected []rawDetail) {
 	t.Helper()
 
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 	require.ErrorAs(t, err, &vErr)
 
 	gotRaw := make([]rawDetail, len(expected))

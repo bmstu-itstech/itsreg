@@ -28,7 +28,7 @@ func NewInstanceManager(log *slog.Logger, process port.ProcessHandler, entry por
 }
 
 func (m *InstanceManager) Start(ctx context.Context, id bots.BotID, token bots.Token) error {
-	const op = "InstanceManager.Start"
+	const op = "telegram.InstanceManager.Start"
 	l := m.l.With(
 		slog.String("op", op),
 		slog.String("bot_id", string(id)),
@@ -135,7 +135,7 @@ func (i *botInstance) run(updates tgbotapi.UpdatesChannel) {
 }
 
 func (i *botInstance) handleUpdate(ctx context.Context, upd tgbotapi.Update) {
-	const op = "botInstance.handleUpdate"
+	const op = "telegram.botInstance.handleUpdate"
 	l := i.log.With(
 		slog.String("op", op),
 		slog.String("bot_id", string(i.botID)),

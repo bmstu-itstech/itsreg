@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/command"
-	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 
 	"github.com/go-chi/render"
 
@@ -117,7 +117,7 @@ func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
 		Token:    req.Token,
 		Desc:     req.Desc,
 	})
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 	if errors.As(err, &vErr) {
 		renderValidationError(w, r, vErr)
 		return
@@ -137,6 +137,37 @@ func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
 
 	body := CreateBotResponse{BotID: res.BotID}
 	w.Header().Set("Content-Location", fmt.Sprintf("%s/bots/%s", s.prefix, res.BotID))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	render.JSON(w, r, body)
+}
+
+func (s *Server) CreateRun(w http.ResponseWriter, r *http.Request, botID string) {
+	uid, ok := jwtauth.FromContext(r.Context())
+	if !ok {
+		renderPlainError(w, r, ErrAuthorizationRequired, http.StatusUnauthorized)
+		return
+	}
+
+	res, err := s.app.Commands.CreateRun.Handle(r.Context(), command.CreateRunRequest{
+		ActorID: uid,
+		BotID:   botID,
+	})
+	if errors.Is(err, port.ErrBotNotFound) {
+		renderPlainError(w, r, err, http.StatusNotFound)
+		return
+	}
+	if errors.Is(err, port.ErrActiveRunAlreadyExists) {
+		renderPlainError(w, r, err, http.StatusConflict)
+		return
+	}
+	if err != nil {
+		renderInternalServerError(w, r)
+		return
+	}
+
+	body := CreateRunResponse{RunID: res.RunID}
+	w.Header().Set("Content-Location", fmt.Sprintf("%s/runs/%s", s.prefix, res.RunID))
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	render.JSON(w, r, body)
@@ -185,7 +216,7 @@ func (s *Server) CreateScript(w http.ResponseWriter, r *http.Request) {
 		Nodes:   nodesFromAPI(req.Nodes),
 		Entries: entriesFromAPI(req.Entries),
 	})
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 	if errors.As(err, &vErr) {
 		renderValidationError(w, r, vErr)
 		return

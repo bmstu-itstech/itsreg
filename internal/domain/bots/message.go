@@ -1,8 +1,10 @@
 package bots
 
+import "github.com/bmstu-itstech/itsreg/internal/domain/shared"
+
 const messageMergeDelim = "\n"
 
-const ErrorCodeMessageEmptyText ErrorCode = "message-empty-text"
+const ErrorCodeMessageEmptyText shared.ErrorCode = "message-empty-text"
 
 type Message struct {
 	text string
@@ -10,7 +12,7 @@ type Message struct {
 
 func NewMessage(text string) (Message, error) {
 	if text == "" {
-		return Message{}, NewValidationError(NewValidationErrorDetail(
+		return Message{}, shared.NewValidationError(shared.NewValidationErrorDetail(
 			"text", ErrorCodeMessageEmptyText, "message text cannot be empty",
 		))
 	}

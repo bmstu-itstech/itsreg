@@ -1,6 +1,10 @@
 package bots
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
+)
 
 const ErrorCodeEntryEmptyKey = "entry-empty-key"
 
@@ -11,8 +15,8 @@ type Entry struct {
 
 func NewEntry(key EntryKey, start State) (Entry, error) {
 	if key == "" {
-		return Entry{}, NewValidationError(
-			NewValidationErrorDetail("key", ErrorCodeEntryEmptyKey, "entry key cannot be empty"),
+		return Entry{}, shared.NewValidationError(
+			shared.NewValidationErrorDetail("key", ErrorCodeEntryEmptyKey, "entry key cannot be empty"),
 		)
 	}
 

@@ -68,8 +68,54 @@ paths:
                 $ref: '#/components/schemas/GetBotResponse'
         "401":
           description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
         "404":
           description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /bots/{botID}/runs:
+    post:
+      operationId: createRun
+      description: Запустить бота с указанным ID.
+      parameters:
+        - in: path
+          name: botID
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID бота для запуска.
+      responses:
+        "201":
+          description: Бот успешно запущен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRunResponse'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "409":
+          description: Бот уже запущен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
 
   /scripts:
     post:
@@ -229,6 +275,16 @@ components:
       required:
         - botID
 
+    CreateRunResponse:
+      type: object
+      properties:
+        runID:
+          type: string
+          description: Уникальный ID запуска бота.
+          example: 123abc
+      required:
+        - runID
+
     CreateScriptResponse:
       type: object
       properties:
@@ -285,6 +341,44 @@ components:
         - desc
         - createdAt
         - updatedAt
+
+    Run:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Уникальный ID запуска бота.
+          example: 123abc
+        botID:
+          type: string
+          description: ID бота, который был запущен.
+          example: 123abc
+        status:
+          $ref: '#/components/schemas/Status'
+        errorMsg:
+          type: string
+          description: Сообщение об ошибке, если статус запуска failed.
+        startedAt:
+          type: string
+          format: date-time
+          description: Метка времени запуска бота.
+        stoppedAt:
+          type: string
+          format: date-time
+          description: Метка времени остановки бота.
+      required:
+        - id
+        - botID
+        - status
+
+    Status:
+      type: string
+      description: Статус бота.
+      enum:
+        - starting
+        - active
+        - failed
+        - stopped
 
     Script:
       type: object

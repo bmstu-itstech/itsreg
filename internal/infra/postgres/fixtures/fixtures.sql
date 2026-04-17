@@ -56,12 +56,12 @@ VALUES
     ('b0004', 2, 'sc0004', 'token_b0004', 'Test bot b0004', '2026-04-11 10:00:00', '2026-04-11 10:00:00', '2026-04-11 11:00:00');
 
 INSERT INTO runs
-    (id, bot_id, status, error_msg, started_at, stopped_at)
+    (id, bot_id, token, status, error_msg, started_at, stopped_at)
 VALUES
-    ('r0001', 'b0001', 'starting', NULL, '2026-04-11 10:00:00', '2026-04-11 10:30:00'),
-    ('r0002', 'b0001', 'failed', 'Some error occurred', '2026-04-11 10:30:00', '2026-04-11 10:45:00'),
-    ('r0003', 'b0002', 'active', NULL, '2026-04-11 10:15:00', NULL),
-    ('r0004', 'b0003', 'stopped', NULL, '2026-04-11 10:20:00', '2026-04-11 10:50:00');
+    ('r0001', 'b0001', 'token_b0001', 'starting', NULL, '2026-04-11 10:00:00', '2026-04-11 10:30:00'),
+    ('r0002', 'b0001', 'token_b0001', 'failed', 'Some error occurred', '2026-04-11 10:30:00', '2026-04-11 10:45:00'),
+    ('r0003', 'b0002', 'token_b0002', 'active', NULL, '2026-04-11 10:15:00', NULL),
+    ('r0004', 'b0003', 'token_b0003', 'stopped', NULL, '2026-04-11 10:20:00', '2026-04-11 10:50:00');
 
 INSERT INTO users
     (id, username, updated_at)

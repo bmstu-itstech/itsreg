@@ -5,6 +5,7 @@ import (
 
 	"github.com/bmstu-itstech/itsreg/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 func PredicateFromDTO(d dto.Predicate) (bots.Predicate, error) {
@@ -16,7 +17,7 @@ func PredicateFromDTO(d dto.Predicate) (bots.Predicate, error) {
 	case "regex":
 		return bots.NewRegexMatchPredicate(d.Data)
 	default:
-		return nil, bots.NewValidationError(bots.NewValidationErrorDetail(
+		return nil, shared.NewValidationError(shared.NewValidationErrorDetail(
 			"type", "predicate-invalid-type",
 			fmt.Sprintf("expected predicate type one of ['always', 'exact', 'regex'], got '%s'", d.Type),
 		))

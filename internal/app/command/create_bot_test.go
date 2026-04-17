@@ -11,6 +11,7 @@ import (
 	"github.com/bmstu-itstech/itsreg/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 	"github.com/stretchr/testify/require"
 )
 
@@ -97,7 +98,7 @@ func TestCreateBotHandler_Handle(t *testing.T) {
 		h := command.NewCreateBotHandler(br, smp, logger)
 
 		_, err := h.Handle(t.Context(), validCreateBotRequest())
-		require.ErrorIs(t, err, bots.ErrPermissionDenied)
+		require.ErrorIs(t, err, shared.ErrPermissionDenied)
 		require.Equal(t, 0, br.saveCalls)
 	})
 
@@ -112,7 +113,7 @@ func TestCreateBotHandler_Handle(t *testing.T) {
 			Token:    "", // Empty token
 			Desc:     "desc",
 		})
-		var vErr bots.ValidationError
+		var vErr shared.ValidationError
 		require.ErrorAs(t, err, &vErr)
 	})
 

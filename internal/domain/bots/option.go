@@ -1,6 +1,8 @@
 package bots
 
-const ErrorCodeOptionEmpty ErrorCode = "option-empty"
+import "github.com/bmstu-itstech/itsreg/internal/domain/shared"
+
+const ErrorCodeOptionEmpty shared.ErrorCode = "option-empty"
 
 // Option есть доступная пользователю опция для выбора ответа.
 // Для Telegram это ReplyKeyboardButton.
@@ -10,7 +12,7 @@ type Option struct {
 
 func NewOption(s string) (Option, error) {
 	if s == "" {
-		return Option{}, NewValidationError(NewValidationErrorDetail(
+		return Option{}, shared.NewValidationError(shared.NewValidationErrorDetail(
 			"value", ErrorCodeOptionEmpty, "option cannot be empty",
 		))
 	}

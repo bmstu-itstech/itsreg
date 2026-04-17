@@ -16,6 +16,7 @@ type RunRepository interface {
 	Run(ctx context.Context, id bots.RunID) (*bots.Run, error)
 	RunsByOwnerID(ctx context.Context, ownerID bots.UserID) ([]*bots.Run, error)
 	RunsByBotID(ctx context.Context, botID bots.BotID) ([]*bots.Run, error)
+	ActiveRuns(ctx context.Context) ([]*bots.Run, error)
 
 	SaveRun(ctx context.Context, run *bots.Run) error
 	UpdateRun(ctx context.Context, run *bots.Run) error

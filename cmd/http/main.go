@@ -13,10 +13,13 @@ import (
 	apiv3 "github.com/bmstu-itstech/itsreg/internal/api/v3"
 	"github.com/bmstu-itstech/itsreg/internal/api/v3/jwtauth"
 	"github.com/bmstu-itstech/itsreg/internal/app"
+	"github.com/bmstu-itstech/itsreg/internal/app/bootstrap"
 	"github.com/bmstu-itstech/itsreg/internal/app/command"
 	"github.com/bmstu-itstech/itsreg/internal/app/dto"
+	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/config"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/infra/inmemory"
 	"github.com/bmstu-itstech/itsreg/internal/infra/jwt"
 	"github.com/bmstu-itstech/itsreg/internal/infra/postgres"
 	"github.com/bmstu-itstech/itsreg/internal/infra/telegram"
@@ -44,6 +47,7 @@ func main() {
 	l.Debug(fmt.Sprintf("config: %+v", cfg))
 
 	repos := postgres.MustNewRepository(cfg.Postgres)
+	bus := inmemory.NewEventBus(l)
 	sender := telegram.NewMessageSender(l) // Надо убрать зависимость от логгера в инфре
 	// И убрать эти кошмарные адаптеры, заменив на ссылку на прикладной слой
 	process := ProcessHandlerAdapter{command.NewProcessHandler(repos, repos, repos, sender, l)}
@@ -53,7 +57,9 @@ func main() {
 	tokenService := jwt.MustNewTokenService(cfg.JWT)
 
 	infra := app.Infra{
+		BotMetaProvider:      repos,
 		BotRepository:        repos,
+		EventBus:             bus,
 		InstanceManager:      instanceManager,
 		MessageSender:        ms,
 		RunRepository:        repos,
@@ -64,6 +70,19 @@ func main() {
 		UserRepository:       repos,
 	}
 	a := app.NewApplication(infra, l)
+
+	// Регистрация обработчиков событий
+
+	mustSubscribe(bus, "run.start_requested", a.Events.StartOnRunStartRequested)
+	mustSubscribe(bus, "run.recover_requested", a.Events.StartOnRunRecoverRequested)
+
+	// Восстановление состояние
+
+	recoverer := bootstrap.NewRecoverActiveRunsHandler(repos, bus, l)
+	if err := recoverer.Recover(context.Background()); err != nil {
+		l.Error("error recovering active runs", "error", err)
+		os.Exit(1)
+	}
 
 	// Инициализация HTTP сервера
 
@@ -158,4 +177,10 @@ func (a EntryHandlerAdapter) Entry(
 		EntryKey: string(key),
 	})
 	return err
+}
+
+func mustSubscribe(bus port.EventBus, eventName string, h port.EventHandler) {
+	if err := bus.Subscribe(eventName, h); err != nil {
+		panic(err)
+	}
 }

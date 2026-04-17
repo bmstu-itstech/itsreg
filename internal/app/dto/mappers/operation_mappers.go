@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 func operationFromDTO(d string) (bots.Operation, error) {
@@ -15,7 +16,7 @@ func operationFromDTO(d string) (bots.Operation, error) {
 	case "append":
 		return bots.AppendOp{}, nil
 	default:
-		return nil, bots.NewValidationError(bots.NewValidationErrorDetail(
+		return nil, shared.NewValidationError(shared.NewValidationErrorDetail(
 			"", "operation-invalid-type",
 			fmt.Sprintf("expected operation one of ['noop', 'save', 'append'], got '%s'", d),
 		))

@@ -9,6 +9,7 @@ import (
 	"github.com/bmstu-itstech/itsreg/internal/app/dto/mappers"
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 type CreateScriptRequest struct {
@@ -37,7 +38,7 @@ func (h *CreateScriptHandler) Handle(ctx context.Context, req CreateScriptReques
 		slog.Int64("actor_id", req.ActorID),
 	)
 
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 
 	nodes, err := mappers.NodesFromDTOPrefixed(req.Nodes, "nodes")
 	if err != nil {

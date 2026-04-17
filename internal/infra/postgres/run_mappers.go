@@ -6,6 +6,7 @@ func runToRow(r *bots.Run) runRow {
 	return runRow{
 		ID:        r.ID().String(),
 		BotID:     r.BotID().String(),
+		Token:     r.Token().String(),
 		Status:    r.Status().String(),
 		ErrorMsg:  r.ErrorMsg(),
 		StartedAt: r.StartedAt(),
@@ -21,6 +22,7 @@ func runFromRow(r runRow) (*bots.Run, error) {
 	return bots.RestoreRun(
 		bots.RunID(r.ID),
 		bots.BotID(r.BotID),
+		bots.Token(r.Token),
 		s,
 		r.ErrorMsg,
 		r.StartedAt,

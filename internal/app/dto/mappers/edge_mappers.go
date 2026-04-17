@@ -1,12 +1,15 @@
 package mappers
 
 import (
+	"fmt"
+
 	"github.com/bmstu-itstech/itsreg/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 func edgeFromDTO(d dto.Edge) (bots.Edge, error) {
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 
 	pred, err := PredicateFromDTO(d.Predicate)
 	if err != nil {
@@ -27,6 +30,19 @@ func edgeFromDTO(d dto.Edge) (bots.Edge, error) {
 		return bots.Edge{}, vErr
 	}
 	return bots.NewEdge(pred, to, oper), nil
+}
+
+func edgesFromDTOPrefixed(ds []dto.Edge, prefix string) ([]bots.Edge, error) {
+	var vErr shared.ValidationError
+	edges := make([]bots.Edge, len(ds))
+	for i, de := range ds {
+		edge, err2 := edgeFromDTO(de)
+		if err2 != nil {
+			vErr = vErr.AppendPrefixed(err2, fmt.Sprintf("%s[%d]", prefix, i))
+		}
+		edges[i] = edge
+	}
+	return edges, vErr
 }
 
 func edgeToDTO(e bots.Edge) dto.Edge {

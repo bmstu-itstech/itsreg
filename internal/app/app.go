@@ -4,12 +4,14 @@ import (
 	"log/slog"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/command"
+	"github.com/bmstu-itstech/itsreg/internal/app/eventhandler"
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/app/query"
 )
 
 type Commands struct {
 	CreateBot    *command.CreateBotHandler
+	CreateRun    *command.CreateRunHandler
 	CreateScript *command.CreateScriptHandler
 	DeleteScript *command.DeleteScriptHandler
 	Entry        *command.EntryHandler
@@ -22,13 +24,21 @@ type Queries struct {
 	GetScripts *query.GetScriptsHandler
 }
 
+type EventHandlers struct {
+	StartOnRunStartRequested   *eventhandler.StartOnRunStartRequestedHandler
+	StartOnRunRecoverRequested *eventhandler.StartOnRunRecoverRequestedHandler
+}
+
 type Application struct {
 	Commands Commands
 	Queries  Queries
+	Events   EventHandlers
 }
 
 type Infra struct {
+	BotMetaProvider      port.BotMetaProvider
 	BotRepository        port.BotRepository
+	EventBus             port.EventBus
 	InstanceManager      port.InstanceManager
 	MessageSender        port.MessageSender
 	RunRepository        port.RunRepository
@@ -43,6 +53,7 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 	return &Application{
 		Commands: Commands{
 			CreateBot:    command.NewCreateBotHandler(i.BotRepository, i.ScriptMetaProvider, l),
+			CreateRun:    command.NewCreateRunHandler(i.RunRepository, i.BotMetaProvider, i.EventBus, l),
 			CreateScript: command.NewCreateScriptHandler(i.ScriptRepository, l),
 			DeleteScript: command.NewDeleteScriptHandler(i.ScriptRepository, l),
 			Entry: command.NewEntryHandler(
@@ -56,6 +67,14 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 			GetBot:     query.NewGetBotHandler(i.BotRepository, l),
 			GetScript:  query.NewGetScriptHandler(i.ScriptRepository, l),
 			GetScripts: query.NewGetScriptsHandler(i.ScriptRepository, l),
+		},
+		Events: EventHandlers{
+			StartOnRunStartRequested: eventhandler.NewStartOnRunStartRequestedHandler(
+				i.RunRepository, i.InstanceManager, i.EventBus, l,
+			),
+			StartOnRunRecoverRequested: eventhandler.NewStartOnRunRecoverRequestedHandler(
+				i.RunRepository, i.InstanceManager, i.EventBus, l,
+			),
 		},
 	}
 }

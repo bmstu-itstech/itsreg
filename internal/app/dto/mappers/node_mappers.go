@@ -5,41 +5,30 @@ import (
 
 	"github.com/bmstu-itstech/itsreg/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 )
 
 func nodeFromDTO(d dto.Node) (bots.Node, error) {
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 
 	state, err := bots.NewState(d.State)
 	if err != nil {
 		vErr = vErr.AppendPrefixed(err, "state")
 	}
 
-	edges := make([]bots.Edge, len(d.Edges))
-	for i, de := range d.Edges {
-		edge, err2 := edgeFromDTO(de)
-		if err2 != nil {
-			vErr = vErr.AppendPrefixed(err2, fmt.Sprintf("edges[%d]", i))
-		}
-		edges[i] = edge
+	edges, err := edgesFromDTOPrefixed(d.Edges, "edges")
+	if err != nil {
+		vErr = vErr.AppendError(err)
 	}
 
-	messages := make([]bots.Message, len(d.Messages))
-	for i, dm := range d.Messages {
-		message, err2 := MessageFromDTO(dm)
-		if err2 != nil {
-			vErr = vErr.AppendPrefixed(err2, fmt.Sprintf("messages[%d]", i))
-		}
-		messages[i] = message
+	messages, err := messagesFromDTOPrefixed(d.Messages, "messages")
+	if err != nil {
+		vErr = vErr.AppendError(err)
 	}
 
-	options := make([]bots.Option, len(d.Options))
-	for i, do := range d.Options {
-		option, err2 := bots.NewOption(do)
-		if err2 != nil {
-			vErr = vErr.AppendPrefixed(err2, fmt.Sprintf("options[%d]", i))
-		}
-		options[i] = option
+	options, err := optionsFromDTOPrefixed(d.Options, "options")
+	if err != nil {
+		vErr = vErr.AppendError(err)
 	}
 
 	if vErr.OrError() != nil {
@@ -50,7 +39,7 @@ func nodeFromDTO(d dto.Node) (bots.Node, error) {
 }
 
 func NodesFromDTOPrefixed(ds []dto.Node, prefix string) ([]bots.Node, error) {
-	var vErr bots.ValidationError
+	var vErr shared.ValidationError
 
 	nodes := make([]bots.Node, len(ds))
 	for i, n := range ds {

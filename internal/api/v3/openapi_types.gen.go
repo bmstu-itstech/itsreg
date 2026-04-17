@@ -84,6 +84,12 @@ type CreateBotResponse struct {
 	BotID string `json:"botID"`
 }
 
+// CreateRunResponse defines model for CreateRunResponse.
+type CreateRunResponse struct {
+	// RunID Уникальный ID запуска бота.
+	RunID string `json:"runID"`
+}
+
 // CreateScriptRequest defines model for CreateScriptRequest.
 type CreateScriptRequest struct {
 	// Desc Человекочитаемое описание назначения сценария.
