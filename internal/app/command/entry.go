@@ -106,7 +106,7 @@ func (h *EntryHandler) Handle(ctx context.Context, req EntryRequest) (EntryRespo
 		l.ErrorContext(ctx, "failed to save thread", slog.String("error", err.Error()))
 		return EntryResponse{}, err
 	}
-	l.InfoContext(ctx, "thread saved")
+	l.DebugContext(ctx, "thread saved")
 
 	// После внедрения событийной модели, отправка сообщений будет асинхронной
 	// через bus.Publish(thread.PullEvents()), что гарантирует их отправку

@@ -45,6 +45,8 @@ func (h *StartOnRunRecoverRequestedHandler) Handle(ctx context.Context, _ev even
 		return err
 	}
 
+	l = l.With(slog.String("bot_id", run.BotID().String()))
+
 	l.InfoContext(ctx, "starting bot instance")
 	err = h.im.Start(ctx, run.BotID(), run.Token())
 	if err != nil {

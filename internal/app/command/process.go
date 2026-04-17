@@ -109,7 +109,7 @@ func (h *ProcessHandler) Handle(ctx context.Context, req ProcessRequest) (Proces
 		l.ErrorContext(ctx, "failed to update thread", slog.String("error", err.Error()))
 		return ProcessResponse{}, err
 	}
-	l.InfoContext(ctx, "thread updated")
+	l.DebugContext(ctx, "thread updated")
 
 	// После внедрения событийной модели, отправка сообщений будет асинхронной
 	// через bus.Publish(thread.PullEvents()), что гарантирует их отправку
