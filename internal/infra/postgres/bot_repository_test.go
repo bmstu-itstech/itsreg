@@ -111,6 +111,16 @@ func (s *RepositoryTestSuite) TestBotRepository_SaveBot_FailedToSaveBotTwice() {
 	s.Require().ErrorIs(err, port.ErrBotAlreadyExists)
 }
 
+func (s *RepositoryTestSuite) TestBotRepository_SaveBot_TokenAlreadyExists() {
+	bot1 := bots.MustNewBot(actorUserID, "sc0001", "token", "Test bot")
+	err := s.repos.SaveBot(s.ctx, bot1)
+	s.Require().NoError(err)
+
+	bot2 := bots.MustNewBot(actorUserID, "sc0002", "token", "Test bot 2")
+	err = s.repos.SaveBot(s.ctx, bot2)
+	s.Require().ErrorIs(err, port.ErrTokenAlreadyExists)
+}
+
 func (s *RepositoryTestSuite) TestBotRepository_UpdateBot_Success() {
 	bot := bots.MustNewBot(actorUserID, "sc0001", "token", "Test bot")
 	err := s.repos.SaveBot(s.ctx, bot)
@@ -118,7 +128,7 @@ func (s *RepositoryTestSuite) TestBotRepository_UpdateBot_Success() {
 
 	err = bot.SetScriptID("sc0002")
 	s.Require().NoError(err)
-	err = bot.SetToken("token_b0002")
+	err = bot.SetToken("token_updated")
 	s.Require().NoError(err)
 	err = bot.SetDesc("Test bot (updated)")
 	s.Require().NoError(err)

@@ -90,6 +90,10 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 		l.WarnContext(ctx, "bot already exists", slog.String("error", err.Error()))
 		return CreateBotResponse{}, err
 	}
+	if errors.Is(err, port.ErrTokenAlreadyExists) {
+		l.InfoContext(ctx, "token already exists", slog.String("error", err.Error()))
+		return CreateBotResponse{}, err
+	}
 	if err != nil {
 		l.ErrorContext(ctx, "failed to save bot", slog.String("error", err.Error()))
 		return CreateBotResponse{}, err

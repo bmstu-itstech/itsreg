@@ -126,6 +126,10 @@ func (s *Server) CreateBot(w http.ResponseWriter, r *http.Request) {
 		renderPlainError(w, r, err, http.StatusConflict)
 		return
 	}
+	if errors.Is(err, port.ErrTokenAlreadyExists) {
+		renderPlainError(w, r, err, http.StatusConflict)
+		return
+	}
 	if errors.Is(err, port.ErrScriptNotFound) {
 		renderPlainError(w, r, err, http.StatusUnprocessableEntity)
 		return

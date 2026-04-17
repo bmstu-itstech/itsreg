@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	ErrBotNotFound      = errors.New("bot not found")
-	ErrBotAlreadyExists = errors.New("bot already exists")
+	ErrBotNotFound        = errors.New("bot not found")
+	ErrBotAlreadyExists   = errors.New("bot already exists")
+	ErrTokenAlreadyExists = errors.New("token already exists")
 )
 
 type BotRepository interface {

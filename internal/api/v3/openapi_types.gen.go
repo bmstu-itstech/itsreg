@@ -74,7 +74,7 @@ type CreateBotRequest struct {
 	// ScriptID ID сценария для бота.
 	ScriptID string `json:"scriptID"`
 
-	// Token Telegram-токен бота, полученный через @BotFather.
+	// Token Telegram-токен бота, полученный через @BotFather. Должен быть уникальным для всех ботов.
 	Token Token `json:"token"`
 }
 
@@ -214,7 +214,7 @@ type Script struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// Token Telegram-токен бота, полученный через @BotFather.
+// Token Telegram-токен бота, полученный через @BotFather. Должен быть уникальным для всех ботов.
 type Token = string
 
 // ValidationError defines model for ValidationError.

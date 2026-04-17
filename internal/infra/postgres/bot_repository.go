@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/lib/pq"
 	"github.com/zhikh23/pgutils"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
@@ -33,7 +34,11 @@ func (r *Repository) BotsByOwnerID(ctx context.Context, ownerID bots.UserID) ([]
 func (r *Repository) SaveBot(ctx context.Context, bot *bots.Bot) error {
 	rBot := botToRow(bot)
 	err := r.insertBotRow(ctx, r.db, rBot)
-	if pgutils.IsUniqueViolationError(err) {
+	var perr *pq.Error
+	if errors.As(err, &perr) && perr.Code == pgutils.UniqueViolationErr {
+		if perr.Constraint == "uniq_bots_token" {
+			return port.ErrTokenAlreadyExists
+		}
 		return port.ErrBotAlreadyExists
 	}
 	return err

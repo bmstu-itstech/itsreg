@@ -556,7 +556,7 @@ components:
 
     Token:
       type: string
-      description: Telegram-токен бота, полученный через @BotFather.
+      description: Telegram-токен бота, полученный через @BotFather. Должен быть уникальным для всех ботов.
       example: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
 
     PlainError:
