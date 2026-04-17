@@ -13,13 +13,16 @@ type Commands struct {
 	CreateBot    *command.CreateBotHandler
 	CreateRun    *command.CreateRunHandler
 	CreateScript *command.CreateScriptHandler
+	DeleteBot    *command.DeleteBotHandler
 	DeleteScript *command.DeleteScriptHandler
 	Entry        *command.EntryHandler
 	Process      *command.ProcessHandler
+	UpdateBot    *command.UpdateBotHandler
 }
 
 type Queries struct {
 	GetBot     *query.GetBotHandler
+	GetBots    *query.GetBotsHandler
 	GetScript  *query.GetScriptHandler
 	GetScripts *query.GetScriptsHandler
 }
@@ -55,6 +58,7 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 			CreateBot:    command.NewCreateBotHandler(i.BotRepository, i.ScriptMetaProvider, l),
 			CreateRun:    command.NewCreateRunHandler(i.RunRepository, i.BotMetaProvider, i.EventBus, l),
 			CreateScript: command.NewCreateScriptHandler(i.ScriptRepository, l),
+			DeleteBot:    command.NewDeleteBotHandler(i.BotRepository, l),
 			DeleteScript: command.NewDeleteScriptHandler(i.ScriptRepository, l),
 			Entry: command.NewEntryHandler(
 				i.BotRepository, i.ScriptRepository, i.ThreadRepository, i.UserRepository, i.MessageSender, l,
@@ -62,9 +66,11 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 			Process: command.NewProcessHandler(
 				i.BotRepository, i.ScriptRepository, i.ThreadRepository, i.MessageSender, l,
 			),
+			UpdateBot: command.NewUpdateBotHandler(i.BotRepository, i.ScriptMetaProvider, l),
 		},
 		Queries: Queries{
 			GetBot:     query.NewGetBotHandler(i.BotRepository, l),
+			GetBots:    query.NewGetBotsHandler(i.BotRepository, l),
 			GetScript:  query.NewGetScriptHandler(i.ScriptRepository, l),
 			GetScripts: query.NewGetScriptsHandler(i.ScriptRepository, l),
 		},

@@ -144,6 +144,9 @@ type ExactPredicateType string
 // GetBotResponse Сущность, связывающая между собой сценарий (Script) и запуски телеграм-бота (Run).
 type GetBotResponse = Bot
 
+// GetBotsResponse defines model for GetBotsResponse.
+type GetBotsResponse = []Bot
+
 // GetScriptResponse Сценарий бота. Является объединением узлов (Node), точек входа (Entry). Гарантируется связность всех узлов относительно любой точки входа Entry.
 type GetScriptResponse = Script
 
@@ -217,6 +220,21 @@ type Script struct {
 // Token Telegram-токен бота, полученный через @BotFather. Должен быть уникальным для всех ботов.
 type Token = string
 
+// UpdateBotRequest defines model for UpdateBotRequest.
+type UpdateBotRequest struct {
+	// Desc Человекочитаемое описание назначения бота.
+	Desc *string `json:"desc,omitempty"`
+
+	// ScriptID ID сценария для бота.
+	ScriptID *string `json:"scriptID,omitempty"`
+
+	// Token Telegram-токен бота, полученный через @BotFather. Должен быть уникальным для всех ботов.
+	Token *Token `json:"token,omitempty"`
+}
+
+// UpdateBotResponse Сущность, связывающая между собой сценарий (Script) и запуски телеграм-бота (Run).
+type UpdateBotResponse = Bot
+
 // ValidationError defines model for ValidationError.
 type ValidationError = []ValidationErrorDetail
 
@@ -234,6 +252,9 @@ type ValidationErrorDetail struct {
 
 // CreateBotJSONRequestBody defines body for CreateBot for application/json ContentType.
 type CreateBotJSONRequestBody = CreateBotRequest
+
+// UpdateBotJSONRequestBody defines body for UpdateBot for application/json ContentType.
+type UpdateBotJSONRequestBody = UpdateBotRequest
 
 // CreateScriptJSONRequestBody defines body for CreateScript for application/json ContentType.
 type CreateScriptJSONRequestBody = CreateScriptRequest

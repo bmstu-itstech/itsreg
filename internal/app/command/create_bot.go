@@ -33,7 +33,7 @@ func NewCreateBotHandler(br port.BotRepository, smp port.ScriptMetaProvider, l *
 
 func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (CreateBotResponse, error) {
 	l := h.l.With(
-		slog.String("op", "command.CreateBot.Handle"),
+		slog.String("op", "command.CreateBotHandler.Handle"),
 		slog.Int64("actor_id", req.ActorID),
 	)
 
@@ -65,7 +65,7 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 			slog.String("script_id", req.ScriptID),
 			slog.Int64("owner_id", script.OwnerID),
 		)
-		return CreateBotResponse{}, shared.ErrPermissionDenied
+		return CreateBotResponse{}, port.ErrScriptNotFound
 	}
 
 	bot, err := bots.NewBot(

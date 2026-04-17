@@ -92,13 +92,13 @@ func TestCreateBotHandler_Handle(t *testing.T) {
 		require.Equal(t, 0, br.saveCalls)
 	})
 
-	t.Run("permission denied for foreign script owner", func(t *testing.T) {
+	t.Run("script not found for foreign script owner", func(t *testing.T) {
 		br := &createBotRepositoryStub{}
 		smp := &createBotScriptMetaProviderStub{meta: validScriptMeta(10, false)}
 		h := command.NewCreateBotHandler(br, smp, logger)
 
 		_, err := h.Handle(t.Context(), validCreateBotRequest())
-		require.ErrorIs(t, err, shared.ErrPermissionDenied)
+		require.ErrorIs(t, err, port.ErrScriptNotFound)
 		require.Equal(t, 0, br.saveCalls)
 	})
 

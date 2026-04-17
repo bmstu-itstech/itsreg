@@ -12,6 +12,8 @@ paths:
   /bots:
     post:
       operationId: createBot
+      tags:
+        - Bots
       description: Создать нового бота с указанным сценарием.
       requestBody:
         required: true
@@ -47,9 +49,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlainError'
 
+    get:
+      operationId: getBots
+      tags:
+        - Bots
+      description: Получить список всех ботов, доступных пользователю.
+      responses:
+        "200":
+          description: Боты успешно получены.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetBotsResponse'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
   /bots/{id}:
     get:
       operationId: getBot
+      tags:
+        - Bots
       description: Получить информацию о боте с указанным ID.
       parameters:
         - in: path
@@ -79,9 +102,88 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlainError'
 
+    patch:
+      operationId: updateBot
+      tags:
+        - Bots
+      description: Обновить информацию о боте с указанным ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID бота.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBotRequest'
+      responses:
+        "200":
+          description: Бот успешно обновлён.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateBotResponse'
+        "400":
+          description: Данные для обновления бота невалидны.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PlainError'
+                  - $ref: '#/components/schemas/ValidationError'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+    delete:
+      operationId: deleteBot
+      tags:
+        - Bots
+      description: Удалить бота по указанному ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID бота.
+      responses:
+        "204":
+          description: Бот успешно удалён.
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
   /bots/{botID}/runs:
     post:
       operationId: createRun
+      tags:
+        - Bots
+        - Runs
       description: Запустить бота с указанным ID.
       parameters:
         - in: path
@@ -120,6 +222,8 @@ paths:
   /scripts:
     post:
       operationId: createScript
+      tags:
+        - Scripts
       description: Создать новый сценарий.
       requestBody:
         required: true
@@ -151,6 +255,8 @@ paths:
 
     get:
       operationId: getScripts
+      tags:
+        - Scripts
       description: Получить список всех сценариев, доступных пользователю.
       responses:
         "200":
@@ -169,6 +275,8 @@ paths:
   /scripts/{id}:
     get:
       operationId: getScript
+      tags:
+        - Scripts
       description: Получить информацию о сценарии с указанным ID.
       parameters:
         - in: path
@@ -200,6 +308,8 @@ paths:
 
     delete:
       operationId: deleteScript
+      tags:
+        - Scripts
       description: Удалить сценарий по указанному ID.
       parameters:
         - in: path
@@ -265,6 +375,19 @@ components:
         - nodes
         - entries
 
+    UpdateBotRequest:
+      type: object
+      properties:
+        scriptID:
+          type: string
+          description: ID сценария для бота.
+          example: 123abc
+        token:
+          $ref: '#/components/schemas/Token'
+        desc:
+          type: string
+          description: Человекочитаемое описание назначения бота.
+
     CreateBotResponse:
       type: object
       properties:
@@ -295,8 +418,16 @@ components:
       required:
         - scriptID
 
+    UpdateBotResponse:
+       $ref: '#/components/schemas/Bot'
+
     GetBotResponse:
       $ref: '#/components/schemas/Bot'
+
+    GetBotsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Bot'
 
     GetScriptResponse:
       $ref: '#/components/schemas/Script'

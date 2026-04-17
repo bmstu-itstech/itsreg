@@ -120,3 +120,11 @@ func botToAPI(d dto.Bot) Bot {
 		UpdatedAt: d.UpdatedAt,
 	}
 }
+
+func botsToAPI(ds []dto.Bot) []Bot {
+	res := make([]Bot, len(ds))
+	for i, d := range ds {
+		res[i] = botToAPI(d)
+	}
+	return res
+}

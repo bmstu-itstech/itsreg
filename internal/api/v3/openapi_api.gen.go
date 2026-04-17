@@ -15,14 +15,23 @@ import (
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (GET /bots)
+	GetBots(w http.ResponseWriter, r *http.Request)
+
 	// (POST /bots)
 	CreateBot(w http.ResponseWriter, r *http.Request)
 
 	// (POST /bots/{botID}/runs)
 	CreateRun(w http.ResponseWriter, r *http.Request, botID string)
 
+	// (DELETE /bots/{id})
+	DeleteBot(w http.ResponseWriter, r *http.Request, id string)
+
 	// (GET /bots/{id})
 	GetBot(w http.ResponseWriter, r *http.Request, id string)
+
+	// (PATCH /bots/{id})
+	UpdateBot(w http.ResponseWriter, r *http.Request, id string)
 
 	// (GET /scripts)
 	GetScripts(w http.ResponseWriter, r *http.Request)
@@ -41,6 +50,11 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
+// (GET /bots)
+func (_ Unimplemented) GetBots(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (POST /bots)
 func (_ Unimplemented) CreateBot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -51,8 +65,18 @@ func (_ Unimplemented) CreateRun(w http.ResponseWriter, r *http.Request, botID s
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (DELETE /bots/{id})
+func (_ Unimplemented) DeleteBot(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /bots/{id})
 func (_ Unimplemented) GetBot(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (PATCH /bots/{id})
+func (_ Unimplemented) UpdateBot(w http.ResponseWriter, r *http.Request, id string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -84,6 +108,23 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetBots operation middleware
+func (siw *ServerInterfaceWrapper) GetBots(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBots(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
 
 // CreateBot operation middleware
 func (siw *ServerInterfaceWrapper) CreateBot(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +171,34 @@ func (siw *ServerInterfaceWrapper) CreateRun(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// DeleteBot operation middleware
+func (siw *ServerInterfaceWrapper) DeleteBot(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteBot(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // GetBot operation middleware
 func (siw *ServerInterfaceWrapper) GetBot(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -149,6 +218,34 @@ func (siw *ServerInterfaceWrapper) GetBot(w http.ResponseWriter, r *http.Request
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetBot(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// UpdateBot operation middleware
+func (siw *ServerInterfaceWrapper) UpdateBot(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateBot(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -362,13 +459,22 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/bots", wrapper.GetBots)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/bots", wrapper.CreateBot)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/bots/{botID}/runs", wrapper.CreateRun)
 	})
 	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/bots/{id}", wrapper.DeleteBot)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/bots/{id}", wrapper.GetBot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/bots/{id}", wrapper.UpdateBot)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/scripts", wrapper.GetScripts)
