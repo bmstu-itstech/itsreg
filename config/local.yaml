@@ -3,6 +3,9 @@ http:
   cors_allow_origins:
   cors_max_age: 300
 
+proxy:
+  url:
+
 postgres:
   uri:
 

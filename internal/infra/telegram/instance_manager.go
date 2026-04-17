@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"sync"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/dto"
@@ -16,12 +17,14 @@ import (
 type InstanceManager struct {
 	m  sync.Map // map[string]*botInstance
 	id port.InboundDispatcher
+	cl *http.Client
 	l  *slog.Logger
 }
 
-func NewInstanceManager(id port.InboundDispatcher, l *slog.Logger) *InstanceManager {
+func NewInstanceManager(id port.InboundDispatcher, cl *http.Client, l *slog.Logger) *InstanceManager {
 	return &InstanceManager{
 		id: id,
+		cl: cl,
 		l:  l,
 	}
 }
@@ -43,7 +46,7 @@ func (m *InstanceManager) Start(ctx context.Context, id bots.BotID, token bots.T
 		}
 	}
 
-	ins, err := startBotInstance(id, token, m.id, m.l)
+	ins, err := startBotInstance(id, token, m.id, m.cl, m.l)
 	m.m.Store(id, ins) // В любом случае сохраняем, чтобы иметь status = dead
 	if err != nil {
 		l.ErrorContext(ctx, "failed to start bot", slog.String("error", err.Error()))
@@ -79,9 +82,10 @@ func startBotInstance(
 	botID bots.BotID,
 	token bots.Token,
 	id port.InboundDispatcher,
+	cl *http.Client,
 	log *slog.Logger,
 ) (*botInstance, error) {
-	api, err := tgbotapi.NewBotAPI(string(token))
+	api, err := tgbotapi.NewBotAPIWithClient(token.String(), cl)
 	if err != nil {
 		return nil, err
 	}

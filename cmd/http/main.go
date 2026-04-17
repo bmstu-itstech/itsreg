@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 
@@ -47,7 +48,8 @@ func main() {
 	repos := postgres.MustNewRepository(cfg.Postgres)
 	bus := inmemory.NewEventBus(l)
 	inbound := dispatcher.NewInboundDispatcher(l)
-	instanceManager := telegram.NewInstanceManager(inbound, l)
+	httpClient := mustProxyOrDefaultHTTPClient(cfg.Proxy)
+	instanceManager := telegram.NewInstanceManager(inbound, httpClient, l)
 	sender := telegram.NewMessageSender(l)
 	tokenService := jwt.MustNewTokenService(cfg.JWT)
 
@@ -138,6 +140,31 @@ func main() {
 			cancel()
 		}
 	}
+}
+
+func proxyOrDefaultHTTPClient(proxyCfg config.Proxy) (*http.Client, error) {
+	if proxyCfg.URL == "" {
+		return http.DefaultClient, nil
+	}
+
+	u, err := url.Parse(proxyCfg.URL)
+	if err != nil {
+		return nil, err
+	}
+
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(u),
+		},
+	}, nil
+}
+
+func mustProxyOrDefaultHTTPClient(proxyCfg config.Proxy) *http.Client {
+	c, err := proxyOrDefaultHTTPClient(proxyCfg)
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 func mustSubscribe(bus port.EventBus, eventName string, h port.EventHandler) {

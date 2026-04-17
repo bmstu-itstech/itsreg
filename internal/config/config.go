@@ -13,6 +13,7 @@ const projectPrefix = "IR"
 type Config struct {
 	HTTP     HTTP     `mapstructure:"http"`
 	Logging  Logging  `mapstructure:"logging"`
+	Proxy    Proxy    `mapstructure:"proxy"`
 	Postgres Postgres `mapstructure:"postgres"`
 	JWT      JWT      `mapstructure:"jwt"`
 }
@@ -25,6 +26,10 @@ type HTTP struct {
 
 type Logging struct {
 	Level string `mapstructure:"level"`
+}
+
+type Proxy struct {
+	URL string `mapstructure:"url"`
 }
 
 type Postgres struct {
