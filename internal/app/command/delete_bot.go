@@ -42,8 +42,6 @@ func (h *DeleteBotHandler) Handle(ctx context.Context, req DeleteBotRequest) (De
 		return DeleteBotResponse{}, err
 	}
 
-	l.InfoContext(ctx, "fetched bot from repository")
-
 	if err = bot.EnsureActive(); err != nil {
 		l.InfoContext(ctx, "bot already deleted")
 		return DeleteBotResponse{}, nil
@@ -63,6 +61,8 @@ func (h *DeleteBotHandler) Handle(ctx context.Context, req DeleteBotRequest) (De
 		l.ErrorContext(ctx, "failed to update bot", slog.String("error", err.Error()))
 		return DeleteBotResponse{}, err
 	}
+
+	l.InfoContext(ctx, "bot successfully deleted")
 
 	return DeleteBotResponse{}, nil
 }

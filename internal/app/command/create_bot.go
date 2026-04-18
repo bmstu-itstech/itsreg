@@ -98,7 +98,7 @@ func (h *CreateBotHandler) Handle(ctx context.Context, req CreateBotRequest) (Cr
 		l.ErrorContext(ctx, "failed to save bot", slog.String("error", err.Error()))
 		return CreateBotResponse{}, err
 	}
-	l.DebugContext(ctx, "bot saved")
+	l.InfoContext(ctx, "bot successfully created")
 
 	return CreateBotResponse{
 		BotID: bot.ID().String(),

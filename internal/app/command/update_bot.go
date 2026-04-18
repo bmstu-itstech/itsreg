@@ -91,6 +91,8 @@ func (h *UpdateBotHandler) Handle(ctx context.Context, req UpdateBotRequest) (Up
 		return UpdateBotResponse{}, err
 	}
 
+	l.InfoContext(ctx, "bot successfully updated", slog.String("bot_id", req.BotID))
+
 	return mappers.BotToDTO(bot), nil
 }
 

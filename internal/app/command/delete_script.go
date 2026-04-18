@@ -45,8 +45,6 @@ func (h *DeleteScriptHandler) Handle(ctx context.Context, req DeleteScriptReques
 		return DeleteScriptResponse{}, err
 	}
 
-	l.InfoContext(ctx, "fetched script from repository")
-
 	if err = script.EnsureActive(); err != nil {
 		l.InfoContext(ctx, "script already deleted")
 		return DeleteScriptResponse{}, nil
@@ -66,6 +64,8 @@ func (h *DeleteScriptHandler) Handle(ctx context.Context, req DeleteScriptReques
 		l.ErrorContext(ctx, "failed to update script", slog.String("error", err.Error()))
 		return DeleteScriptResponse{}, err
 	}
+
+	l.InfoContext(ctx, "script successfully deleted")
 
 	return DeleteScriptResponse{}, nil
 }

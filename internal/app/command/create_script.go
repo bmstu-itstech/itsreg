@@ -73,7 +73,8 @@ func (h *CreateScriptHandler) Handle(ctx context.Context, req CreateScriptReques
 		l.ErrorContext(ctx, "failed to save script", slog.String("error", err.Error()))
 		return CreateScriptResponse{}, err
 	}
-	l.InfoContext(ctx, "script saved")
+
+	l.InfoContext(ctx, "script successfully created")
 
 	return CreateScriptResponse{
 		ScriptID: script.ID().String(),

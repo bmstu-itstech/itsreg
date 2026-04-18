@@ -78,12 +78,13 @@ func (h *CreateRunHandler) Handle(ctx context.Context, req CreateRunRequest) (Cr
 		l.ErrorContext(ctx, "failed to save run", slog.String("error", err.Error()))
 		return CreateRunResponse{}, err
 	}
-	l.DebugContext(ctx, "run saved")
 
 	if err = h.eb.Publish(ctx, run.PullEvents()...); err != nil {
 		l.ErrorContext(ctx, "failed to publish events", slog.String("error", err.Error()))
 		return CreateRunResponse{}, err
 	}
+
+	l.InfoContext(ctx, "run successfully created")
 
 	return CreateRunResponse{
 		RunID: run.ID().String(),

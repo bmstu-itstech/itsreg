@@ -55,13 +55,15 @@ func (h *StopRunHandler) Handle(ctx context.Context, req StopRunRequest) (StopRu
 		return StopRunResponse{}, err
 	}
 
+	l = l.With(slog.String("bot_id", bot.ID))
+
 	if bot.Deleted {
-		l.InfoContext(ctx, "bot already deleted", slog.String("bot_id", bot.ID))
+		l.InfoContext(ctx, "bot already deleted")
 		return StopRunResponse{}, port.ErrRunNotFound
 	}
 
 	if bot.OwnerID != req.ActorID {
-		l.InfoContext(ctx, "actor cannot stop the run", slog.String("bot_id", bot.ID))
+		l.InfoContext(ctx, "actor cannot stop the run")
 		return StopRunResponse{}, port.ErrRunNotFound
 	}
 
@@ -75,12 +77,12 @@ func (h *StopRunHandler) Handle(ctx context.Context, req StopRunRequest) (StopRu
 		return StopRunResponse{}, err
 	}
 
-	l.DebugContext(ctx, "run stopped", slog.String("bot_id", bot.ID))
-
 	if err = h.eb.Publish(ctx, run.PullEvents()...); err != nil {
 		l.ErrorContext(ctx, "failed to publish events", slog.String("error", err.Error()))
 		return StopRunResponse{}, err
 	}
+
+	l.InfoContext(ctx, "run successfully stopped")
 
 	return StopRunResponse{}, nil
 }

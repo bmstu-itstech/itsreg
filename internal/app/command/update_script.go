@@ -91,5 +91,7 @@ func (h *UpdateScriptHandler) Handle(ctx context.Context, req UpdateScriptReques
 		return UpdateScriptResponse{}, err
 	}
 
+	l.InfoContext(ctx, "script successfully updated")
+
 	return mappers.ScriptToDTO(script), nil
 }

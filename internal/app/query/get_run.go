@@ -43,6 +43,8 @@ func (h *GetRunHandler) Handle(ctx context.Context, req GetRunRequest) (GetRunRe
 		return GetRunResponse{}, err
 	}
 
+	l.InfoContext(ctx, "fetched owned run from repository")
+
 	if run.OwnerID != req.ActorID {
 		l.InfoContext(ctx, "run does not belong to actor", slog.Int64("owner_id", run.OwnerID))
 		return GetRunResponse{}, port.ErrRunNotFound
