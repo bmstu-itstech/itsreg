@@ -2,8 +2,8 @@ package telegram
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
+	"net/http"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -13,25 +13,24 @@ import (
 )
 
 type MessageSender struct {
-	l *slog.Logger
+	cl *http.Client
+	l  *slog.Logger
 }
 
-func NewMessageSender(l *slog.Logger) *MessageSender {
-	return &MessageSender{
-		l: l,
-	}
+func NewMessageSender(cl *http.Client, l *slog.Logger) *MessageSender {
+	return &MessageSender{cl, l}
 }
 
 func (s *MessageSender) Send(
 	ctx context.Context, token bots.Token, userID bots.UserID, msg bots.BotMessage,
 ) error {
-	const op = "MessageSender.Send"
 	l := s.l.With(
-		slog.String("op", op),
+		slog.String("op", "telegram.MessageSender.Send"),
+		slog.Int64("user_id", userID.Int64()),
 		slog.String("message", msg.String()),
 	)
 
-	api, err := tgbotapi.NewBotAPI(string(token))
+	api, err := tgbotapi.NewBotAPIWithClient(string(token), s.cl)
 	if err != nil {
 		return err
 	}
@@ -45,30 +44,28 @@ func (s *MessageSender) Send(
 	}
 
 	_, err = api.Send(m)
-	if err != nil {
-		if isCantParseEntitiesError(err) {
-			l.WarnContext(ctx, "can't parse HTML entities in message, send message without formatting",
-				slog.String("error", err.Error()),
-			)
-			m.ParseMode = ""
-			_, err = api.Send(m)
-		} else if isForbiddenError(err) {
-			l.WarnContext(ctx, "user blocked bot, can't send message",
-				slog.String("error", err.Error()),
-			)
-			err = fmt.Errorf("%w: %d", port.ErrUserBlockedBot, userID)
-		}
+	if isCantParseEntitiesError(err) {
+		l.InfoContext(ctx, "can't parse HTML entities in message, send message without formatting",
+			slog.String("error", err.Error()),
+		)
+		return err
+	} else if isForbiddenError(err) {
+		l.InfoContext(ctx, "user blocked bot, can't send message", slog.String("error", err.Error()))
+		return port.ErrUserBlockedBot
+	} else if err != nil {
+		l.ErrorContext(ctx, "failed to send message", slog.String("error", err.Error()))
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func isCantParseEntitiesError(err error) bool {
-	return strings.Contains(err.Error(), "can't parse entities")
+	return err != nil && strings.Contains(err.Error(), "can't parse entities")
 }
 
 func isForbiddenError(err error) bool {
-	return strings.Contains(err.Error(), "Forbidden")
+	return err != nil && strings.Contains(err.Error(), "Forbidden")
 }
 
 func buildInlineKeyboardMarkup(opts []bots.Option) tgbotapi.ReplyKeyboardMarkup {

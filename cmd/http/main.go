@@ -50,7 +50,7 @@ func main() {
 	inbound := dispatcher.NewInboundDispatcher(l)
 	httpClient := mustProxyOrDefaultHTTPClient(cfg.Proxy)
 	instanceManager := telegram.NewInstanceManager(inbound, httpClient, l)
-	sender := telegram.NewMessageSender(l)
+	sender := telegram.NewMessageSender(httpClient, l)
 	tokenService := jwt.MustNewTokenService(cfg.JWT)
 
 	infra := app.Infra{
