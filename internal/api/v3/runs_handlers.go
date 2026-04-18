@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/query"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 	"github.com/go-chi/render"
 
 	"github.com/bmstu-itstech/itsreg/internal/api/v3/jwtauth"
@@ -112,4 +113,32 @@ func (s *Server) GetRun(w http.ResponseWriter, r *http.Request, id string) {
 
 	body := ownedRunToAPI(res)
 	render.JSON(w, r, body)
+}
+
+func (s *Server) StopRun(w http.ResponseWriter, r *http.Request, id string) {
+	uid, ok := jwtauth.FromContext(r.Context())
+	if !ok {
+		renderPlainError(w, r, ErrAuthorizationRequired, http.StatusUnauthorized)
+		return
+	}
+
+	_, err := s.app.Commands.StopRun.Handle(r.Context(), command.StopRunRequest{
+		ActorID: uid,
+		RunID:   id,
+	})
+	if errors.Is(err, port.ErrRunNotFound) {
+		renderPlainError(w, r, err, http.StatusNotFound)
+		return
+	}
+	if errors.Is(err, bots.ErrIllegalStateTransition) {
+		renderPlainError(w, r, err, http.StatusConflict)
+		return
+	}
+	if err != nil {
+		renderInternalServerError(w, r)
+		return
+	}
+
+	w.Header().Set("Content-Location", fmt.Sprintf("%s/runs/%s", s.prefix, id))
+	w.WriteHeader(http.StatusAccepted)
 }

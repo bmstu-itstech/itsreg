@@ -28,7 +28,7 @@ func NewStartOnRunRecoverRequestedHandler(
 
 func (h *StartOnRunRecoverRequestedHandler) Handle(ctx context.Context, _ev event.Event) error {
 	l := h.l.With(
-		slog.String("op", "handler.StartOnRunRecoverRequested.Handle"),
+		slog.String("op", "eventhandler.StartOnRunRecoverRequestedHandler.Handle"),
 		slog.String("event", _ev.EventName()),
 	)
 
@@ -52,7 +52,7 @@ func (h *StartOnRunRecoverRequestedHandler) Handle(ctx context.Context, _ev even
 	if err != nil {
 		l.ErrorContext(ctx, "failed to start bot instance", slog.String("error", err.Error()))
 
-		if err2 := run.Fail(err.Error()); err2 != nil {
+		if err2 := run.Failed(err.Error()); err2 != nil {
 			l.ErrorContext(ctx, "failed to mark run as failed", slog.String("error", err2.Error()))
 			return err2
 		}

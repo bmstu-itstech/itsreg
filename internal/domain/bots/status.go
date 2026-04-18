@@ -9,6 +9,7 @@ type Status struct {
 var (
 	StatusStarting = Status{"starting"}
 	StatusActive   = Status{"active"}
+	StatusStopping = Status{"stopping"}
 	StatusStopped  = Status{"stopped"}
 	StatusFailed   = Status{"failed"}
 )
@@ -19,6 +20,8 @@ func StatusFromString(s string) (Status, error) {
 		return StatusStarting, nil
 	case "active":
 		return StatusActive, nil
+	case "stopping":
+		return StatusStopping, nil
 	case "stopped":
 		return StatusStopped, nil
 	case "failed":

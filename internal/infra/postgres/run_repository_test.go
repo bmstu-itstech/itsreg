@@ -44,7 +44,7 @@ func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_ExcludeDeletedBots
 	s.Require().Equal(bots.RunID("r0004"), run.ID())
 	s.Require().Equal(bots.BotID("b0003"), run.BotID())
 	s.Require().Equal(bots.Token("token_b0003"), run.Token())
-	s.Require().Equal(bots.StatusStopped, run.Status())
+	s.Require().Equal(bots.StatusStopping, run.Status())
 }
 
 func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_MultipleRuns() {
@@ -141,7 +141,7 @@ func (s *RepositoryTestSuite) TestRunRepository_UpdateRun_Success() {
 	err = s.repos.SaveRun(s.ctx, run)
 	s.Require().NoError(err)
 
-	err = run.Start()
+	err = run.Started()
 	s.Require().NoError(err)
 
 	err = s.repos.UpdateRun(s.ctx, run)

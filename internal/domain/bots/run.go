@@ -10,6 +10,17 @@ import (
 
 var ErrIllegalStateTransition = errors.New("illegal state transition")
 
+// Run представляет собой запуск бота на определённом токене. Содержит в себе всю
+// информацию о запуске, включая статус, время запуска и остановки, а также
+// возможную ошибку при выполнении.
+//
+// Жизненный цикл Run:
+//  1. Создаётся в статусе StatusStarting с помощью NewRun.
+//  2. Переходит в статус StatusActive при успешном запуске бота (метод Started).
+//  3. Может перейти в статус StatusFailed при ошибке запуска, выполнения или
+//     остановки (метод Failed).
+//  4. Переходит в статус StatusStopping при запросе остановки (метод Stop).
+//  5. Переходит в статус StatusStopped после успешной остановки (метод Stopped).
 type Run struct {
 	id        RunID
 	botID     BotID
@@ -91,7 +102,10 @@ func (r *Run) PullEvents() []event.Event {
 	return ev
 }
 
-func (r *Run) Start() error {
+// Started переводит Run из статуса StatusStarting в StatusActive. Устанавливает время
+// запуска и генерирует событие RunStarted. Если текущий статус не StatusStarting,
+// возвращает ошибку ErrIllegalStateTransition.
+func (r *Run) Started() error {
 	if r.status != StatusStarting {
 		return fmt.Errorf("%w: %s -> %s", ErrIllegalStateTransition, r.status, StatusActive)
 	}
@@ -106,30 +120,58 @@ func (r *Run) Start() error {
 	return nil
 }
 
-func (r *Run) Fail(msg string) error {
-	if r.status != StatusStarting && r.status != StatusActive {
-		return fmt.Errorf("%w: %s -> %s", ErrIllegalStateTransition, r.status, StatusFailed)
+// Failed переводит Run в статус StatusFailed. Устанавливает время остановки,
+// сохраняет сообщение об ошибке и генерирует событие RunFailed. Если текущий
+// статус StatusStopped, то возвращает ошибку ErrIllegalStateTransition.
+func (r *Run) Failed(msg string) error {
+	if r.status == StatusStopped {
+		return fmt.Errorf("%w: %s -> %s", ErrIllegalStateTransition, r.status, StatusStopped)
 	}
 	r.status = StatusFailed
-	t := time.Now()
-	r.stoppedAt = &t
+	now := time.Now()
+	r.stoppedAt = &now
 	r.errorMsg = &msg
 	r.events = append(r.events, RunFailed{
 		RunID:  r.id,
 		BotID:  r.botID,
 		ErrMsg: msg,
-		Time:   t,
+		Time:   now,
 	})
 	return nil
 }
 
+// Stop переводит Run из статуса StatusActive в StatusStopping. Генерирует
+// событие RunStopRequested. Если текущий статус не StatusActive, возвращает
+// ошибку ErrIllegalStateTransition.
 func (r *Run) Stop() error {
 	if r.status != StatusActive {
+		return fmt.Errorf("%w: %s -> %s", ErrIllegalStateTransition, r.status, StatusStopping)
+	}
+	r.status = StatusStopping
+	now := time.Now()
+	r.events = append(r.events, RunStopRequested{
+		RunID: r.id,
+		BotID: r.botID,
+		Time:  now,
+	})
+	return nil
+}
+
+// Stopped переводит Run из статуса StatusStopping в StatusStopped. Устанавливает время
+// остановки и генерирует событие RunStopped. Если текущий статус не StatusStopping,
+// возвращает ошибку ErrIllegalStateTransition.
+func (r *Run) Stopped() error {
+	if r.status != StatusStopping {
 		return fmt.Errorf("%w: %s -> %s", ErrIllegalStateTransition, r.status, StatusStopped)
 	}
 	r.status = StatusStopped
-	t := time.Now()
-	r.stoppedAt = &t
+	now := time.Now()
+	r.stoppedAt = &now
+	r.events = append(r.events, RunStopped{
+		RunID: r.id,
+		BotID: r.botID,
+		Time:  now,
+	})
 	return nil
 }
 

@@ -58,6 +58,20 @@ func (e RunFailed) OccurredAt() time.Time {
 	return e.Time
 }
 
+type RunStopRequested struct {
+	RunID RunID
+	BotID BotID
+	Time  time.Time
+}
+
+func (e RunStopRequested) EventName() string {
+	return "run.stop_requested"
+}
+
+func (e RunStopRequested) OccurredAt() time.Time {
+	return e.Time
+}
+
 type RunStopped struct {
 	RunID RunID
 	BotID BotID

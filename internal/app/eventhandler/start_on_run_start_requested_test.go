@@ -56,6 +56,9 @@ type instanceManagerStub struct {
 	startCalls   int
 	startedID    bots.BotID
 	startedToken bots.Token
+	stopErr      error
+	stopCalls    int
+	stoppedID    bots.BotID
 }
 
 func (s *instanceManagerStub) Start(_ context.Context, id bots.BotID, token bots.Token) error {
@@ -65,8 +68,10 @@ func (s *instanceManagerStub) Start(_ context.Context, id bots.BotID, token bots
 	return s.startErr
 }
 
-func (s *instanceManagerStub) Stop(context.Context, bots.BotID) error {
-	return nil
+func (s *instanceManagerStub) Stop(_ context.Context, id bots.BotID) error {
+	s.stopCalls++
+	s.stoppedID = id
+	return s.stopErr
 }
 
 type eventBusStub struct {

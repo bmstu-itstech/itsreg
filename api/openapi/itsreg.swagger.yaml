@@ -337,6 +337,44 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlainError'
 
+  /runs/{id}/stop:
+    post:
+      operationId: stopRun
+      tags:
+        - Runs
+      description: Остановить запуск бота с указанным ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID запуска бота.
+      responses:
+        "202":
+          description: >
+            Запуск бота в процессе остановки. Статус запуска будет изменён на stopped в течение короткого времени.
+            Остановить можно только запуски в статусе active.
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Запуск бота не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "409":
+          description: Запуск бота не находится в статусе active и не может быть остановлен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
   /scripts:
     post:
       operationId: createScript

@@ -96,6 +96,14 @@ func TestRestoreRun(t *testing.T) {
 			status: bots.StatusStarting,
 		},
 		{
+			name:      "valid stopping run",
+			id:        bots.RunID("r000035"),
+			botID:     bots.BotID("b00035"),
+			token:     bots.Token("token:b00035"),
+			status:    bots.StatusStopping,
+			startedAt: &startedAt,
+		},
+		{
 			name:      "zero run id",
 			botID:     bots.BotID("b0001"),
 			token:     bots.Token("token:b0001"),
@@ -234,7 +242,7 @@ func TestRun_Start(t *testing.T) {
 				run, err := bots.NewRun("b0002", "token:b0002")
 				require.NoError(t, err)
 				_ = run.PullEvents()
-				require.NoError(t, run.Start())
+				require.NoError(t, run.Started())
 				_ = run.PullEvents() // сброс события первого Start
 				return run
 			},
@@ -246,19 +254,19 @@ func TestRun_Start(t *testing.T) {
 				run, err := bots.NewRun("b0003", "token:b0003")
 				require.NoError(t, err)
 				_ = run.PullEvents()
-				require.NoError(t, run.Fail("boom"))
+				require.NoError(t, run.Failed("boom"))
 				_ = run.PullEvents()
 				return run
 			},
 			wantErr: true,
 		},
 		{
-			name: "stopped -> active",
+			name: "stopping -> active",
 			prepare: func(t *testing.T) *bots.Run {
 				run, err := bots.NewRun("b0004", "token:b0004")
 				require.NoError(t, err)
 				_ = run.PullEvents()
-				require.NoError(t, run.Start())
+				require.NoError(t, run.Started())
 				_ = run.PullEvents()
 				require.NoError(t, run.Stop())
 				return run
@@ -271,7 +279,7 @@ func TestRun_Start(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			run := tt.prepare(t)
 
-			err := run.Start()
+			err := run.Started()
 			if tt.wantErr {
 				require.Error(t, err)
 				require.ErrorIs(t, err, bots.ErrIllegalStateTransition)
@@ -324,7 +332,7 @@ func TestRun_Fail(t *testing.T) {
 				run, err := bots.NewRun("b1002", "token:b1002")
 				require.NoError(t, err)
 				_ = run.PullEvents()
-				require.NoError(t, run.Start())
+				require.NoError(t, run.Started())
 				_ = run.PullEvents() // сброс run.started
 				return run
 			},
@@ -336,21 +344,38 @@ func TestRun_Fail(t *testing.T) {
 				run, err := bots.NewRun("b1003", "token:b1003")
 				require.NoError(t, err)
 				_ = run.PullEvents()
-				require.NoError(t, run.Fail("first fail"))
+				require.NoError(t, run.Failed("first fail"))
 				_ = run.PullEvents()
 				return run
 			},
-			wantErr: true,
+			wantEventName: "run.failed",
 		},
 		{
-			name: "stopped -> failed",
+			name: "stopping -> failed",
 			prepare: func(t *testing.T) *bots.Run {
 				run, err := bots.NewRun("b1004", "token:b1004")
 				require.NoError(t, err)
 				_ = run.PullEvents()
-				require.NoError(t, run.Start())
+				require.NoError(t, run.Started())
 				_ = run.PullEvents()
 				require.NoError(t, run.Stop())
+				_ = run.PullEvents()
+				return run
+			},
+			wantEventName: "run.failed",
+		},
+		{
+			name: "stopped -> failed",
+			prepare: func(t *testing.T) *bots.Run {
+				run, err := bots.NewRun("b1005", "token:b1005")
+				require.NoError(t, err)
+				_ = run.PullEvents()
+				require.NoError(t, run.Started())
+				_ = run.PullEvents()
+				require.NoError(t, run.Stop())
+				_ = run.PullEvents()
+				require.NoError(t, run.Stopped())
+				_ = run.PullEvents()
 				return run
 			},
 			wantErr: true,
@@ -361,7 +386,7 @@ func TestRun_Fail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			run := tt.prepare(t)
 
-			err := run.Fail(msg)
+			err := run.Failed(msg)
 			if tt.wantErr {
 				require.Error(t, err)
 				require.ErrorIs(t, err, bots.ErrIllegalStateTransition)
@@ -384,54 +409,55 @@ func TestRun_Fail(t *testing.T) {
 
 func TestRun_Stop(t *testing.T) {
 	tests := []struct {
-		name          string
-		prepare       func(t *testing.T) *bots.Run
-		wantErr       bool
-		wantStoppedAt bool
+		name             string
+		prepare          func(t *testing.T) *bots.Run
+		wantErr          bool
+		wantStoppedAtNil bool
 	}{
 		{
-			name: "active -> stopped",
+			name: "active -> stopping",
 			prepare: func(t *testing.T) *bots.Run {
 				run, err := bots.NewRun("b2001", "token:b2001")
 				require.NoError(t, err)
 				_ = run.PullEvents()
-				require.NoError(t, run.Start())
+				require.NoError(t, run.Started())
 				_ = run.PullEvents() // сброс run.started
 				return run
 			},
-			wantStoppedAt: true,
+			wantStoppedAtNil: true,
 		},
 		{
-			name: "starting -> stopped",
-			prepare: func(t *testing.T) *bots.Run {
-				run, err := bots.NewRun("b2002", "token:b2002")
-				require.NoError(t, err)
-				_ = run.PullEvents()
-				return run
-			},
-			wantErr: true,
-		},
-		{
-			name: "failed -> stopped",
+			name: "starting -> stopping",
 			prepare: func(t *testing.T) *bots.Run {
 				run, err := bots.NewRun("b2003", "token:b2003")
 				require.NoError(t, err)
 				_ = run.PullEvents()
-				require.NoError(t, run.Fail("boom"))
+				return run
+			},
+			wantErr: true,
+		},
+		{
+			name: "failed -> stopping",
+			prepare: func(t *testing.T) *bots.Run {
+				run, err := bots.NewRun("b2004", "token:b2004")
+				require.NoError(t, err)
+				_ = run.PullEvents()
+				require.NoError(t, run.Failed("boom"))
 				_ = run.PullEvents()
 				return run
 			},
 			wantErr: true,
 		},
 		{
-			name: "stopped -> stopped",
+			name: "stopping -> stopping",
 			prepare: func(t *testing.T) *bots.Run {
-				run, err := bots.NewRun("b2004", "token:b2004")
+				run, err := bots.NewRun("b2005", "token:b2005")
 				require.NoError(t, err)
 				_ = run.PullEvents()
-				require.NoError(t, run.Start())
+				require.NoError(t, run.Started())
 				_ = run.PullEvents()
 				require.NoError(t, run.Stop())
+				_ = run.PullEvents()
 				return run
 			},
 			wantErr: true,
@@ -450,6 +476,88 @@ func TestRun_Stop(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+			require.Equal(t, bots.StatusStopping, run.Status())
+
+			if tt.wantStoppedAtNil {
+				require.Nil(t, run.StoppedAt())
+			}
+
+			events := run.PullEvents()
+			require.Len(t, events, 1)
+			require.Equal(t, "run.stop_requested", events[0].EventName())
+		})
+	}
+}
+
+func TestRun_Stopped(t *testing.T) {
+	tests := []struct {
+		name          string
+		prepare       func(t *testing.T) *bots.Run
+		wantErr       bool
+		wantStoppedAt bool
+	}{
+		{
+			name: "stopping -> stopped",
+			prepare: func(t *testing.T) *bots.Run {
+				run, err := bots.NewRun("b3001", "token:b3001")
+				require.NoError(t, err)
+				_ = run.PullEvents()
+				require.NoError(t, run.Started())
+				_ = run.PullEvents()
+				require.NoError(t, run.Stop())
+				_ = run.PullEvents()
+				return run
+			},
+			wantStoppedAt: true,
+		},
+		{
+			name: "starting -> stopped",
+			prepare: func(t *testing.T) *bots.Run {
+				run, err := bots.NewRun("b3002", "token:b3002")
+				require.NoError(t, err)
+				_ = run.PullEvents()
+				return run
+			},
+			wantErr: true,
+		},
+		{
+			name: "active -> stopped",
+			prepare: func(t *testing.T) *bots.Run {
+				run, err := bots.NewRun("b3003", "token:b3003")
+				require.NoError(t, err)
+				_ = run.PullEvents()
+				require.NoError(t, run.Started())
+				_ = run.PullEvents()
+				return run
+			},
+			wantErr: true,
+		},
+		{
+			name: "failed -> stopped",
+			prepare: func(t *testing.T) *bots.Run {
+				run, err := bots.NewRun("b3004", "token:b3004")
+				require.NoError(t, err)
+				_ = run.PullEvents()
+				require.NoError(t, run.Failed("boom"))
+				_ = run.PullEvents()
+				return run
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			run := tt.prepare(t)
+
+			err := run.Stopped()
+			if tt.wantErr {
+				require.Error(t, err)
+				require.ErrorIs(t, err, bots.ErrIllegalStateTransition)
+				return
+			}
+
+			require.NoError(t, err)
 			require.Equal(t, bots.StatusStopped, run.Status())
 
 			if tt.wantStoppedAt {
@@ -457,8 +565,9 @@ func TestRun_Stop(t *testing.T) {
 				require.False(t, run.StoppedAt().IsZero())
 			}
 
-			// В текущей реализации Stop не публикует событие.
-			require.Empty(t, run.PullEvents())
+			events := run.PullEvents()
+			require.Len(t, events, 1)
+			require.Equal(t, "run.stopped", events[0].EventName())
 		})
 	}
 }

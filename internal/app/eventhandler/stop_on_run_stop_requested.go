@@ -10,31 +10,31 @@ import (
 	"github.com/bmstu-itstech/itsreg/internal/domain/shared/event"
 )
 
-type StartOnRunStartRequestedHandler struct {
+type StopOnRunStopRequestedHandler struct {
 	rr port.RunRepository
 	im port.InstanceManager
 	eb port.EventBus
 	l  *slog.Logger
 }
 
-func NewStartOnRunStartRequestedHandler(
+func NewStopOnRunStopRequestedHandler(
 	rr port.RunRepository,
 	im port.InstanceManager,
 	eb port.EventBus,
 	l *slog.Logger,
-) *StartOnRunStartRequestedHandler {
-	return &StartOnRunStartRequestedHandler{rr, im, eb, l}
+) *StopOnRunStopRequestedHandler {
+	return &StopOnRunStopRequestedHandler{rr, im, eb, l}
 }
 
-func (h *StartOnRunStartRequestedHandler) Handle(ctx context.Context, _ev event.Event) error {
+func (h *StopOnRunStopRequestedHandler) Handle(ctx context.Context, _ev event.Event) error {
 	l := h.l.With(
-		slog.String("op", "eventhandler.StartOnRunStartRequestedHandler.Handle"),
+		slog.String("op", "eventhandler.StopOnRunStopRequstedHandler.Handle"),
 		slog.String("event", _ev.EventName()),
 	)
 
-	ev, ok := _ev.(bots.RunStartRequested)
+	ev, ok := _ev.(bots.RunStopRequested)
 	if !ok {
-		return fmt.Errorf("unexpected event type: %T", _ev)
+		return fmt.Errorf("unexpected event type: %T", _ev.EventName())
 	}
 
 	l = l.With(
@@ -48,10 +48,10 @@ func (h *StartOnRunStartRequestedHandler) Handle(ctx context.Context, _ev event.
 		return err
 	}
 
-	l.InfoContext(ctx, "starting bot instance")
-	err = h.im.Start(ctx, run.BotID(), run.Token())
+	l.InfoContext(ctx, "stopping bot instance")
+	err = h.im.Stop(ctx, ev.BotID)
 	if err != nil {
-		l.ErrorContext(ctx, "failed to start bot instance", slog.String("error", err.Error()))
+		l.ErrorContext(ctx, "failed to stop bot instance", slog.String("error", err.Error()))
 
 		if err2 := run.Failed(err.Error()); err2 != nil {
 			l.ErrorContext(ctx, "failed to mark run as failed", slog.String("error", err2.Error()))
@@ -59,7 +59,7 @@ func (h *StartOnRunStartRequestedHandler) Handle(ctx context.Context, _ev event.
 		}
 
 		if err2 := h.rr.UpdateRun(ctx, run); err2 != nil {
-			l.ErrorContext(ctx, "failed to save run failure", slog.String("error", err2.Error()))
+			l.ErrorContext(ctx, "failed to update run", slog.String("error", err2.Error()))
 			return err2
 		}
 
@@ -68,11 +68,11 @@ func (h *StartOnRunStartRequestedHandler) Handle(ctx context.Context, _ev event.
 			return err2
 		}
 
-		return nil
+		return err
 	}
 
-	if err = run.Started(); err != nil {
-		l.ErrorContext(ctx, "failed to mark run as started", slog.String("error", err.Error()))
+	if err = run.Stopped(); err != nil {
+		l.ErrorContext(ctx, "failed to mark run as stopped", slog.String("error", err.Error()))
 		return err
 	}
 
@@ -86,6 +86,5 @@ func (h *StartOnRunStartRequestedHandler) Handle(ctx context.Context, _ev event.
 		return err
 	}
 
-	l.InfoContext(ctx, "bot instance started successfully")
 	return nil
 }

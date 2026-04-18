@@ -17,6 +17,7 @@ type Commands struct {
 	DeleteScript *command.DeleteScriptHandler
 	Entry        *command.EntryHandler
 	Process      *command.ProcessHandler
+	StopRun      *command.StopRunHandler
 	UpdateBot    *command.UpdateBotHandler
 	UpdateScript *command.UpdateScriptHandler
 }
@@ -34,6 +35,7 @@ type Queries struct {
 type EventHandlers struct {
 	StartOnRunStartRequested   *eventhandler.StartOnRunStartRequestedHandler
 	StartOnRunRecoverRequested *eventhandler.StartOnRunRecoverRequestedHandler
+	StopOnRunStopRequested     *eventhandler.StopOnRunStopRequestedHandler
 }
 
 type Application struct {
@@ -71,6 +73,7 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 			Process: command.NewProcessHandler(
 				i.BotRepository, i.ScriptRepository, i.ThreadRepository, i.MessageSender, l,
 			),
+			StopRun:      command.NewStopRunHandler(i.RunRepository, i.BotMetaProvider, i.EventBus, l),
 			UpdateBot:    command.NewUpdateBotHandler(i.BotRepository, i.ScriptMetaProvider, l),
 			UpdateScript: command.NewUpdateScriptHandler(i.ScriptRepository, l),
 		},
@@ -88,6 +91,9 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 				i.RunRepository, i.InstanceManager, i.EventBus, l,
 			),
 			StartOnRunRecoverRequested: eventhandler.NewStartOnRunRecoverRequestedHandler(
+				i.RunRepository, i.InstanceManager, i.EventBus, l,
+			),
+			StopOnRunStopRequested: eventhandler.NewStopOnRunStopRequestedHandler(
 				i.RunRepository, i.InstanceManager, i.EventBus, l,
 			),
 		},
