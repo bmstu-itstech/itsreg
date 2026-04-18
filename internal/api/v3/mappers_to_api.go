@@ -128,3 +128,33 @@ func botsToAPI(ds []dto.Bot) []Bot {
 	}
 	return res
 }
+
+func ownedRunToAPI(d dto.OwnedRun) Run {
+	return Run{
+		BotID:     d.BotID,
+		ErrorMsg:  d.ErrorMsg,
+		Id:        d.ID,
+		StartedAt: d.StartedAt,
+		Status:    Status(d.Status),
+		StoppedAt: d.StoppedAt,
+	}
+}
+
+func runToAPI(d dto.Run) Run {
+	return Run{
+		BotID:     d.BotID,
+		ErrorMsg:  d.ErrorMsg,
+		Id:        d.ID,
+		StartedAt: d.StartedAt,
+		Status:    Status(d.Status),
+		StoppedAt: d.StoppedAt,
+	}
+}
+
+func runsToAPI(ds []dto.Run) []Run {
+	res := make([]Run, len(ds))
+	for i, d := range ds {
+		res[i] = runToAPI(d)
+	}
+	return res
+}

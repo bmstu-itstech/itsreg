@@ -37,6 +37,14 @@ const (
 	Regex RegexPredicateType = "regex"
 )
 
+// Defines values for Status.
+const (
+	Active   Status = "active"
+	Failed   Status = "failed"
+	Starting Status = "starting"
+	Stopped  Status = "stopped"
+)
+
 // AlwaysPredicate Переход по ребру осуществляется на любое сообщение пользователя.
 type AlwaysPredicate struct {
 	Type AlwaysPredicateType `json:"type"`
@@ -196,6 +204,27 @@ type RegexPredicate struct {
 // RegexPredicateType defines model for RegexPredicate.Type.
 type RegexPredicateType string
 
+// Run defines model for Run.
+type Run struct {
+	// BotID ID бота, который был запущен.
+	BotID string `json:"botID"`
+
+	// ErrorMsg Сообщение об ошибке, если статус запуска failed.
+	ErrorMsg *string `json:"errorMsg,omitempty"`
+
+	// Id Уникальный ID запуска бота.
+	Id string `json:"id"`
+
+	// StartedAt Метка времени запуска бота.
+	StartedAt *time.Time `json:"startedAt,omitempty"`
+
+	// Status Статус бота.
+	Status Status `json:"status"`
+
+	// StoppedAt Метка времени остановки бота.
+	StoppedAt *time.Time `json:"stoppedAt,omitempty"`
+}
+
 // Script Сценарий бота. Является объединением узлов (Node), точек входа (Entry). Гарантируется связность всех узлов относительно любой точки входа Entry.
 type Script struct {
 	// CreatedAt Метка времени создания сценария.
@@ -216,6 +245,9 @@ type Script struct {
 	// UpdatedAt Метка времени последнего обновления сценария.
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 }
+
+// Status Статус бота.
+type Status string
 
 // Token Telegram-токен бота, полученный через @BotFather. Должен быть уникальным для всех ботов.
 type Token = string
@@ -251,6 +283,21 @@ type ValidationErrorDetail struct {
 
 	// Message Сообщение об ошибке валидации для данного поля.
 	Message string `json:"message"`
+}
+
+// GetBotRunsParams defines parameters for GetBotRuns.
+type GetBotRunsParams struct {
+	// Status Статус запуска для фильтрации. Если не указан, возвращаются запуски всех статусов.
+	Status *Status `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// GetRunsParams defines parameters for GetRuns.
+type GetRunsParams struct {
+	// BotID ID бота для фильтрации запусков. Если не указан, возвращаются запуски всех ботов пользователя.
+	BotID *string `form:"botID,omitempty" json:"botID,omitempty"`
+
+	// Status Статус запуска для фильтрации. Если не указан, возвращаются запуски всех статусов.
+	Status *Status `form:"status,omitempty" json:"status,omitempty"`
 }
 
 // CreateBotJSONRequestBody defines body for CreateBot for application/json ContentType.

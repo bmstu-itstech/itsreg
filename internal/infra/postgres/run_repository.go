@@ -22,16 +22,10 @@ func (r *Repository) Run(ctx context.Context, id bots.RunID) (*bots.Run, error) 
 	return runFromRow(rRun)
 }
 
-func (r *Repository) RunsByBotID(ctx context.Context, botID bots.BotID) ([]*bots.Run, error) {
-	rRuns, err := r.selectRunsByBotIDRows(ctx, r.db, botID.String())
-	if err != nil {
-		return nil, err
-	}
-	return runsFromRows(rRuns)
-}
-
-func (r *Repository) RunsByOwnerID(ctx context.Context, ownerID bots.UserID) ([]*bots.Run, error) {
-	rRuns, err := r.selectRunsByOwnerIDRows(ctx, r.db, ownerID.Int64())
+func (r *Repository) RunsByOwnerID(
+	ctx context.Context, ownerID bots.UserID, filter port.RunsFilter,
+) ([]*bots.Run, error) {
+	rRuns, err := r.selectRunsByOwnerIDRows(ctx, r.db, ownerID.Int64(), getRunsFilterToDB(filter))
 	if err != nil {
 		return nil, err
 	}

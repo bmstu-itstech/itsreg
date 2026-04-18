@@ -1,6 +1,20 @@
 package postgres
 
-import "github.com/bmstu-itstech/itsreg/internal/domain/bots"
+import (
+	"github.com/bmstu-itstech/itsreg/internal/app/port"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+)
+
+func getRunsFilterToDB(f port.RunsFilter) getRunsFilter {
+	var filter getRunsFilter
+	if f.BotID != nil {
+		filter.BotID = ptr(f.BotID.String())
+	}
+	if f.Status != nil {
+		filter.Status = ptr(f.Status.String())
+	}
+	return filter
+}
 
 func runToRow(r *bots.Run) runRow {
 	return runRow{
@@ -40,4 +54,8 @@ func runsFromRows(rs []runRow) ([]*bots.Run, error) {
 		res[i] = run
 	}
 	return res, nil
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }

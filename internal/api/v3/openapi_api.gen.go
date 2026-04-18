@@ -21,6 +21,9 @@ type ServerInterface interface {
 	// (POST /bots)
 	CreateBot(w http.ResponseWriter, r *http.Request)
 
+	// (GET /bots/{botID}/runs)
+	GetBotRuns(w http.ResponseWriter, r *http.Request, botID string, params GetBotRunsParams)
+
 	// (POST /bots/{botID}/runs)
 	CreateRun(w http.ResponseWriter, r *http.Request, botID string)
 
@@ -32,6 +35,12 @@ type ServerInterface interface {
 
 	// (PATCH /bots/{id})
 	UpdateBot(w http.ResponseWriter, r *http.Request, id string)
+
+	// (GET /runs)
+	GetRuns(w http.ResponseWriter, r *http.Request, params GetRunsParams)
+
+	// (GET /runs/{id})
+	GetRun(w http.ResponseWriter, r *http.Request, id string)
 
 	// (GET /scripts)
 	GetScripts(w http.ResponseWriter, r *http.Request)
@@ -63,6 +72,11 @@ func (_ Unimplemented) CreateBot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// (GET /bots/{botID}/runs)
+func (_ Unimplemented) GetBotRuns(w http.ResponseWriter, r *http.Request, botID string, params GetBotRunsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (POST /bots/{botID}/runs)
 func (_ Unimplemented) CreateRun(w http.ResponseWriter, r *http.Request, botID string) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -80,6 +94,16 @@ func (_ Unimplemented) GetBot(w http.ResponseWriter, r *http.Request, id string)
 
 // (PATCH /bots/{id})
 func (_ Unimplemented) UpdateBot(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /runs)
+func (_ Unimplemented) GetRuns(w http.ResponseWriter, r *http.Request, params GetRunsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /runs/{id})
+func (_ Unimplemented) GetRun(w http.ResponseWriter, r *http.Request, id string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -142,6 +166,45 @@ func (siw *ServerInterfaceWrapper) CreateBot(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateBot(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetBotRuns operation middleware
+func (siw *ServerInterfaceWrapper) GetBotRuns(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "botID" -------------
+	var botID string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "botID", chi.URLParam(r, "botID"), &botID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "botID", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetBotRunsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBotRuns(w, r, botID, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -254,6 +317,72 @@ func (siw *ServerInterfaceWrapper) UpdateBot(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateBot(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetRuns operation middleware
+func (siw *ServerInterfaceWrapper) GetRuns(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRunsParams
+
+	// ------------- Optional query parameter "botID" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "botID", r.URL.Query(), &params.BotID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "botID", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", r.URL.Query(), &params.Status)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRuns(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetRun operation middleware
+func (siw *ServerInterfaceWrapper) GetRun(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRun(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -501,6 +630,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/bots", wrapper.CreateBot)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/bots/{botID}/runs", wrapper.GetBotRuns)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/bots/{botID}/runs", wrapper.CreateRun)
 	})
 	r.Group(func(r chi.Router) {
@@ -511,6 +643,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Patch(options.BaseURL+"/bots/{id}", wrapper.UpdateBot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/runs", wrapper.GetRuns)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/runs/{id}", wrapper.GetRun)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/scripts", wrapper.GetScripts)

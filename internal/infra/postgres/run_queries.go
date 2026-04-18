@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/zhikh23/pgutils"
@@ -44,9 +46,10 @@ func (r *Repository) selectRunsByOwnerIDRows(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
 	ownerID int64,
+	filter getRunsFilter,
 ) ([]runRow, error) {
-	var rows []runRow
-	err := pgutils.Select(ctx, qc, &rows, `
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString(`
 		SELECT
 			r.id, r.bot_id, r.token, r.status, r.error_msg, r.started_at, r.stopped_at
 		FROM runs r
@@ -54,9 +57,24 @@ func (r *Repository) selectRunsByOwnerIDRows(
 			ON b.id = r.bot_id
 		WHERE
 			b.owner_id = $1
-			AND deleted_at IS NULL
-		`, ownerID,
+			AND b.deleted_at IS NULL
+		`,
 	)
+
+	args := []any{ownerID}
+
+	if filter.BotID != nil {
+		args = append(args, *filter.BotID)
+		queryBuilder.WriteString(fmt.Sprintf(`AND r.bot_id = $%d `, len(args)))
+	}
+
+	if filter.Status != nil {
+		args = append(args, *filter.Status)
+		queryBuilder.WriteString(fmt.Sprintf(`AND r.status = $%d `, len(args)))
+	}
+
+	var rows []runRow
+	err := pgutils.Select(ctx, qc, &rows, queryBuilder.String(), args...)
 	return rows, err
 }
 

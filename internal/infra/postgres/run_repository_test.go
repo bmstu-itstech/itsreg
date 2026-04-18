@@ -29,45 +29,14 @@ func (s *RepositoryTestSuite) TestRunRepository_Run_NotFound() {
 	s.Require().Nil(run)
 }
 
-func (s *RepositoryTestSuite) TestRunRepository_RunsByBotID_Empty() {
-	res, err := s.repos.RunsByBotID(s.ctx, "b9999")
-	s.Require().NoError(err)
-	s.Require().Empty(res)
-}
-
-func (s *RepositoryTestSuite) TestRunRepository_RunsByBotID_MultipleRuns() {
-	res, err := s.repos.RunsByBotID(s.ctx, "b0001")
-	s.Require().NoError(err)
-	s.Require().Len(res, 2)
-
-	byID := map[bots.RunID]*bots.Run{}
-	for _, run := range res {
-		byID[run.ID()] = run
-	}
-
-	r1, ok := byID["r0001"]
-	s.Require().True(ok)
-	s.Require().Equal(bots.BotID("b0001"), r1.BotID())
-	s.Require().Equal(bots.Token("token_b0001"), r1.Token())
-	s.Require().Equal(bots.StatusStarting, r1.Status())
-
-	r2, ok := byID["r0002"]
-	s.Require().True(ok)
-	s.Require().Equal(bots.BotID("b0001"), r2.BotID())
-	s.Require().Equal(bots.Token("token_b0001"), r2.Token())
-	s.Require().Equal(bots.StatusFailed, r2.Status())
-	s.Require().NotNil(r2.ErrorMsg())
-	s.Require().Equal("Some error occurred", *r2.ErrorMsg())
-}
-
 func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_Empty() {
-	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(-1))
+	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(-1), port.RunsFilter{})
 	s.Require().NoError(err)
 	s.Require().Empty(res)
 }
 
 func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_ExcludeDeletedBots() {
-	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(2))
+	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(2), port.RunsFilter{})
 	s.Require().NoError(err)
 	s.Require().Len(res, 1)
 
@@ -79,7 +48,7 @@ func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_ExcludeDeletedBots
 }
 
 func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_MultipleRuns() {
-	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(1))
+	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(1), port.RunsFilter{})
 	s.Require().NoError(err)
 	s.Require().Len(res, 3)
 
@@ -88,6 +57,43 @@ func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_MultipleRuns() {
 		ids = append(ids, run.ID())
 	}
 	s.Require().ElementsMatch([]bots.RunID{"r0001", "r0002", "r0003"}, ids)
+}
+
+func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_FilterByBotID() {
+	botID := bots.BotID("b0001")
+	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(1), port.RunsFilter{BotID: &botID})
+	s.Require().NoError(err)
+	s.Require().Len(res, 2)
+
+	ids := make([]bots.RunID, 0, len(res))
+	for _, run := range res {
+		ids = append(ids, run.ID())
+	}
+	s.Require().ElementsMatch([]bots.RunID{"r0001", "r0002"}, ids)
+}
+
+func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_FilterByStatus() {
+	status := bots.StatusActive
+	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(1), port.RunsFilter{Status: &status})
+	s.Require().NoError(err)
+	s.Require().Len(res, 1)
+	s.Require().Equal(bots.RunID("r0003"), res[0].ID())
+}
+
+func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_FilterByBotIDAndStatus() {
+	botID := bots.BotID("b0001")
+	status := bots.StatusFailed
+	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(1), port.RunsFilter{BotID: &botID, Status: &status})
+	s.Require().NoError(err)
+	s.Require().Len(res, 1)
+	s.Require().Equal(bots.RunID("r0002"), res[0].ID())
+}
+
+func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_FilterByDeletedBotID_Empty() {
+	botID := bots.BotID("b0004")
+	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(2), port.RunsFilter{BotID: &botID})
+	s.Require().NoError(err)
+	s.Require().Empty(res)
 }
 
 func (s *RepositoryTestSuite) TestRunRepository_ActiveRuns() {

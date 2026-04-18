@@ -34,11 +34,7 @@ func (s *runRepositoryStub) Run(_ context.Context, id bots.RunID) (*bots.Run, er
 	return run, nil
 }
 
-func (s *runRepositoryStub) RunsByOwnerID(context.Context, bots.UserID) ([]*bots.Run, error) {
-	return nil, nil
-}
-
-func (s *runRepositoryStub) RunsByBotID(context.Context, bots.BotID) ([]*bots.Run, error) {
+func (s *runRepositoryStub) RunsByOwnerID(context.Context, bots.UserID, port.RunsFilter) ([]*bots.Run, error) {
 	return nil, nil
 }
 

@@ -127,3 +127,7 @@ func applyFixtures(db *sqlx.DB) error {
 
 	return nil
 }
+
+func ptr[T any](v T) *T {
+	return &v
+}

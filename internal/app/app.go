@@ -23,7 +23,10 @@ type Commands struct {
 
 type Queries struct {
 	GetBot     *query.GetBotHandler
+	GetBotRuns *query.GetBotRunsHandler
 	GetBots    *query.GetBotsHandler
+	GetRun     *query.GetRunHandler
+	GetRuns    *query.GetRunsHandler
 	GetScript  *query.GetScriptHandler
 	GetScripts *query.GetScriptsHandler
 }
@@ -45,6 +48,7 @@ type Infra struct {
 	EventBus             port.EventBus
 	InstanceManager      port.InstanceManager
 	MessageSender        port.MessageSender
+	OwnedRunProvider     port.OwnedRunProvider
 	RunRepository        port.RunRepository
 	ScriptMetaProvider   port.ScriptMetaProvider
 	ScriptRepository     port.ScriptRepository
@@ -72,7 +76,10 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 		},
 		Queries: Queries{
 			GetBot:     query.NewGetBotHandler(i.BotRepository, l),
+			GetBotRuns: query.NewGetBotRunsHandler(i.RunRepository, i.BotMetaProvider, l),
 			GetBots:    query.NewGetBotsHandler(i.BotRepository, l),
+			GetRun:     query.NewGetRunHandler(i.OwnedRunProvider, l),
+			GetRuns:    query.NewGetRunsHandler(i.RunRepository, l),
 			GetScript:  query.NewGetScriptHandler(i.ScriptRepository, l),
 			GetScripts: query.NewGetScriptsHandler(i.ScriptRepository, l),
 		},

@@ -4,7 +4,13 @@ info:
   description: ITS Reg API
   version: 3.0.0
 servers:
-  - url: "{url}"
+  - url: "{url}/api/v3"
+    variables:
+      url:
+        default: http://localhost:8400
+        description: >
+          Протокол + адрес сервера + порт (если требуется).
+          Без trailing / в конце. Пример: http://localhost:8000.
 security:
   - bearerAuth: []
 
@@ -214,6 +220,118 @@ paths:
                 $ref: '#/components/schemas/PlainError'
         "409":
           description: Бот уже запущен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+    get:
+      operationId: getBotRuns
+      tags:
+        - Bots
+        - Runs
+      description: Получить список всех запусков бота с указанным ID.
+      parameters:
+        - in: path
+          name: botID
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID бота для получения запусков.
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/Status'
+          required: false
+          description: Статус запуска для фильтрации. Если не указан, возвращаются запуски всех статусов.
+      responses:
+        "200":
+          description: Запуски бота успешно получены.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Run'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /runs:
+    get:
+      operationId: getRuns
+      tags:
+        - Runs
+      description: Получить список всех запусков ботов, доступных пользователю.
+      parameters:
+        - in: query
+          name: botID
+          schema:
+            type: string
+            example: 123abc
+          required: false
+          description: ID бота для фильтрации запусков. Если не указан, возвращаются запуски всех ботов пользователя.
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/Status'
+          required: false
+          description: Статус запуска для фильтрации. Если не указан, возвращаются запуски всех статусов.
+      responses:
+        "200":
+          description: Запуски успешно получены.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Run'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /runs/{id}:
+    get:
+      operationId: getRun
+      tags:
+        - Runs
+      description: Получить информацию о запуске бота с указанным ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID запуска бота.
+      responses:
+        "200":
+          description: Запуск бота успешно найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Запуск бота не существует или недоступен пользователю.
           content:
             application/json:
               schema:
