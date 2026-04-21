@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg/internal/app/dto/mappers"
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared/event"
 )
 
 type ProcessRequest struct {
@@ -23,7 +25,7 @@ type ProcessHandler struct {
 	br port.BotRepository
 	sr port.ScriptRepository
 	tr port.ThreadRepository
-	ms port.MessageSender
+	eb port.EventBus
 	l  *slog.Logger
 }
 
@@ -31,10 +33,10 @@ func NewProcessHandler(
 	br port.BotRepository,
 	sr port.ScriptRepository,
 	tr port.ThreadRepository,
-	ms port.MessageSender,
+	eb port.EventBus,
 	l *slog.Logger,
 ) *ProcessHandler {
-	return &ProcessHandler{br, sr, tr, ms, l}
+	return &ProcessHandler{br, sr, tr, eb, l}
 }
 
 func (h *ProcessHandler) Handle(ctx context.Context, req ProcessRequest) (ProcessResponse, error) {
@@ -96,7 +98,7 @@ func (h *ProcessHandler) Handle(ctx context.Context, req ProcessRequest) (Proces
 
 	// Непосредственно выполнение обработки сообщения
 
-	res, err := script.Process(thread, msg)
+	msgs, err := script.Process(thread, msg)
 	if err != nil {
 		l.InfoContext(ctx, "failed to process message", slog.String("error", err.Error()))
 		return ProcessResponse{}, err
@@ -109,18 +111,22 @@ func (h *ProcessHandler) Handle(ctx context.Context, req ProcessRequest) (Proces
 		l.ErrorContext(ctx, "failed to update thread", slog.String("error", err.Error()))
 		return ProcessResponse{}, err
 	}
-	l.DebugContext(ctx, "thread updated")
 
-	// После внедрения событийной модели, отправка сообщений будет асинхронной
-	// через bus.Publish(thread.PullEvents()), что гарантирует их отправку
-
-	for _, m := range res {
-		err = h.ms.Send(ctx, bot.Token(), bots.UserID(req.UserID), m)
-		if err != nil {
-			l.ErrorContext(ctx, "failed to send response message", slog.String("error", err.Error()))
-			return ProcessResponse{}, err
+	events := make([]event.Event, len(msgs))
+	for i, m := range msgs {
+		events[i] = bots.SendMessageRequested{
+			BotID:   thread.BotID(),
+			UserID:  thread.UserID(),
+			Message: m,
+			Time:    time.Now(),
 		}
 	}
+	if err = h.eb.Publish(ctx, events...); err != nil {
+		l.ErrorContext(ctx, "failed to publish events", slog.String("error", err.Error()))
+		return ProcessResponse{}, err
+	}
+
+	l.InfoContext(ctx, "message processed")
 
 	return ProcessResponse{}, nil
 }

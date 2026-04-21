@@ -20,6 +20,7 @@ import (
 	"github.com/bmstu-itstech/itsreg/internal/config"
 	"github.com/bmstu-itstech/itsreg/internal/infra/inmemory"
 	"github.com/bmstu-itstech/itsreg/internal/infra/jwt"
+	"github.com/bmstu-itstech/itsreg/internal/infra/mutexlimiter"
 	"github.com/bmstu-itstech/itsreg/internal/infra/postgres"
 	"github.com/bmstu-itstech/itsreg/internal/infra/telegram"
 	"github.com/bmstu-itstech/itsreg/pkg/logs"
@@ -50,8 +51,9 @@ func main() {
 	inbound := dispatcher.NewInboundDispatcher(l)
 	httpClient := mustProxyOrDefaultHTTPClient(cfg.Proxy)
 	instanceManager := telegram.NewInstanceManager(inbound, httpClient, l)
-	sender := telegram.NewMessageSender(httpClient, l)
+	sender := telegram.NewMessageSender(httpClient)
 	tokenService := jwt.MustNewTokenService(cfg.JWT)
+	rateLimiter := mutexlimiter.NewRateLimiter(cfg.RateLimiter)
 
 	infra := app.Infra{
 		BotMetaProvider:      repos,
@@ -59,6 +61,8 @@ func main() {
 		EventBus:             bus,
 		InstanceManager:      instanceManager,
 		MessageSender:        sender,
+		OwnedRunProvider:     repos,
+		RateLimiter:          rateLimiter,
 		RunRepository:        repos,
 		ScriptMetaProvider:   repos,
 		ScriptRepository:     repos,
@@ -78,6 +82,7 @@ func main() {
 	mustSubscribe(bus, "run.start_requested", a.Events.StartOnRunStartRequested)
 	mustSubscribe(bus, "run.recover_requested", a.Events.StartOnRunRecoverRequested)
 	mustSubscribe(bus, "run.stop_requsted", a.Events.StopOnRunStopRequested)
+	mustSubscribe(bus, "message.send_requested", a.Events.SendOnSendMessageRequested)
 
 	// Восстановление состояние
 

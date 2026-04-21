@@ -33,6 +33,7 @@ type Queries struct {
 }
 
 type EventHandlers struct {
+	SendOnSendMessageRequested *eventhandler.SendOnSendMessageRequestedHandler
 	StartOnRunStartRequested   *eventhandler.StartOnRunStartRequestedHandler
 	StartOnRunRecoverRequested *eventhandler.StartOnRunRecoverRequestedHandler
 	StopOnRunStopRequested     *eventhandler.StopOnRunStopRequestedHandler
@@ -51,6 +52,7 @@ type Infra struct {
 	InstanceManager      port.InstanceManager
 	MessageSender        port.MessageSender
 	OwnedRunProvider     port.OwnedRunProvider
+	RateLimiter          port.RateLimiter
 	RunRepository        port.RunRepository
 	ScriptMetaProvider   port.ScriptMetaProvider
 	ScriptRepository     port.ScriptRepository
@@ -68,10 +70,10 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 			DeleteBot:    command.NewDeleteBotHandler(i.BotRepository, l),
 			DeleteScript: command.NewDeleteScriptHandler(i.ScriptRepository, l),
 			Entry: command.NewEntryHandler(
-				i.BotRepository, i.ScriptRepository, i.ThreadRepository, i.UserRepository, i.MessageSender, l,
+				i.BotRepository, i.ScriptRepository, i.ThreadRepository, i.UserRepository, i.EventBus, l,
 			),
 			Process: command.NewProcessHandler(
-				i.BotRepository, i.ScriptRepository, i.ThreadRepository, i.MessageSender, l,
+				i.BotRepository, i.ScriptRepository, i.ThreadRepository, i.EventBus, l,
 			),
 			StopRun:      command.NewStopRunHandler(i.RunRepository, i.BotMetaProvider, i.EventBus, l),
 			UpdateBot:    command.NewUpdateBotHandler(i.BotRepository, i.ScriptMetaProvider, l),
@@ -87,6 +89,9 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 			GetScripts: query.NewGetScriptsHandler(i.ScriptRepository, l),
 		},
 		Events: EventHandlers{
+			SendOnSendMessageRequested: eventhandler.NewSendOnSendMessageRequestedHandler(
+				i.MessageSender, i.BotMetaProvider, i.RateLimiter, i.EventBus, l,
+			),
 			StartOnRunStartRequested: eventhandler.NewStartOnRunStartRequestedHandler(
 				i.RunRepository, i.InstanceManager, i.EventBus, l,
 			),

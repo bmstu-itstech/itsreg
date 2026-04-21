@@ -9,6 +9,10 @@ proxy:
 postgres:
   uri:
 
+rate_limit:
+  capacity: 10
+  rate: 25.0
+
 logging:
   level: debug
 

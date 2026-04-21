@@ -85,3 +85,18 @@ func (e RunStopped) EventName() string {
 func (e RunStopped) OccurredAt() time.Time {
 	return e.Time
 }
+
+type SendMessageRequested struct {
+	BotID   BotID
+	UserID  UserID
+	Message BotMessage
+	Time    time.Time
+}
+
+func (e SendMessageRequested) EventName() string {
+	return "message.send_requested"
+}
+
+func (e SendMessageRequested) OccurredAt() time.Time {
+	return e.Time
+}

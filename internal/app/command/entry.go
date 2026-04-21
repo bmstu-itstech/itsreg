@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared/event"
 )
 
 type EntryRequest struct {
@@ -23,7 +25,7 @@ type EntryHandler struct {
 	sr port.ScriptRepository
 	tr port.ThreadRepository
 	ur port.UserRepository
-	ms port.MessageSender
+	eb port.EventBus
 	l  *slog.Logger
 }
 
@@ -32,10 +34,10 @@ func NewEntryHandler(
 	sr port.ScriptRepository,
 	tr port.ThreadRepository,
 	ur port.UserRepository,
-	ms port.MessageSender,
+	eb port.EventBus,
 	l *slog.Logger,
 ) *EntryHandler {
-	return &EntryHandler{br, sr, tr, ur, ms, l}
+	return &EntryHandler{br, sr, tr, ur, eb, l}
 }
 
 func (h *EntryHandler) Handle(ctx context.Context, req EntryRequest) (EntryResponse, error) {
@@ -87,7 +89,7 @@ func (h *EntryHandler) Handle(ctx context.Context, req EntryRequest) (EntryRespo
 
 	// Непосредственно процедура входа в тред
 
-	thread, res, err := script.Entry(bot.ID(), bots.UserID(req.UserID), bots.EntryKey(req.EntryKey))
+	thread, msgs, err := script.Entry(bot.ID(), bots.UserID(req.UserID), bots.EntryKey(req.EntryKey))
 	if err != nil {
 		l.ErrorContext(ctx, "failed to entry in script", slog.String("error", err.Error()))
 		return EntryResponse{}, err
@@ -106,18 +108,22 @@ func (h *EntryHandler) Handle(ctx context.Context, req EntryRequest) (EntryRespo
 		l.ErrorContext(ctx, "failed to save thread", slog.String("error", err.Error()))
 		return EntryResponse{}, err
 	}
-	l.DebugContext(ctx, "thread saved")
 
-	// После внедрения событийной модели, отправка сообщений будет асинхронной
-	// через bus.Publish(thread.PullEvents()), что гарантирует их отправку
-
-	for _, msg := range res {
-		err = h.ms.Send(ctx, bot.Token(), bots.UserID(req.UserID), msg)
-		if err != nil {
-			l.ErrorContext(ctx, "failed to send response message", slog.String("error", err.Error()))
-			return EntryResponse{}, err
+	events := make([]event.Event, len(msgs))
+	for i, msg := range msgs {
+		events[i] = bots.SendMessageRequested{
+			BotID:   thread.BotID(),
+			UserID:  thread.UserID(),
+			Message: msg,
+			Time:    time.Now(),
 		}
 	}
+	if err = h.eb.Publish(ctx, events...); err != nil {
+		l.ErrorContext(ctx, "failed to publish events", slog.String("error", err.Error()))
+		return EntryResponse{}, err
+	}
+
+	l.InfoContext(ctx, "entry processed")
 
 	return EntryResponse{}, nil
 }

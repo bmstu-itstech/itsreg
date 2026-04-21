@@ -11,11 +11,12 @@ import (
 const projectPrefix = "IR"
 
 type Config struct {
-	HTTP     HTTP     `mapstructure:"http"`
-	Logging  Logging  `mapstructure:"logging"`
-	Proxy    Proxy    `mapstructure:"proxy"`
-	Postgres Postgres `mapstructure:"postgres"`
-	JWT      JWT      `mapstructure:"jwt"`
+	HTTP        HTTP        `mapstructure:"http"`
+	Logging     Logging     `mapstructure:"logging"`
+	Proxy       Proxy       `mapstructure:"proxy"`
+	Postgres    Postgres    `mapstructure:"postgres"`
+	RateLimiter RateLimiter `mapstructure:"rate_limiter"`
+	JWT         JWT         `mapstructure:"jwt"`
 }
 
 type HTTP struct {
@@ -34,6 +35,11 @@ type Proxy struct {
 
 type Postgres struct {
 	URI string `mapstructure:"uri"`
+}
+
+type RateLimiter struct {
+	Capacity int     `mapstructure:"capacity"`
+	Rate     float64 `mapstructure:"rate"`
 }
 
 type JWT struct {

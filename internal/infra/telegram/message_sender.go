@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -14,22 +13,15 @@ import (
 
 type MessageSender struct {
 	cl *http.Client
-	l  *slog.Logger
 }
 
-func NewMessageSender(cl *http.Client, l *slog.Logger) *MessageSender {
-	return &MessageSender{cl, l}
+func NewMessageSender(cl *http.Client) *MessageSender {
+	return &MessageSender{cl}
 }
 
 func (s *MessageSender) Send(
-	ctx context.Context, token bots.Token, userID bots.UserID, msg bots.BotMessage,
+	_ context.Context, token bots.Token, userID bots.UserID, msg bots.BotMessage,
 ) error {
-	l := s.l.With(
-		slog.String("op", "telegram.MessageSender.Send"),
-		slog.Int64("user_id", userID.Int64()),
-		slog.String("message", msg.String()),
-	)
-
 	api, err := tgbotapi.NewBotAPIWithClient(string(token), s.cl)
 	if err != nil {
 		return err
@@ -44,28 +36,25 @@ func (s *MessageSender) Send(
 	}
 
 	_, err = api.Send(m)
-	if isCantParseEntitiesError(err) {
-		l.InfoContext(ctx, "can't parse HTML entities in message, send message without formatting",
-			slog.String("error", err.Error()),
-		)
-		return err
-	} else if isForbiddenError(err) {
-		l.InfoContext(ctx, "user blocked bot, can't send message", slog.String("error", err.Error()))
+	if isTooManyRequests(err) {
+		return port.ErrMessageSendRateLimitExceeded
+	}
+	if isForbiddenError(err) {
 		return port.ErrUserBlockedBot
-	} else if err != nil {
-		l.ErrorContext(ctx, "failed to send message", slog.String("error", err.Error()))
+	}
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func isCantParseEntitiesError(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "can't parse entities")
+func isForbiddenError(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "forbidden")
 }
 
-func isForbiddenError(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "Forbidden")
+func isTooManyRequests(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "too many requests")
 }
 
 func buildInlineKeyboardMarkup(opts []bots.Option) tgbotapi.ReplyKeyboardMarkup {
