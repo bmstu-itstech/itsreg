@@ -2,36 +2,27 @@ package telegram
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
+	"net/http"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/app/port"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 type MessageSender struct {
-	l *slog.Logger
+	cl *http.Client
 }
 
-func NewMessageSender(l *slog.Logger) *MessageSender {
-	return &MessageSender{
-		l: l,
-	}
+func NewMessageSender(cl *http.Client) *MessageSender {
+	return &MessageSender{cl}
 }
 
 func (s *MessageSender) Send(
-	ctx context.Context, token bots.Token, userID bots.UserID, msg bots.BotMessage,
+	_ context.Context, token bots.Token, userID bots.UserID, msg bots.BotMessage,
 ) error {
-	const op = "MessageSender.Send"
-	l := s.l.With(
-		slog.String("op", op),
-		slog.String("message", msg.String()),
-	)
-
-	api, err := tgbotapi.NewBotAPI(string(token))
+	api, err := tgbotapi.NewBotAPIWithClient(string(token), s.cl)
 	if err != nil {
 		return err
 	}
@@ -45,30 +36,25 @@ func (s *MessageSender) Send(
 	}
 
 	_, err = api.Send(m)
+	if isTooManyRequests(err) {
+		return port.ErrMessageSendRateLimitExceeded
+	}
+	if isForbiddenError(err) {
+		return port.ErrUserBlockedBot
+	}
 	if err != nil {
-		if isCantParseEntitiesError(err) {
-			l.WarnContext(ctx, "can't parse HTML entities in message, send message without formatting",
-				slog.String("error", err.Error()),
-			)
-			m.ParseMode = ""
-			_, err = api.Send(m)
-		} else if isForbiddenError(err) {
-			l.WarnContext(ctx, "user blocked bot, can't send message",
-				slog.String("error", err.Error()),
-			)
-			err = fmt.Errorf("%w: %d", port.ErrUserBlockedBot, userID)
-		}
+		return err
 	}
 
-	return err
-}
-
-func isCantParseEntitiesError(err error) bool {
-	return strings.Contains(err.Error(), "can't parse entities")
+	return nil
 }
 
 func isForbiddenError(err error) bool {
-	return strings.Contains(err.Error(), "Forbidden")
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "forbidden")
+}
+
+func isTooManyRequests(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "too many requests")
 }
 
 func buildInlineKeyboardMarkup(opts []bots.Option) tgbotapi.ReplyKeyboardMarkup {

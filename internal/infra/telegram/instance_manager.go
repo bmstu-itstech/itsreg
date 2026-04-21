@@ -4,33 +4,34 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"sync"
 
+	"github.com/bmstu-itstech/itsreg/internal/app/dto"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/app/port"
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/app/port"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 type InstanceManager struct {
-	m       sync.Map // map[string]*botInstance
-	l       *slog.Logger
-	process port.ProcessHandler
-	entry   port.EntryHandler
+	m  sync.Map // map[string]*botInstance
+	id port.InboundDispatcher
+	cl *http.Client
+	l  *slog.Logger
 }
 
-func NewInstanceManager(log *slog.Logger, process port.ProcessHandler, entry port.EntryHandler) *InstanceManager {
+func NewInstanceManager(id port.InboundDispatcher, cl *http.Client, l *slog.Logger) *InstanceManager {
 	return &InstanceManager{
-		l:       log,
-		process: process,
-		entry:   entry,
+		id: id,
+		cl: cl,
+		l:  l,
 	}
 }
 
 func (m *InstanceManager) Start(ctx context.Context, id bots.BotID, token bots.Token) error {
-	const op = "InstanceManager.Start"
 	l := m.l.With(
-		slog.String("op", op),
+		slog.String("op", "telegram.InstanceManager.Start"),
 		slog.String("bot_id", string(id)),
 	)
 
@@ -41,10 +42,11 @@ func (m *InstanceManager) Start(ctx context.Context, id bots.BotID, token bots.T
 		err := m.Stop(ctx, id)
 		if err != nil {
 			l.ErrorContext(ctx, "failed to stop previous instance while starting", slog.String("error", err.Error()))
+			// Продолжаем попытку запустить нового бота
 		}
 	}
 
-	ins, err := startBotInstance(id, token, m.process, m.entry, m.l)
+	ins, err := startBotInstance(id, token, m.id, m.cl, m.l)
 	m.m.Store(id, ins) // В любом случае сохраняем, чтобы иметь status = dead
 	if err != nil {
 		l.ErrorContext(ctx, "failed to start bot", slog.String("error", err.Error()))
@@ -67,37 +69,35 @@ func (m *InstanceManager) Stop(_ context.Context, id bots.BotID) error {
 }
 
 type botInstance struct {
-	botID   bots.BotID
-	token   bots.Token
-	api     *tgbotapi.BotAPI
-	stopCh  chan struct{}
-	process port.ProcessHandler
-	entry   port.EntryHandler
-	log     *slog.Logger
-	dead    bool
+	botID  bots.BotID
+	token  bots.Token
+	api    *tgbotapi.BotAPI
+	stopCh chan struct{}
+	id     port.InboundDispatcher
+	log    *slog.Logger
+	dead   bool
 }
 
 func startBotInstance(
 	botID bots.BotID,
 	token bots.Token,
-	process port.ProcessHandler,
-	entry port.EntryHandler,
+	id port.InboundDispatcher,
+	cl *http.Client,
 	log *slog.Logger,
 ) (*botInstance, error) {
-	api, err := tgbotapi.NewBotAPI(string(token))
+	api, err := tgbotapi.NewBotAPIWithClient(token.String(), cl)
 	if err != nil {
 		return nil, err
 	}
 
 	i := &botInstance{
-		botID:   botID,
-		token:   token,
-		api:     api,
-		stopCh:  make(chan struct{}),
-		process: process,
-		entry:   entry,
-		log:     log,
-		dead:    false,
+		botID:  botID,
+		token:  token,
+		api:    api,
+		stopCh: make(chan struct{}),
+		id:     id,
+		log:    log,
+		dead:   false,
 	}
 
 	conf := tgbotapi.NewUpdate(0)
@@ -135,34 +135,35 @@ func (i *botInstance) run(updates tgbotapi.UpdatesChannel) {
 }
 
 func (i *botInstance) handleUpdate(ctx context.Context, upd tgbotapi.Update) {
-	const op = "botInstance.handleUpdate"
+	const op = "telegram.botInstance.handleUpdate"
 	l := i.log.With(
 		slog.String("op", op),
 		slog.String("bot_id", string(i.botID)),
 	)
 
-	if upd.Message == nil {
+	if upd.Message == nil || upd.Message.From == nil {
 		return
 	}
 
-	var err error
+	text := upd.Message.Text
 	if upd.Message.IsCommand() {
-		err = i.entry.Entry(
-			ctx,
-			i.botID,
-			bots.UserID(upd.Message.Chat.ID),
-			bots.Username(upd.Message.From.UserName),
-			bots.EntryKey(upd.Message.Command()),
-		)
-	} else {
-		if msg, err2 := bots.NewMessage(upd.Message.Text); err2 == nil {
-			err = i.process.Process(ctx, i.botID, bots.UserID(upd.Message.Chat.ID), msg)
-		} else {
-			l.WarnContext(ctx, "unhandled message", slog.String("message", fmt.Sprintf("%v", upd.Message)))
-		}
+		text = upd.Message.Command()
 	}
-
+	err := i.id.Dispatch(ctx, dto.InboundMessage{
+		BotID:     i.botID.String(),
+		UserID:    upd.Message.Chat.ID,
+		Username:  usernameOrNil(*upd.Message.From),
+		Text:      text,
+		IsCommand: upd.Message.IsCommand(),
+	})
 	if err != nil {
 		l.ErrorContext(ctx, "failed to handle update", slog.String("error", err.Error()))
 	}
+}
+
+func usernameOrNil(user tgbotapi.User) *string {
+	if user.UserName == "" {
+		return nil
+	}
+	return &user.UserName
 }

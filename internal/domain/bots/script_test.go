@@ -1,13 +1,14 @@
 package bots_test
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
+
+const ownerID = bots.UserID(1)
 
 var (
 	greetingNode = bots.MustNewNode(
@@ -77,9 +78,11 @@ var (
 	)
 )
 
-func buildSurveyScript() bots.Script {
+func buildSurveyScript() *bots.Script {
 	start := bots.MustNewEntry("start", bots.MustNewState(1))
 	return bots.MustNewScript(
+		ownerID,
+		"",
 		[]bots.Node{greetingNode, fullNameNode, choosePillNode, redPillNode, bluePill},
 		[]bots.Entry{start},
 	)
@@ -87,100 +90,89 @@ func buildSurveyScript() bots.Script {
 
 func TestScript_EntryNProcess(t *testing.T) {
 	script := buildSurveyScript()
-	prtID := bots.NewParticipantID(1, "bot")
-	prt := bots.MustNewParticipant(prtID)
+	userID := bots.UserID(2)
+	entryKey := bots.EntryKey("start")
 
-	// Пользователь нажимаем команду /start
-	msgs, err := script.Entry(prt, "start")
+	// Пользователь использует команду /start
+	thread, msgs, err := script.Entry("bot-1", userID, entryKey)
 	require.NoError(t, err)
-	require.Equal(t, greetingNode.BotMessages(), msgs)
-	thread := prt.ActiveThread()
 	require.NotNil(t, thread)
-	require.Equal(t, thread.State(), bots.MustNewState(1))
+	require.Equal(t, greetingNode.State(), thread.State())
+	require.Equal(t, greetingNode.BotMessages(), msgs)
 
-	// Пользователь вводит то, чего от него не ждут
-	msgs, err = script.Process(prt, bots.MustNewMessage("/admin"))
+	// Пользователь вводит неожидаемый текст
+	msgs, err = script.Process(thread, bots.MustNewMessage("мяу"))
 	require.NoError(t, err)
-	require.Empty(t, msgs)
-	thread = prt.ActiveThread()
-	require.Equal(t, thread.State(), bots.MustNewState(1))
-	require.Empty(t, thread.Answers())
+	require.Empty(t, msgs)                                 // Нет новых сообщений
+	require.Equal(t, greetingNode.State(), thread.State()) // Остаётся в том же состоянии
+	require.Empty(t, thread.Answers())                     // Ответ не сохранился, так как не было перехода по ребру
 
-	// Пользователь вводит то, что от него всё-таки ожидают
-	msgs, err = script.Process(prt, bots.MustNewMessage("Далее"))
+	// Пользователь вводит "Далее" и переходит по ребру к узлу с ФИО
+	msgs, err = script.Process(thread, bots.MustNewMessage("Далее"))
 	require.NoError(t, err)
 	require.Equal(t, fullNameNode.BotMessages(), msgs)
-	thread = prt.ActiveThread()
-	require.Equal(t, thread.State(), bots.MustNewState(2))
-	require.Empty(t, thread.Answers())
+	require.Equal(t, fullNameNode.State(), thread.State())
+	require.Empty(t, thread.Answers()) // Ответов пока нет, так как ребро имеет операцию noop
 
-	// Пользователь вводит Назад
-	msgs, err = script.Process(prt, bots.MustNewMessage("Назад"))
+	// Пользователь возвращается назад
+	msgs, err = script.Process(thread, bots.MustNewMessage("Назад"))
 	require.NoError(t, err)
 	require.Equal(t, greetingNode.BotMessages(), msgs)
-	thread = prt.ActiveThread()
-	require.Equal(t, thread.State(), bots.MustNewState(1))
-	require.Empty(t, thread.Answers())
+	require.Equal(t, greetingNode.State(), thread.State())
+	require.Empty(t, thread.Answers()) // Ответов нет, так как ребро "Назад" имеет операцию noop
 
-	// Шагаем обратно
-	msgs, err = script.Process(prt, bots.MustNewMessage("Далее"))
+	// Пользователь возвращается
+	_, err = script.Process(thread, bots.MustNewMessage("Далее"))
 	require.NoError(t, err)
-	require.Equal(t, fullNameNode.BotMessages(), msgs)
-	thread = prt.ActiveThread()
-	require.Equal(t, thread.State(), bots.MustNewState(2))
 
-	// Пользователь вводит своё ФИО
-	msgs, err = script.Process(prt, bots.MustNewMessage("Иванов Иван Иванович"))
+	// Пользователь вводит своё имя
+	msgs, err = script.Process(thread, bots.MustNewMessage("Иванов Иван"))
 	require.NoError(t, err)
 	require.Equal(t, choosePillNode.BotMessages(), msgs)
-	thread = prt.ActiveThread()
-	require.Equal(t, thread.State(), bots.MustNewState(3))
+	require.Equal(t, choosePillNode.State(), thread.State())
 	require.Equal(t, map[bots.State]bots.Message{
-		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван Иванович"),
+		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван"),
 	}, thread.Answers())
 
 	// Пользователь выбирает красную таблетку
-	msgs, err = script.Process(prt, bots.MustNewMessage("Красная"))
+	msgs, err = script.Process(thread, bots.MustNewMessage("Красная"))
 	require.NoError(t, err)
 	require.Equal(t, redPillNode.BotMessages(), msgs)
-	thread = prt.ActiveThread()
-	require.Equal(t, thread.State(), bots.MustNewState(10))
+	require.Equal(t, redPillNode.State(), thread.State())
 	require.Equal(t, map[bots.State]bots.Message{
-		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван Иванович"),
+		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван"),
 		bots.MustNewState(3): bots.MustNewMessage("Красная"),
 	}, thread.Answers())
 
 	// Пользователь увидел реальность и передумал
-	msgs, err = script.Process(prt, bots.MustNewMessage("Назад"))
+	msgs, err = script.Process(thread, bots.MustNewMessage("Назад"))
 	require.NoError(t, err)
 	require.Equal(t, choosePillNode.BotMessages(), msgs)
-	thread = prt.ActiveThread()
-	require.Equal(t, thread.State(), bots.MustNewState(3))
+	require.Equal(t, choosePillNode.State(), thread.State())
 	require.Equal(t, map[bots.State]bots.Message{
-		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван Иванович"),
+		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван"),
 		bots.MustNewState(3): bots.MustNewMessage("Красная"),
 	}, thread.Answers())
 
 	// ... и выбрал синюю таблетку
-	msgs, err = script.Process(prt, bots.MustNewMessage("Синяя"))
+	msgs, err = script.Process(thread, bots.MustNewMessage("Синяя"))
 	require.NoError(t, err)
 	require.Equal(t, bluePill.BotMessages(), msgs)
-	thread = prt.ActiveThread()
-	require.Equal(t, thread.State(), bots.MustNewState(11))
+	require.Equal(t, bluePill.State(), thread.State())
 	require.Equal(t, map[bots.State]bots.Message{
-		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван Иванович"),
-		bots.MustNewState(3): bots.MustNewMessage("Красная\nСиняя"),
+		bots.MustNewState(2): bots.MustNewMessage("Иванов Иван"),
+		bots.MustNewState(3): bots.MustNewMessage("Красная\nСиняя"), // Запись второго ответа через Append
 	}, thread.Answers())
 }
 
-func TestScript_Entry(t *testing.T) {
+func TestScript_EntryFailed(t *testing.T) {
 	script := buildSurveyScript()
-	prtID := bots.NewParticipantID(bots.UserID(1), "bot")
-	prt := bots.MustNewParticipant(prtID)
+	userID := bots.UserID(2)
+	key := bots.EntryKey("admin")
 
-	_, err := script.Entry(prt, "admin")
-	require.ErrorAs(t, err, &bots.EntryNotFoundError{})
-	require.EqualError(t, err, "entry not found: admin")
+	_, _, err := script.Entry("bot-1", userID, key)
+	require.ErrorIs(t, err, bots.ErrEntryNotFound)
+	require.ErrorContains(t, err, string(key))
 }
 
 func TestNewScript(t *testing.T) {
@@ -204,37 +196,35 @@ func TestNewScript(t *testing.T) {
 
 	t.Run("Valid script", func(t *testing.T) {
 		entry := bots.MustNewEntry("start", bots.MustNewState(1))
-		_, err := bots.NewScript([]bots.Node{node1, node2, node3}, []bots.Entry{entry})
+		_, err := bots.NewScript(ownerID, "", []bots.Node{node1, node2, node3}, []bots.Entry{entry})
 		require.NoError(t, err)
 	})
 
 	t.Run("Non-existent node - invalid script", func(t *testing.T) {
 		// Узел 1 имеет ребро к несуществующему узлу 3.
 		entry := bots.MustNewEntry("start", bots.MustNewState(1))
-		_, err := bots.NewScript([]bots.Node{node1, node2}, []bots.Entry{entry})
+		_, err := bots.NewScript(ownerID, "", []bots.Node{node1, node2}, []bots.Entry{entry})
 		require.Error(t, err)
-		var iiErr bots.InvalidInputError
-		require.ErrorAs(t, err, &iiErr)
-		require.Equal(t, "node-not-found", iiErr.Code)
-		require.Contains(t, iiErr.Details, "state")
-		require.Equal(t, "1", iiErr.Details["state"])
+		requireValidationErrorDetails(t, err, []rawDetail{
+			{"nodes", bots.ErrorCodeScriptNodeNotFound},
+		})
+		require.ErrorContains(t, err, "nodes[1]")
+		require.ErrorContains(t, err, "nodes[3]")
 	})
 
-	t.Run("Non-existent node - invalid script", func(t *testing.T) {
+	t.Run("Non connected graph - invalid script", func(t *testing.T) {
 		// Здесь хитрость. Вообще говоря граф из {1, 2, 3} является связным, и, казалось бы
 		// ошибки здесь нет. Но у нас есть дополнительное условие - обход графа должен начинаться
 		// с вершин, которые указаны в entries. Обходя граф с 3 узла мы остаёмся в 3 узле, а значит
 		// скрипт не является связным.
 		entry := bots.MustNewEntry("start", bots.MustNewState(3))
-		_, err := bots.NewScript([]bots.Node{node1, node2, node3}, []bots.Entry{entry})
+		_, err := bots.NewScript(ownerID, "", []bots.Node{node1, node2, node3}, []bots.Entry{entry})
 		require.Error(t, err)
-		var ierr bots.InvalidInputError
-		ok := errors.As(err, &ierr)
-		require.True(t, ok)
-		var iiErr bots.InvalidInputError
-		require.ErrorAs(t, err, &iiErr)
-		require.Equal(t, "node-is-not-connected", iiErr.Code)
-		require.Contains(t, iiErr.Details, "state")
-		// Какой именно state - неизвестно, порядок обхода map не определён.
+		requireValidationErrorDetails(t, err, []rawDetail{
+			{"nodes", bots.ErrorCodeScriptNodeIsNotConnected},
+			{"nodes", bots.ErrorCodeScriptNodeIsNotConnected},
+		})
+		require.ErrorContains(t, err, "nodes[1]")
+		require.ErrorContains(t, err, "nodes[2]")
 	})
 }

@@ -1,0 +1,21 @@
+http:
+  port: 8400
+  cors_allow_origins:
+  cors_max_age: 300
+
+proxy:
+  url:
+
+postgres:
+  uri:
+
+rate_limit:
+  capacity: 10
+  rate: 25.0
+
+logging:
+  level: debug
+
+jwt:
+  secret:
+  access_ttl: 24h

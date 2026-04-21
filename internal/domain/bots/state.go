@@ -1,6 +1,8 @@
 package bots
 
-import "fmt"
+import "github.com/bmstu-itstech/itsreg/internal/domain/shared"
+
+const ErrorCodeStateInvalid = "state-invalid"
 
 // State есть состояние в контексте FSM и уникальный номер узла в пределах скрипта.
 type State struct {
@@ -10,15 +12,14 @@ type State struct {
 var ZeroState State
 
 func NewState(i int) (State, error) {
-	if i == 0 {
-		return State{}, NewInvalidInputError("state-empty", "expected not empty state")
+	if i <= 0 {
+		return ZeroState, shared.NewValidationError(shared.NewValidationErrorDetail(
+			"value",
+			ErrorCodeStateInvalid,
+			"state cannot be less or equal than zero",
+		))
 	}
-	if i < 0 {
-		return ZeroState, NewInvalidInputError(
-			"state-invalid",
-			fmt.Sprintf("expected state is positive value, got %d", i),
-		)
-	}
+
 	return State{i: i}, nil
 }
 

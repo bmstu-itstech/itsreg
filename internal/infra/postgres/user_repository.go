@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 func (r *Repository) UpsertUsername(ctx context.Context, id bots.UserID, username bots.Username) error {

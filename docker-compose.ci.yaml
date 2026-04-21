@@ -1,0 +1,31 @@
+services:
+  http:
+    build: .
+    command: [
+      "-config", "/etc/app/prod.yaml",
+    ]
+    environment:
+      IR_HTTP_PORT: 8000
+      IR_POSTGRES_URI: ${IR_POSTGRES_URI}
+      IR_JWT_SECRET: ${IR_JWT_SECRET}
+      IR_HTTP_CORS_ALLOW_ORIGINS: ${IR_HTTP_CORS_ALLOW_ORIGINS:-}
+      IR_PROXY_URL: ${IR_PROXY_URL:-}
+      PGSSLROOTCERT: /certs/root.crt
+    ports:
+      - "${EXTERNAL_HTTP_PORT:-8000}:8000"
+    volumes:
+      - ./config:/etc/app:ro
+      - ${PGSSLROOTCERT}:/certs:ro
+
+  migrate:
+    image: migrate/migrate
+    command: [
+      "-path", "/migrations",
+      "-database", "${IR_POSTGRES_URI}",
+      "up"
+    ]
+    environment:
+      PGSSLROOTCERT: /certs/root.crt
+    volumes:
+      - ./migrations:/migrations:ro
+      - ${PGSSLROOTCERT}:/certs:ro

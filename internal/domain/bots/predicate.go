@@ -3,6 +3,14 @@ package bots
 import (
 	"fmt"
 	"regexp"
+
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
+)
+
+const (
+	ErrorCodeExactMatchPredicateEmptyText shared.ErrorCode = "exact-match-predicate-empty-text"
+	ErrorCodeRegexPredicateEmptyPattern   shared.ErrorCode = "exact-match-predicate-empty-pattern"
+	ErrorCodeRegexPredicateInvalidPattern shared.ErrorCode = "regex-predicate-invalid-pattern"
 )
 
 type Predicate interface {
@@ -21,9 +29,9 @@ type ExactMatchPredicate struct {
 
 func NewExactMatchPredicate(text string) (Predicate, error) {
 	if text == "" {
-		return nil, NewInvalidInputError(
-			"predicate-empty-text", "expected non-empty string for exact match predicate", "field", "text",
-		)
+		return nil, shared.NewValidationError(shared.NewValidationErrorDetail(
+			"text", ErrorCodeExactMatchPredicateEmptyText, "text field in exact match predicate cannot be empty",
+		))
 	}
 	return ExactMatchPredicate{text}, nil
 }
@@ -50,19 +58,17 @@ type RegexMatchPredicate struct {
 
 func NewRegexMatchPredicate(pattern string) (Predicate, error) {
 	if pattern == "" {
-		return nil, NewInvalidInputError(
-			"predicate-empty-pattern", "expected non-empty predicate pattern", "field", "pattern",
-		)
+		return nil, shared.NewValidationError(shared.NewValidationErrorDetail(
+			"pattern", ErrorCodeRegexPredicateEmptyPattern, "pattern field in regex predicate cannot be empty",
+		))
 	}
 
 	regex, err := regexp.Compile(pattern)
 	if err != nil {
-		return nil, NewInvalidInputError(
-			"predicate-invalid-pattern",
-			fmt.Sprintf("failed to compile regex pattern '%s': %s", pattern, err.Error()),
-			"field",
-			"pattern",
-		)
+		return nil, shared.NewValidationError(shared.NewValidationErrorDetail(
+			"pattern", ErrorCodeRegexPredicateInvalidPattern,
+			fmt.Sprintf("failed to compile regex pattern %q: %s", pattern, err.Error()),
+		))
 	}
 
 	return RegexMatchPredicate{regex}, nil

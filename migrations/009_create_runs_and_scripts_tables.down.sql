@@ -1,0 +1,25 @@
+DROP INDEX IF EXISTS uniq_active_run_per_bot;
+
+DROP TABLE IF EXISTS answers;
+DROP TABLE IF EXISTS threads;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS runs;
+DROP TABLE IF EXISTS bots;
+DROP TABLE IF EXISTS options;
+DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS edges;
+DROP TABLE IF EXISTS entries;
+DROP TABLE IF EXISTS nodes;
+DROP TABLE IF EXISTS scripts;
+
+DROP TYPE IF EXISTS edge_pred_type;
+DROP TYPE IF EXISTS edge_operation;
+DROP TYPE IF EXISTS run_status;
+
+ALTER TABLE public.schema_migrations
+    SET SCHEMA old;
+
+DROP SCHEMA public;
+
+ALTER SCHEMA old
+    RENAME TO public;

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 var ErrRunningInstanceNotFound = errors.New("running instance not found")

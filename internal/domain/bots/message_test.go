@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
 )
 
 func TestNewMessage(t *testing.T) {
@@ -14,9 +14,7 @@ func TestNewMessage(t *testing.T) {
 
 	_, err = bots.NewMessage("")
 	require.Error(t, err)
-	var iiErr bots.InvalidInputError
-	require.ErrorAs(t, err, &iiErr)
-	require.Equal(t, "message-empty-text", iiErr.Code)
+	requireValidationErrorDetails(t, err, []rawDetail{{"text", bots.ErrorCodeMessageEmptyText}})
 }
 
 func TestMessage_String(t *testing.T) {

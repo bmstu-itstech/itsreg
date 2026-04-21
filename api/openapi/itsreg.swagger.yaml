@@ -1,0 +1,935 @@
+openapi: 3.0.3
+info:
+  title: ITS Reg API
+  description: ITS Reg API
+  version: 3.0.0
+servers:
+  - url: "{url}/api/v3"
+    variables:
+      url:
+        default: http://localhost:8400
+        description: >
+          Протокол + адрес сервера + порт (если требуется).
+          Без trailing / в конце. Пример: http://localhost:8000.
+security:
+  - bearerAuth: []
+
+paths:
+  /bots:
+    post:
+      operationId: createBot
+      tags:
+        - Bots
+      description: Создать нового бота с указанным сценарием.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBotRequest'
+      responses:
+        "201":
+          description: Бот успешно создан.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateBotResponse'
+        "400":
+          description: Бот невалиден.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PlainError'
+                  - $ref: '#/components/schemas/ValidationError'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "422":
+          description: Указанный scriptID не соответствует ни одному доступному пользователю сценарию.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+    get:
+      operationId: getBots
+      tags:
+        - Bots
+      description: Получить список всех ботов, доступных пользователю.
+      responses:
+        "200":
+          description: Боты успешно получены.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetBotsResponse'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /bots/{id}:
+    get:
+      operationId: getBot
+      tags:
+        - Bots
+      description: Получить информацию о боте с указанным ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID бота.
+      responses:
+        "200":
+          description: Бот успешно найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetBotResponse'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+    patch:
+      operationId: updateBot
+      tags:
+        - Bots
+      description: Обновить информацию о боте с указанным ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID бота.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBotRequest'
+      responses:
+        "200":
+          description: Бот успешно обновлён.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateBotResponse'
+        "400":
+          description: Данные для обновления бота невалидны.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PlainError'
+                  - $ref: '#/components/schemas/ValidationError'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+    delete:
+      operationId: deleteBot
+      tags:
+        - Bots
+      description: Удалить бота по указанному ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID бота.
+      responses:
+        "204":
+          description: Бот успешно удалён.
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /bots/{botID}/runs:
+    post:
+      operationId: createRun
+      tags:
+        - Bots
+        - Runs
+      description: Запустить бота с указанным ID.
+      parameters:
+        - in: path
+          name: botID
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID бота для запуска.
+      responses:
+        "201":
+          description: Бот успешно запущен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRunResponse'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "409":
+          description: Бот уже запущен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+    get:
+      operationId: getBotRuns
+      tags:
+        - Bots
+        - Runs
+      description: Получить список всех запусков бота с указанным ID.
+      parameters:
+        - in: path
+          name: botID
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID бота для получения запусков.
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/Status'
+          required: false
+          description: Статус запуска для фильтрации. Если не указан, возвращаются запуски всех статусов.
+      responses:
+        "200":
+          description: Запуски бота успешно получены.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Run'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /runs:
+    get:
+      operationId: getRuns
+      tags:
+        - Runs
+      description: Получить список всех запусков ботов, доступных пользователю.
+      parameters:
+        - in: query
+          name: botID
+          schema:
+            type: string
+            example: 123abc
+          required: false
+          description: ID бота для фильтрации запусков. Если не указан, возвращаются запуски всех ботов пользователя.
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/Status'
+          required: false
+          description: Статус запуска для фильтрации. Если не указан, возвращаются запуски всех статусов.
+      responses:
+        "200":
+          description: Запуски успешно получены.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Run'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /runs/{id}:
+    get:
+      operationId: getRun
+      tags:
+        - Runs
+      description: Получить информацию о запуске бота с указанным ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID запуска бота.
+      responses:
+        "200":
+          description: Запуск бота успешно найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Запуск бота не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /runs/{id}/stop:
+    post:
+      operationId: stopRun
+      tags:
+        - Runs
+      description: Остановить запуск бота с указанным ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID запуска бота.
+      responses:
+        "202":
+          description: >
+            Запуск бота в процессе остановки. Статус запуска будет изменён на stopped в течение короткого времени.
+            Остановить можно только запуски в статусе active.
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Запуск бота не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "409":
+          description: Запуск бота не находится в статусе active и не может быть остановлен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /scripts:
+    post:
+      operationId: createScript
+      tags:
+        - Scripts
+      description: Создать новый сценарий.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateScriptRequest'
+      responses:
+        "201":
+          description: Сценарий успешно создан.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateScriptResponse'
+        "400":
+          description: Сценарий невалиден.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PlainError'
+                  - $ref: '#/components/schemas/ValidationError'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+    get:
+      operationId: getScripts
+      tags:
+        - Scripts
+      description: Получить список всех сценариев, доступных пользователю.
+      responses:
+        "200":
+          description: Сценарии успешно получены.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetScriptsResponse'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /scripts/{id}:
+    get:
+      operationId: getScript
+      tags:
+        - Scripts
+      description: Получить информацию о сценарии с указанным ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID сценария.
+      responses:
+        "200":
+          description: Сценарий успешно найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetScriptResponse'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Сценарий не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+    put:
+      operationId: updateScript
+      tags:
+        - Scripts
+      description: Полностью обновить сценарий по указанному ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID сценария.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Script'
+      responses:
+        "200":
+          description: Сценарий успешно обновлён.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateScriptResponse'
+        "400":
+          description: Сценарий невалиден.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PlainError'
+                  - $ref: '#/components/schemas/ValidationError'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Сценарий не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+    delete:
+      operationId: deleteScript
+      tags:
+        - Scripts
+      description: Удалить сценарий по указанному ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID сценария.
+      responses:
+        "204":
+          description: Сценарий успешно удалён.
+        "404":
+          description: Сценарий не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateBotRequest:
+      type: object
+      properties:
+        scriptID:
+          type: string
+          description: ID сценария для бота.
+          example: 123abc
+        token:
+          $ref: '#/components/schemas/Token'
+        desc:
+          type: string
+          description: Человекочитаемое описание назначения бота.
+      required:
+        - scriptID
+        - token
+        - desc
+
+    CreateScriptRequest:
+      type: object
+      properties:
+        desc:
+          type: string
+          description: Человекочитаемое описание назначения сценария.
+        nodes:
+          type: array
+          description: Неупорядоченный непустой массив узлов сценария.
+          items:
+            $ref: '#/components/schemas/Node'
+        entries:
+          type: array
+          description: Неупорядоченный непустой массив точек входа сценария.
+          items:
+            $ref: '#/components/schemas/Entry'
+      required:
+        - desc
+        - nodes
+        - entries
+
+    UpdateBotRequest:
+      type: object
+      properties:
+        scriptID:
+          type: string
+          description: ID сценария для бота.
+          example: 123abc
+        token:
+          $ref: '#/components/schemas/Token'
+        desc:
+          type: string
+          description: Человекочитаемое описание назначения бота.
+
+    CreateBotResponse:
+      type: object
+      properties:
+        botID:
+          type: string
+          description: Уникальный ID бота.
+          example: 123abc
+      required:
+        - botID
+
+    CreateRunResponse:
+      type: object
+      properties:
+        runID:
+          type: string
+          description: Уникальный ID запуска бота.
+          example: 123abc
+      required:
+        - runID
+
+    CreateScriptResponse:
+      type: object
+      properties:
+        scriptID:
+          type: string
+          description: Уникальный ID сценария.
+          example: 123abc
+      required:
+        - scriptID
+
+    UpdateBotResponse:
+       $ref: '#/components/schemas/Bot'
+
+    UpdateScriptResponse:
+      $ref: '#/components/schemas/Script'
+
+    GetBotResponse:
+      $ref: '#/components/schemas/Bot'
+
+    GetBotsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Bot'
+
+    GetScriptResponse:
+      $ref: '#/components/schemas/Script'
+
+    GetScriptsResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Script'
+
+    Bot:
+      type: object
+      description: >
+        Сущность, связывающая между собой сценарий (Script) и запуски телеграм-бота (Run).
+      properties:
+        id:
+          type: string
+          description: Уникальный ID бота.
+          example: 123abc
+        ownerID:
+          type: integer
+          format: int64
+          description: ID владельца бота.
+        scriptID:
+          type: string
+          description: ID сценария для бота.
+          example: 123abc
+        desc:
+          type: string
+          description: Человекочитаемое описание назначения бота.
+        createdAt:
+          type: string
+          format: date-time
+          description: Метка времени создания бота.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Метка времени последнего обновления бота.
+      required:
+        - id
+        - ownerID
+        - scriptID
+        - desc
+        - createdAt
+        - updatedAt
+
+    Run:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Уникальный ID запуска бота.
+          example: 123abc
+        botID:
+          type: string
+          description: ID бота, который был запущен.
+          example: 123abc
+        status:
+          $ref: '#/components/schemas/Status'
+        errorMsg:
+          type: string
+          description: Сообщение об ошибке, если статус запуска failed.
+        startedAt:
+          type: string
+          format: date-time
+          description: Метка времени запуска бота.
+        stoppedAt:
+          type: string
+          format: date-time
+          description: Метка времени остановки бота.
+      required:
+        - id
+        - botID
+        - status
+
+    Status:
+      type: string
+      description: Статус бота.
+      enum:
+        - starting
+        - active
+        - failed
+        - stopped
+
+    Script:
+      type: object
+      description:
+        Сценарий бота. Является объединением узлов (Node), точек входа (Entry). Гарантируется связность всех узлов
+        относительно любой точки входа Entry.
+      properties:
+        id:
+          type: string
+          description: Уникальный ID сценария.
+          example: 123abc
+          readOnly: true
+        desc:
+          type: string
+          description: Человекочитаемое описание назначения сценария.
+        nodes:
+          type: array
+          description: Неупорядоченный непустой массив узлов сценария.
+          items:
+            $ref: '#/components/schemas/Node'
+        entries:
+          type: array
+          description: Неупорядоченный непустой массив точек входа сценария.
+          items:
+            $ref: '#/components/schemas/Entry'
+        createdAt:
+          type: string
+          format: date-time
+          description: Метка времени создания сценария.
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: Метка времени последнего обновления сценария.
+          readOnly: true
+      required:
+        - id
+        - desc
+        - nodes
+        - entries
+        - createdAt
+        - updatedAt
+
+    Entry:
+      type: object
+      description: >
+        Точка входа в сценарий бота. Пользователь может вызвать точку входу командой /<entry> (как, например, /start).
+        Может быть вызвана рассылкой по такому же ключу.
+      properties:
+        key:
+          type: string
+          description: Ключ точки входа.
+        start:
+          type: integer
+          description: Указатель на State узла, с которого начинается выполнение сценария.
+      required:
+        - key
+        - start
+
+    Node:
+      type: object
+      description: >
+        Минимальная структурная единица сценария Script.
+        Представляет собой:
+        - сообщения, которые отправляются пользователю (Message);
+        - исходящие рёбра, обозначающие переход пользователя к следующему состоянию (узлу, Node);
+        - опции для пользователя (кнопки).
+      properties:
+        state:
+          type: integer
+          description: Уникальный номер узла в сценарии бота.
+        title:
+          type: string
+          description: Человеко-читаемое название узла. В таблице ответов будет отображаться как заголовок столбца.
+        edges:
+          type: array
+          description: Массив исходящих рёбер узла.
+          items:
+            $ref: '#/components/schemas/Edge'
+        messages:
+          type: array
+          description: Массив отправляемых ботом сообщений при вхождении в узел.
+          items:
+            $ref: '#/components/schemas/Message'
+        options:
+          type: array
+          description: Массив кнопок (опций) ответа для пользователя.
+          items:
+            type: string
+      required:
+        - state
+        - title
+        - messages
+
+    Edge:
+      type: object
+      description: Обозначают связь между узлами как переход в результате ответа пользователя.
+      properties:
+        predicate:
+          $ref: '#/components/schemas/Predicate'
+        to:
+          type: integer
+          description: State узла, к которому совершается переход.
+        operation:
+          type: string
+          description: >
+            Действие, которое выполнится в результате перехода пользователя по ребру.
+            - noop. Ничего не происходит. Подходит для использования в меню и промежуточных узлах.
+            - save. Сохраняет ответ или перезаписывает предыдущий. Подходит в большинстве ситуаций.
+            - append. Добавляет ответ к предыдущему. Подходит для вопросов с множественным выбором.
+          enum:
+            - noop
+            - save
+            - append
+      required:
+        - predicate
+        - to
+        - operation
+
+    Predicate:
+      type: object
+      description: Predicate описывает условие перехода по ребру.
+      oneOf:
+        - $ref: '#/components/schemas/AlwaysPredicate'
+        - $ref: '#/components/schemas/ExactPredicate'
+        - $ref: '#/components/schemas/RegexPredicate'
+      discriminator:
+        propertyName: type
+        mapping:
+          always: '#/components/schemas/AlwaysPredicate'
+          exact: '#/components/schemas/ExactPredicate'
+          regex: '#/components/schemas/RegexPredicate'
+
+    AlwaysPredicate:
+      type: object
+      description: Переход по ребру осуществляется на любое сообщение пользователя.
+      properties:
+        type:
+          type: string
+          enum: [ always ]
+      required:
+        - type
+
+    ExactPredicate:
+      type: object
+      description: Переход по ребру осуществляется при полном совпадении строки text с сообщением пользователя.
+      properties:
+        type:
+          type: string
+          enum: [ exact ]
+        text:
+          type: string
+      required:
+        - type
+        - text
+
+    RegexPredicate:
+      type: object
+      description: Переход по ребру осуществляется при совпадении с регулярным выражением pattern.
+      properties:
+        type:
+          type: string
+          enum: [ regex ]
+        pattern:
+          type: string
+      required:
+        - type
+        - pattern
+
+    Message:
+      type: object
+      description: Любое сообщение в Telegram. На данный момент описывается текстом, но в будущем добавится поддержка файлов.
+      properties:
+        text:
+          type: string
+      required:
+        - text
+
+    Token:
+      type: string
+      description: Telegram-токен бота, полученный через @BotFather. Должен быть уникальным для всех ботов.
+      example: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+
+    PlainError:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Сообщение об ошибке.
+          example: some error message
+      required:
+        - message
+
+    ValidationError:
+      type: array
+      items:
+        $ref: '#/components/schemas/ValidationErrorDetail'
+
+    ValidationErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+          description: Название поля, вызвавшего ошибку валидации.
+          example: scriptID
+        code:
+          type: string
+          description: Код ошибки валидации для данного поля.
+          example: script-id-required
+        message:
+          type: string
+          description: Сообщение об ошибке валидации для данного поля.
+          example: scriptID is required
+      required:
+        - field
+        - code
+        - message

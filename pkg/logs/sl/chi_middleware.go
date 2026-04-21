@@ -1,6 +1,7 @@
 package sl
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -28,7 +29,7 @@ func (m *chiLoggerMiddleware) NewLogEntry(r *http.Request) middleware.LogEntry {
 	)
 	log.InfoContext(r.Context(), "request started")
 
-	return &chiLoggerEntry{log: log}
+	return &chiLoggerEntry{log: log, ctx: r.Context()}
 }
 
 func (m *chiLoggerMiddleware) GetLogEntry(r *http.Request) middleware.LogEntry {
@@ -38,6 +39,7 @@ func (m *chiLoggerMiddleware) GetLogEntry(r *http.Request) middleware.LogEntry {
 
 type chiLoggerEntry struct {
 	log *slog.Logger
+	ctx context.Context
 }
 
 func (l *chiLoggerEntry) Write(status, bytes int, _ http.Header, elapsed time.Duration, _ interface{}) {
@@ -55,4 +57,10 @@ func (l *chiLoggerEntry) Panic(v interface{}, stack []byte) {
 		slog.String("stack", string(stack)),
 		slog.String("panic", fmt.Sprintf("%+v", v)),
 	)
+	// Log the panic immediately so Recoverer output is visible in logs
+	if l.ctx != nil {
+		l.log.ErrorContext(l.ctx, "panic recovered")
+	} else {
+		l.log.Error("panic recovered")
+	}
 }

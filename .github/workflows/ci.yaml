@@ -1,0 +1,60 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run Unit Tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+
+      - name: Run tests
+        run: go test -v -short -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.out
+          fail_ci_if_error: false
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy to production
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          EXTERNAL_HTTP_PORT: ${{ vars.EXTERNAL_HTTP_PORT }}
+          PGSSLROOTCERT: ${{ vars.PGSSLROOTCERT }}
+          IR_POSTGRES_URI: ${{ secrets.IR_POSTGRES_URI }}
+          IR_JWT_SECRET: ${{ secrets.IR_JWT_SECRET }}
+          IR_HTTP_CORS_ALLOW_ORIGINS: ${{ vars.IR_HTTP_CORS_ALLOW_ORIGINS }}
+          IR_PROXY_URL: ${{ secrets.IR_PROXY_URL }}
+        with:
+          host: ${{ vars.SSH_HOST }}
+          port: ${{ vars.SSH_PORT }}
+          username: ${{ vars.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          envs: EXTERNAL_HTTP_PORT,PGSSLROOTCERT,IR_POSTGRES_URI,IR_JWT_SECRET,IR_HTTP_CORS_ALLOW_ORIGINS,IR_PROXY_URL
+          script: |
+            cd ${{ vars.PROJECT_DIR }}
+            git stash
+            git checkout main
+            git pull origin main
+            docker compose --env-file=.env up --build -d

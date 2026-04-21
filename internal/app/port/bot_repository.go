@@ -2,14 +2,21 @@ package port
 
 import (
 	"context"
+	"errors"
 
-	"github.com/bmstu-itstech/itsreg-bots/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+)
+
+var (
+	ErrBotNotFound        = errors.New("bot not found")
+	ErrBotAlreadyExists   = errors.New("bot already exists")
+	ErrTokenAlreadyExists = errors.New("token already exists")
 )
 
 type BotRepository interface {
-	// UpsertBot создаёт нового бота или обновляет существующий с данным botID.
-	UpsertBot(ctx context.Context, bot *bots.Bot) error
-	DeleteBot(ctx context.Context, id bots.BotID) error
+	Bot(ctx context.Context, id bots.BotID) (*bots.Bot, error)
+	BotsByOwnerID(ctx context.Context, ownerID bots.UserID) ([]*bots.Bot, error)
 
-	BotProvider
+	SaveBot(ctx context.Context, bot *bots.Bot) error
+	UpdateBot(ctx context.Context, bot *bots.Bot) error
 }

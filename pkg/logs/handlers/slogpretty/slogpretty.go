@@ -82,6 +82,7 @@ func (h *PrettyHandler) Handle(_ context.Context, r slog.Record) error {
 }
 
 func (h *PrettyHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	attrs = append(h.attrs, attrs...)
 	return &PrettyHandler{
 		Handler: h.Handler,
 		l:       h.l,
