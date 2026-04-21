@@ -65,7 +65,7 @@ docker-compose up
    
 2. Поднять PostgreSQL и применить миграции:
    ```bash
-   docker compose --env-file .env up -d postgres
+   docker compose --env-file .env up -d db
    docker compose --env-file .env run --rm migrate
    ```
 
