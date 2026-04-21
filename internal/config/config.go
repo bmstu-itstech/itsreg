@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/spf13/viper"
 )
@@ -43,8 +42,7 @@ type RateLimiter struct {
 }
 
 type JWT struct {
-	Secret    string        `mapstructure:"secret"`
-	AccessTTL time.Duration `mapstructure:"access_ttl"`
+	Secret string `mapstructure:"secret"`
 }
 
 func Load(path string) (*Config, error) {

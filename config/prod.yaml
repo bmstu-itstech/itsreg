@@ -1,5 +1,5 @@
 http:
-  port: 8400
+  port:
   cors_allow_origins:
   cors_max_age: 300
 
@@ -14,7 +14,7 @@ rate_limit:
   rate: 25.0
 
 logging:
-  level: debug
+  level: info
 
 jwt:
   secret:
