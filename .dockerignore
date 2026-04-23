@@ -5,4 +5,7 @@
 
 storage
 .pgdata
+.cache
+third_party
 
+config

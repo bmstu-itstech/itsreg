@@ -4,10 +4,10 @@ info:
   description: ITS Reg API
   version: 3.0.0
 servers:
-  - url: "{url}/api/v3"
+  - url: "{addr}/api/v3"
     variables:
-      url:
-        default: http://localhost:8400
+      addr:
+        default: https://itsreg.itsbmstu.ru
         description: >
           Протокол + адрес сервера + порт (если требуется).
           Без trailing / в конце. Пример: http://localhost:8000.
