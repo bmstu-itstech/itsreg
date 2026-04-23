@@ -81,7 +81,7 @@ func main() {
 
 	mustSubscribe(bus, "run.start_requested", a.Events.StartOnRunStartRequested)
 	mustSubscribe(bus, "run.recover_requested", a.Events.StartOnRunRecoverRequested)
-	mustSubscribe(bus, "run.stop_requsted", a.Events.StopOnRunStopRequested)
+	mustSubscribe(bus, "run.stop_requested", a.Events.StopOnRunStopRequested)
 	mustSubscribe(bus, "message.send_requested", a.Events.SendOnSendMessageRequested)
 
 	// Восстановление состояние
