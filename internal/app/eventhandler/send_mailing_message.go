@@ -51,7 +51,7 @@ func (h *SendMailingMessageHandler) Handle(ctx context.Context, _ev event.Event)
 		return err
 	}
 
-	bot, err := h.bmp.BotMeta(ctx, ev.BotID)
+	bot, err := h.bmp.BotMeta(ctx, mailing.BotID())
 	if err != nil {
 		l.ErrorContext(ctx, "failed to fetch bot", slog.String("error", err.Error()))
 		return err
@@ -66,9 +66,7 @@ func (h *SendMailingMessageHandler) Handle(ctx context.Context, _ev event.Event)
 
 	err = h.ms.Send(ctx, token, ev.UserID, ev.Message)
 	if err != nil {
-		if err2 := mailing.MessageFailed(ev.UserID, err.Error()); err2 != nil {
-			l.ErrorContext(ctx, "failed to mark message sending as failed", slog.String("error", err2.Error()))
-		}
+		h.messageFailed(ctx, l, mailing, ev.UserID, err)
 
 		if errors.Is(err, port.ErrUserBlockedBot) {
 			l.InfoContext(ctx, "user blocked the bot")
@@ -101,8 +99,9 @@ func (h *SendMailingMessageHandler) Handle(ctx context.Context, _ev event.Event)
 }
 
 func (h *SendMailingMessageHandler) rateLimitWait(ctx context.Context, token bots.Token) error {
+	now := time.Now()
 	for {
-		wait, err := h.rl.Wait(ctx, token, time.Now())
+		wait, err := h.rl.Wait(ctx, token, now)
 		if err != nil {
 			return err
 		}
@@ -117,7 +116,21 @@ func (h *SendMailingMessageHandler) rateLimitWait(ctx context.Context, token bot
 			timer.Stop()
 			return ctx.Err()
 		case <-timer.C:
-			return nil
+			now = time.Now()
 		}
+	}
+}
+
+func (h *SendMailingMessageHandler) messageFailed(
+	ctx context.Context, l *slog.Logger, m *bots.Mailing, userID bots.UserID, err error,
+) {
+	if err2 := m.MessageFailed(userID, err.Error()); err2 != nil {
+		l.ErrorContext(ctx, "failed to mark message sending as failed", slog.String("error", err2.Error()))
+	}
+
+	if err2 := h.mr.UpdateMailing(ctx, m); err2 != nil {
+		l.ErrorContext(ctx, "failed to update mailing after message sending failure",
+			slog.String("error", err2.Error()),
+		)
 	}
 }

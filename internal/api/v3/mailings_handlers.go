@@ -38,6 +38,10 @@ func (s *Server) CreateMailing(w http.ResponseWriter, r *http.Request) {
 		renderValidationError(w, r, vErr)
 		return
 	}
+	if errors.Is(err, port.ErrBotNotFound) {
+		renderPlainError(w, r, err, http.StatusUnprocessableEntity)
+		return
+	}
 	if errors.Is(err, port.ErrMailingAlreadyExists) {
 		renderPlainError(w, r, err, http.StatusConflict)
 		return
@@ -111,7 +115,7 @@ func (s *Server) GetBotMailings(w http.ResponseWriter, r *http.Request, botID st
 		BotID:   botID,
 		Status:  (*string)(params.Status),
 	})
-	if errors.Is(err, port.ErrMailingNotFound) {
+	if errors.Is(err, port.ErrBotNotFound) {
 		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}

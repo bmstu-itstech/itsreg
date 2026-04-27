@@ -4,10 +4,11 @@ package hlpr
 func GroupBy[K comparable, V any](ts []V, key func(v V) K) map[K][]V {
 	res := make(map[K][]V)
 	for _, t := range ts {
-		if _, ok := res[key(t)]; !ok {
-			res[key(t)] = make([]V, 0, 1)
+		k := key(t)
+		if _, ok := res[k]; !ok {
+			res[k] = make([]V, 0, 1)
 		}
-		res[key(t)] = append(res[key(t)], t)
+		res[k] = append(res[k], t)
 	}
 	return res
 }

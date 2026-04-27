@@ -902,6 +902,7 @@ components:
         - starting
         - active
         - failed
+        - stopping
         - stopped
 
     Mailing:
