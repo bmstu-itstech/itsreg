@@ -37,7 +37,7 @@ func NewLogger(env string) *slog.Logger {
 		}.NewPrettyHandler(os.Stdout)
 	}
 
-	handler = slogcontext.NewChiHandler(handler)
+	handler = slogcontext.NewContextHandler(handler)
 	log = slog.New(handler)
 
 	return log

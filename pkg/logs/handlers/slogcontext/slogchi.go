@@ -11,7 +11,7 @@ type ContextHandler struct {
 	slog.Handler
 }
 
-func NewChiHandler(handler slog.Handler) *ContextHandler {
+func NewContextHandler(handler slog.Handler) *ContextHandler {
 	return &ContextHandler{Handler: handler}
 }
 
