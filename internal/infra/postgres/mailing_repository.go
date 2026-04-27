@@ -26,7 +26,7 @@ func (r *Repository) Mailing(ctx context.Context, id bots.MailingID) (*bots.Mail
 
 		rRecs, err := r.selectMailingRecipientsByMailingIDRows(ctx, tx, rMailing.ID)
 		if err != nil {
-			return fmt.Errorf("selectMailingResultsByMailingIDRows: %w", err)
+			return fmt.Errorf("selectMailingRecipientsByMailingIDRows: %w", err)
 		}
 
 		rRes, err := r.selectMailingResultsByMailingIDRows(ctx, tx, rMailing.ID)

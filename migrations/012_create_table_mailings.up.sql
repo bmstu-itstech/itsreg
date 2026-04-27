@@ -51,6 +51,9 @@ ALTER TABLE mailing_results
             ON DELETE CASCADE,
     ADD CONSTRAINT fk_mailing_results_user_id_users
         FOREIGN KEY (user_id) REFERENCES users (id)
+            ON DELETE CASCADE,
+    ADD CONSTRAINT fk_mailing_results_mailing_id_user_id_mailing_recipients
+        FOREIGN KEY (mailing_id, user_id) REFERENCES mailing_recipients (mailing_id, user_id)
             ON DELETE CASCADE;
 
 ALTER TABLE mailings

@@ -62,6 +62,7 @@ func main() {
 		InstanceManager:      instanceManager,
 		MailingRepository:    repos,
 		MessageSender:        sender,
+		OwnedMailingProvider: repos,
 		OwnedRunProvider:     repos,
 		RateLimiter:          rateLimiter,
 		RunRepository:        repos,

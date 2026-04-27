@@ -81,7 +81,7 @@ func (h *CreateMailingHandler) Handle(ctx context.Context, req CreateMailingRequ
 	err = h.mr.SaveMailing(ctx, mailing)
 	if errors.Is(err, port.ErrMailingAlreadyExists) {
 		l.WarnContext(ctx, "mailing already exists", slog.String("error", err.Error()))
-		return CreateMailingResponse{}, nil
+		return CreateMailingResponse{}, err
 	}
 	if err != nil {
 		l.ErrorContext(ctx, "failed to save mailing", slog.String("error", err.Error()))

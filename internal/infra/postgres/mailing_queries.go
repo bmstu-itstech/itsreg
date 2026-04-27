@@ -59,7 +59,6 @@ func (r *Repository) selectMailingsByOwnerIDRows(
 		WHERE
 			b.owner_id = $1
 			AND b.deleted_at IS NULL
-		ORDER BY created_at DESC
 		`,
 	)
 
@@ -74,6 +73,8 @@ func (r *Repository) selectMailingsByOwnerIDRows(
 		args = append(args, *filter.Status)
 		queryBuilder.WriteString(fmt.Sprintf(` AND m.status = $%d`, len(args)))
 	}
+
+	queryBuilder.WriteString(` ORDER BY m.created_at DESC`)
 
 	var rows []mailingRow
 	err := pgutils.Select(ctx, qc, &rows, queryBuilder.String(), args...)

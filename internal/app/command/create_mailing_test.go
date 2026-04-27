@@ -177,18 +177,14 @@ func TestCreateMailingHandler_Handle(t *testing.T) {
 		require.Equal(t, 0, eb.publishCalls)
 	})
 
-	t.Run("mailing already exists is idempotent", func(t *testing.T) {
+	t.Run("mailing already exists", func(t *testing.T) {
 		mr := &createMailingRepositoryStub{saveErr: port.ErrMailingAlreadyExists}
 		bmp := &createMailingBotMetaProviderStub{meta: validBotMeta(42, false)}
 		eb := &createMailingEventBusStub{}
 		h := command.NewCreateMailingHandler(mr, bmp, eb, logger)
 
-		res, err := h.Handle(t.Context(), validCreateMailingRequest())
-		require.NoError(t, err)
-		require.Empty(t, res.MailingID)
-		require.Equal(t, 1, bmp.metaCalls)
-		require.Equal(t, 1, mr.saveCalls)
-		require.Equal(t, 0, eb.publishCalls)
+		_, err := h.Handle(t.Context(), validCreateMailingRequest())
+		require.ErrorIs(t, err, port.ErrMailingAlreadyExists)
 	})
 
 	t.Run("save repository error", func(t *testing.T) {
