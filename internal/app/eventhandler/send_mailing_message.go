@@ -106,7 +106,7 @@ func (h *SendMailingMessageHandler) rateLimitWait(ctx context.Context, token bot
 			return err
 		}
 
-		if wait == 0 {
+		if wait <= 0 {
 			return nil
 		}
 

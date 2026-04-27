@@ -7,6 +7,7 @@ import (
 
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/domain/shared/event"
+	"github.com/bmstu-itstech/itsreg/pkg/reqctx"
 )
 
 type EventBus struct {
@@ -22,7 +23,7 @@ func NewEventBus(l *slog.Logger) *EventBus {
 	}
 }
 
-func (b *EventBus) Publish(_ context.Context, events ...event.Event) error {
+func (b *EventBus) Publish(ctx context.Context, events ...event.Event) error {
 	l := b.logger.With(slog.String("op", "inmemory.EventBus.Publish"))
 
 	for _, ev := range events {
@@ -31,15 +32,18 @@ func (b *EventBus) Publish(_ context.Context, events ...event.Event) error {
 		b.mu.RUnlock()
 
 		for _, h := range handlers {
-			go func() {
+			go func(ctx context.Context, h port.EventHandler, ev event.Event) {
 				innerCtx := context.Background()
+				if reqID, ok := reqctx.FromContext(ctx); ok {
+					innerCtx = reqctx.WithRequestID(innerCtx, reqID)
+				}
 				if err := h.Handle(innerCtx, ev); err != nil {
 					l.ErrorContext(innerCtx, "failed to handle event",
 						slog.String("event_name", ev.EventName()),
 						slog.String("error", err.Error()),
 					)
 				}
-			}()
+			}(ctx, h, ev)
 		}
 	}
 	return nil

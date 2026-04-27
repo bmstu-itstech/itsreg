@@ -25,6 +25,7 @@ import (
 	"github.com/bmstu-itstech/itsreg/internal/infra/telegram"
 	"github.com/bmstu-itstech/itsreg/pkg/logs"
 	"github.com/bmstu-itstech/itsreg/pkg/logs/sl"
+	"github.com/bmstu-itstech/itsreg/pkg/reqctx"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -137,6 +138,8 @@ func main() {
 
 func setupRouter(root *chi.Mux, l *slog.Logger, cfg config.HTTP, ts port.TokenService) {
 	root.Use(middleware.RealIP)
+	root.Use(middleware.RequestID)
+	root.Use(reqctx.ChiRequestID)
 	root.Use(sl.NewLoggerMiddleware(l))
 	root.Use(middleware.Recoverer)
 	corsMiddleware := cors.New(cors.Options{
