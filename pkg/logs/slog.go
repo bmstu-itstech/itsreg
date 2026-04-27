@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/bmstu-itstech/itsreg/pkg/logs/handlers/slogcontext"
 	"github.com/bmstu-itstech/itsreg/pkg/logs/handlers/slogpretty"
 )
 
@@ -16,30 +17,28 @@ const (
 func NewLogger(env string) *slog.Logger {
 	var log *slog.Logger
 
+	var handler slog.Handler
 	switch env {
 	case envProd:
-		log = slog.New(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-				Level: slog.LevelInfo,
-			}),
-		)
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		})
 	case envLocal, envDev:
-		log = slog.New(
-			slogpretty.PrettyHandlerOptions{
-				SlogOpts: &slog.HandlerOptions{
-					Level: slog.LevelDebug,
-				},
-			}.NewPrettyHandler(os.Stdout),
-		)
+		handler = slogpretty.PrettyHandlerOptions{
+			SlogOpts: &slog.HandlerOptions{
+				Level: slog.LevelDebug,
+			},
+		}.NewPrettyHandler(os.Stdout)
 	default:
-		log = slog.New(
-			slogpretty.PrettyHandlerOptions{
-				SlogOpts: &slog.HandlerOptions{
-					Level: slog.LevelDebug,
-				},
-			}.NewPrettyHandler(os.Stdout),
-		)
+		handler = slogpretty.PrettyHandlerOptions{
+			SlogOpts: &slog.HandlerOptions{
+				Level: slog.LevelDebug,
+			},
+		}.NewPrettyHandler(os.Stdout)
 	}
+
+	handler = slogcontext.NewContextHandler(handler)
+	log = slog.New(handler)
 
 	return log
 }
