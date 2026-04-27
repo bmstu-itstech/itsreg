@@ -16,6 +16,16 @@ services:
     volumes:
       - ./config:/etc/app:ro
       - ${PGSSLROOTCERT}:/certs:ro
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+        loki-batch-size: "100"
+        loki-retries: 2
+        loki-max-backoff: 1000ms
+        loki-timeout: 1s
+    networks:
+      - internal
 
   migrate:
     image: migrate/migrate
@@ -29,3 +39,16 @@ services:
     volumes:
       - ./migrations:/migrations:ro
       - ${PGSSLROOTCERT}:/certs:ro
+
+  loki:
+    hostname: loki
+    image: grafana/loki:latest
+    ports:
+      - "${EXTERNAL_LOKI_PORT:-3100}:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
