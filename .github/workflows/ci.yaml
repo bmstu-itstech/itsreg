@@ -40,6 +40,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           EXTERNAL_HTTP_PORT: ${{ vars.EXTERNAL_HTTP_PORT }}
+          EXTERNAL_LOKI_PORT: ${{ vars.EXTERNAL_LOKI_PORT }}
           PGSSLROOTCERT: ${{ vars.PGSSLROOTCERT }}
           IR_POSTGRES_URI: ${{ secrets.IR_POSTGRES_URI }}
           IR_JWT_SECRET: ${{ secrets.IR_JWT_SECRET }}
@@ -51,7 +52,7 @@ jobs:
           username: ${{ vars.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script_stop: true
-          envs: EXTERNAL_HTTP_PORT,PGSSLROOTCERT,IR_POSTGRES_URI,IR_JWT_SECRET,IR_HTTP_CORS_ALLOW_ORIGINS,IR_PROXY_URL
+          envs: EXTERNAL_HTTP_PORT,EXTERNAL_LOKI_PORT,PGSSLROOTCERT,IR_POSTGRES_URI,IR_JWT_SECRET,IR_HTTP_CORS_ALLOW_ORIGINS,IR_PROXY_URL
           script: |
             cd ${{ vars.PROJECT_DIR }}
             git stash
