@@ -2,7 +2,7 @@ package postgres
 
 import "time"
 
-type getRunsFilter struct {
+type selectRunsFilter struct {
 	BotID  *string
 	Status *string
 }

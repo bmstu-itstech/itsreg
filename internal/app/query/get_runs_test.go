@@ -59,8 +59,8 @@ func TestGetRunsHandler_Handle(t *testing.T) {
 		botID := "b0001"
 		repo := &getRunsRepositoryStub{
 			runs: []*bots.Run{
-				mustRestoreRun(t, "r0001", "b0001", bots.StatusFailed),
-				mustRestoreRun(t, "r0002", "b0001", bots.StatusActive),
+				mustRestoreRun(t, "r0001", "b0001", bots.RunStatusFailed),
+				mustRestoreRun(t, "r0002", "b0001", bots.RunStatusActive),
 			},
 		}
 		h := query.NewGetRunsHandler(repo, logger)
@@ -71,7 +71,7 @@ func TestGetRunsHandler_Handle(t *testing.T) {
 		require.Equal(t, 1, repo.calls)
 		require.Equal(t, bots.UserID(10), repo.gotOwnerID)
 		require.NotNil(t, repo.gotFilter.Status)
-		require.Equal(t, bots.StatusFailed, *repo.gotFilter.Status)
+		require.Equal(t, bots.RunStatusFailed, *repo.gotFilter.Status)
 		require.NotNil(t, repo.gotFilter.BotID)
 		require.Equal(t, bots.BotID("b0001"), *repo.gotFilter.BotID)
 
@@ -84,7 +84,7 @@ func TestGetRunsHandler_Handle(t *testing.T) {
 	})
 
 	t.Run("without filters passes empty filter", func(t *testing.T) {
-		repo := &getRunsRepositoryStub{runs: []*bots.Run{mustRestoreRun(t, "r0003", "b0002", bots.StatusStarting)}}
+		repo := &getRunsRepositoryStub{runs: []*bots.Run{mustRestoreRun(t, "r0003", "b0002", bots.RunStatusStarting)}}
 		h := query.NewGetRunsHandler(repo, logger)
 
 		res, err := h.Handle(t.Context(), query.GetRunsRequest{ActorID: 77})
@@ -120,12 +120,12 @@ func TestGetRunsHandler_Handle(t *testing.T) {
 		require.Equal(t, 1, repo.calls)
 		require.Equal(t, bots.UserID(12), repo.gotOwnerID)
 		require.NotNil(t, repo.gotFilter.Status)
-		require.Equal(t, bots.StatusActive, *repo.gotFilter.Status)
+		require.Equal(t, bots.RunStatusActive, *repo.gotFilter.Status)
 		require.Nil(t, repo.gotFilter.BotID)
 	})
 }
 
-func mustRestoreRun(t *testing.T, id string, botID string, status bots.Status) *bots.Run {
+func mustRestoreRun(t *testing.T, id string, botID string, status bots.RunStatus) *bots.Run {
 	t.Helper()
 
 	startedAt := time.Date(2026, 4, 11, 10, 30, 0, 0, time.UTC)

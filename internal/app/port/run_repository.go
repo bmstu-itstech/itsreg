@@ -14,7 +14,7 @@ var (
 
 type RunsFilter struct {
 	BotID  *bots.BotID
-	Status *bots.Status
+	Status *bots.RunStatus
 }
 
 type RunRepository interface {

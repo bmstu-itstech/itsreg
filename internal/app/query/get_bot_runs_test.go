@@ -74,8 +74,8 @@ func TestGetBotRunsHandler_Handle(t *testing.T) {
 		status := "active"
 		repo := &getBotRunsRepositoryStub{
 			runs: []*bots.Run{
-				mustRestoreRun(t, "r0001", "b0001", bots.StatusActive),
-				mustRestoreRun(t, "r0002", "b0001", bots.StatusFailed),
+				mustRestoreRun(t, "r0001", "b0001", bots.RunStatusActive),
+				mustRestoreRun(t, "r0002", "b0001", bots.RunStatusFailed),
 			},
 		}
 		bmp := &botMetaProviderStub{meta: dto.BotMeta{ID: "b0001"}}
@@ -91,7 +91,7 @@ func TestGetBotRunsHandler_Handle(t *testing.T) {
 		require.NotNil(t, repo.gotFilter.BotID)
 		require.Equal(t, bots.BotID("b0001"), *repo.gotFilter.BotID)
 		require.NotNil(t, repo.gotFilter.Status)
-		require.Equal(t, bots.StatusActive, *repo.gotFilter.Status)
+		require.Equal(t, bots.RunStatusActive, *repo.gotFilter.Status)
 
 		require.Len(t, res, 2)
 		require.Equal(t, "r0001", res[0].ID)
@@ -100,7 +100,9 @@ func TestGetBotRunsHandler_Handle(t *testing.T) {
 	})
 
 	t.Run("without status passes bot id only", func(t *testing.T) {
-		repo := &getBotRunsRepositoryStub{runs: []*bots.Run{mustRestoreRun(t, "r0003", "b0003", bots.StatusStarting)}}
+		repo := &getBotRunsRepositoryStub{
+			runs: []*bots.Run{mustRestoreRun(t, "r0003", "b0003", bots.RunStatusStarting)},
+		}
 		bmp := &botMetaProviderStub{meta: dto.BotMeta{ID: "b0003"}}
 		h := query.NewGetBotRunsHandler(repo, bmp, logger)
 
@@ -170,6 +172,6 @@ func TestGetBotRunsHandler_Handle(t *testing.T) {
 		require.NotNil(t, repo.gotFilter.BotID)
 		require.Equal(t, bots.BotID("b0001"), *repo.gotFilter.BotID)
 		require.NotNil(t, repo.gotFilter.Status)
-		require.Equal(t, bots.StatusFailed, *repo.gotFilter.Status)
+		require.Equal(t, bots.RunStatusFailed, *repo.gotFilter.Status)
 	})
 }

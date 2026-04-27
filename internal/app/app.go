@@ -10,32 +10,38 @@ import (
 )
 
 type Commands struct {
-	CreateBot    *command.CreateBotHandler
-	CreateRun    *command.CreateRunHandler
-	CreateScript *command.CreateScriptHandler
-	DeleteBot    *command.DeleteBotHandler
-	DeleteScript *command.DeleteScriptHandler
-	Entry        *command.EntryHandler
-	Process      *command.ProcessHandler
-	StopRun      *command.StopRunHandler
-	UpdateBot    *command.UpdateBotHandler
-	UpdateScript *command.UpdateScriptHandler
+	CreateBot     *command.CreateBotHandler
+	CreateMailing *command.CreateMailingHandler
+	CreateRun     *command.CreateRunHandler
+	CreateScript  *command.CreateScriptHandler
+	DeleteBot     *command.DeleteBotHandler
+	DeleteScript  *command.DeleteScriptHandler
+	Entry         *command.EntryHandler
+	Process       *command.ProcessHandler
+	StopRun       *command.StopRunHandler
+	UpdateBot     *command.UpdateBotHandler
+	UpdateScript  *command.UpdateScriptHandler
 }
 
 type Queries struct {
-	GetBot     *query.GetBotHandler
-	GetBotRuns *query.GetBotRunsHandler
-	GetBots    *query.GetBotsHandler
-	GetRun     *query.GetRunHandler
-	GetRuns    *query.GetRunsHandler
-	GetScript  *query.GetScriptHandler
-	GetScripts *query.GetScriptsHandler
+	GetBot         *query.GetBotHandler
+	GetBotMailings *query.GetBotMailingsHandler
+	GetBotRuns     *query.GetBotRunsHandler
+	GetBots        *query.GetBotsHandler
+	GetMailing     *query.GetMailingHandler
+	GetMailings    *query.GetMailingsHandler
+	GetRun         *query.GetRunHandler
+	GetRuns        *query.GetRunsHandler
+	GetScript      *query.GetScriptHandler
+	GetScripts     *query.GetScriptsHandler
 }
 
 type EventHandlers struct {
+	SendMailingMessage         *eventhandler.SendMailingMessageHandler
 	SendOnSendMessageRequested *eventhandler.SendOnSendMessageRequestedHandler
 	StartOnRunStartRequested   *eventhandler.StartOnRunStartRequestedHandler
 	StartOnRunRecoverRequested *eventhandler.StartOnRunRecoverRequestedHandler
+	StartScheduledMailing      *eventhandler.StartScheduledMailingHandler
 	StopOnRunStopRequested     *eventhandler.StopOnRunStopRequestedHandler
 }
 
@@ -50,7 +56,9 @@ type Infra struct {
 	BotRepository        port.BotRepository
 	EventBus             port.EventBus
 	InstanceManager      port.InstanceManager
+	MailingRepository    port.MailingRepository
 	MessageSender        port.MessageSender
+	OwnedMailingProvider port.OwnedMailingProvider
 	OwnedRunProvider     port.OwnedRunProvider
 	RateLimiter          port.RateLimiter
 	RunRepository        port.RunRepository
@@ -64,11 +72,12 @@ type Infra struct {
 func NewApplication(i Infra, l *slog.Logger) *Application {
 	return &Application{
 		Commands: Commands{
-			CreateBot:    command.NewCreateBotHandler(i.BotRepository, i.ScriptMetaProvider, l),
-			CreateRun:    command.NewCreateRunHandler(i.RunRepository, i.BotMetaProvider, i.EventBus, l),
-			CreateScript: command.NewCreateScriptHandler(i.ScriptRepository, l),
-			DeleteBot:    command.NewDeleteBotHandler(i.BotRepository, l),
-			DeleteScript: command.NewDeleteScriptHandler(i.ScriptRepository, l),
+			CreateBot:     command.NewCreateBotHandler(i.BotRepository, i.ScriptMetaProvider, l),
+			CreateMailing: command.NewCreateMailingHandler(i.MailingRepository, i.BotMetaProvider, i.EventBus, l),
+			CreateRun:     command.NewCreateRunHandler(i.RunRepository, i.BotMetaProvider, i.EventBus, l),
+			CreateScript:  command.NewCreateScriptHandler(i.ScriptRepository, l),
+			DeleteBot:     command.NewDeleteBotHandler(i.BotRepository, l),
+			DeleteScript:  command.NewDeleteScriptHandler(i.ScriptRepository, l),
 			Entry: command.NewEntryHandler(
 				i.BotRepository, i.ScriptRepository, i.ThreadRepository, i.UserRepository, i.EventBus, l,
 			),
@@ -80,15 +89,21 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 			UpdateScript: command.NewUpdateScriptHandler(i.ScriptRepository, l),
 		},
 		Queries: Queries{
-			GetBot:     query.NewGetBotHandler(i.BotRepository, l),
-			GetBotRuns: query.NewGetBotRunsHandler(i.RunRepository, i.BotMetaProvider, l),
-			GetBots:    query.NewGetBotsHandler(i.BotRepository, l),
-			GetRun:     query.NewGetRunHandler(i.OwnedRunProvider, l),
-			GetRuns:    query.NewGetRunsHandler(i.RunRepository, l),
-			GetScript:  query.NewGetScriptHandler(i.ScriptRepository, l),
-			GetScripts: query.NewGetScriptsHandler(i.ScriptRepository, l),
+			GetBot:         query.NewGetBotHandler(i.BotRepository, l),
+			GetBotMailings: query.NewGetBotMailingsHandler(i.MailingRepository, i.BotMetaProvider, l),
+			GetBotRuns:     query.NewGetBotRunsHandler(i.RunRepository, i.BotMetaProvider, l),
+			GetBots:        query.NewGetBotsHandler(i.BotRepository, l),
+			GetMailing:     query.NewGetMailingHandler(i.OwnedMailingProvider, l),
+			GetMailings:    query.NewGetMailingsHandler(i.MailingRepository, l),
+			GetRun:         query.NewGetRunHandler(i.OwnedRunProvider, l),
+			GetRuns:        query.NewGetRunsHandler(i.RunRepository, l),
+			GetScript:      query.NewGetScriptHandler(i.ScriptRepository, l),
+			GetScripts:     query.NewGetScriptsHandler(i.ScriptRepository, l),
 		},
 		Events: EventHandlers{
+			SendMailingMessage: eventhandler.NewSendMailingMessageHandler(
+				i.MessageSender, i.MailingRepository, i.BotMetaProvider, i.RateLimiter, i.EventBus, l,
+			),
 			SendOnSendMessageRequested: eventhandler.NewSendOnSendMessageRequestedHandler(
 				i.MessageSender, i.BotMetaProvider, i.RateLimiter, i.EventBus, l,
 			),
@@ -97,6 +112,9 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 			),
 			StartOnRunRecoverRequested: eventhandler.NewStartOnRunRecoverRequestedHandler(
 				i.RunRepository, i.InstanceManager, i.EventBus, l,
+			),
+			StartScheduledMailing: eventhandler.NewStartScheduledMailing(
+				i.MailingRepository, i.ThreadRepository, i.BotMetaProvider, i.ScriptRepository, i.EventBus, l,
 			),
 			StopOnRunStopRequested: eventhandler.NewStopOnRunStopRequestedHandler(
 				i.RunRepository, i.InstanceManager, i.EventBus, l,

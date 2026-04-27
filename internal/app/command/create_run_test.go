@@ -91,7 +91,7 @@ func TestCreateRunHandler_Handle(t *testing.T) {
 		require.NotNil(t, rr.saved)
 		require.Equal(t, bots.BotID("b0001"), rr.saved.BotID())
 		require.Equal(t, bots.Token("token_b0001"), rr.saved.Token())
-		require.Equal(t, bots.StatusStarting, rr.saved.Status())
+		require.Equal(t, bots.RunStatusStarting, rr.saved.Status())
 
 		require.Equal(t, 1, eb.publishCalls)
 		require.Len(t, eb.published, 1)

@@ -14,6 +14,7 @@ import (
 	"github.com/bmstu-itstech/itsreg/internal/app/dto"
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 	"github.com/bmstu-itstech/itsreg/internal/domain/shared/event"
 )
 
@@ -95,7 +96,7 @@ func TestStopRunHandler_Handle(t *testing.T) {
 			"r0001",
 			"b0001",
 			"token_b0001",
-			bots.StatusActive,
+			bots.RunStatusActive,
 			timePtr(time.Date(2026, 4, 11, 10, 30, 0, 0, time.UTC)),
 			nil,
 		)
@@ -113,7 +114,7 @@ func TestStopRunHandler_Handle(t *testing.T) {
 		require.Equal(t, bots.BotID("b0001"), bmp.requestedBotID)
 		require.Equal(t, 1, rr.updateCalls)
 		require.NotNil(t, rr.updated)
-		require.Equal(t, bots.StatusStopping, rr.updated.Status())
+		require.Equal(t, bots.RunStatusStopping, rr.updated.Status())
 		require.Equal(t, 1, eb.publishCalls)
 		require.Len(t, eb.published, 1)
 		require.Equal(t, "run.stop_requested", eb.published[0].EventName())
@@ -154,7 +155,7 @@ func TestStopRunHandler_Handle(t *testing.T) {
 			"r0004",
 			"b0004",
 			"token_b0004",
-			bots.StatusActive,
+			bots.RunStatusActive,
 			timePtr(time.Date(2026, 4, 11, 10, 30, 0, 0, time.UTC)),
 			nil,
 		)
@@ -177,7 +178,7 @@ func TestStopRunHandler_Handle(t *testing.T) {
 			"r0005",
 			"b0005",
 			"token_b0005",
-			bots.StatusActive,
+			bots.RunStatusActive,
 			timePtr(time.Date(2026, 4, 11, 10, 30, 0, 0, time.UTC)),
 			nil,
 		)
@@ -201,7 +202,7 @@ func TestStopRunHandler_Handle(t *testing.T) {
 			"r0006",
 			"b0006",
 			"token_b0006",
-			bots.StatusActive,
+			bots.RunStatusActive,
 			timePtr(time.Date(2026, 4, 11, 10, 30, 0, 0, time.UTC)),
 			nil,
 		)
@@ -224,7 +225,7 @@ func TestStopRunHandler_Handle(t *testing.T) {
 			"r0007",
 			"b0007",
 			"token_b0007",
-			bots.StatusActive,
+			bots.RunStatusActive,
 			timePtr(time.Date(2026, 4, 11, 10, 30, 0, 0, time.UTC)),
 			nil,
 		)
@@ -242,14 +243,14 @@ func TestStopRunHandler_Handle(t *testing.T) {
 	})
 
 	t.Run("illegal state transition", func(t *testing.T) {
-		run := mustRestoreRun(t, "r0008", "b0008", "token_b0008", bots.StatusStarting, nil, nil)
+		run := mustRestoreRun(t, "r0008", "b0008", "token_b0008", bots.RunStatusStarting, nil, nil)
 		rr := &stopRunRepositoryStub{run: run}
 		bmp := &stopRunBotMetaProviderStub{meta: dto.BotMeta{ID: "b0008", OwnerID: 42}}
 		eb := &stopRunEventBusStub{}
 		h := command.NewStopRunHandler(rr, bmp, eb, logger)
 
 		_, err := h.Handle(t.Context(), command.StopRunRequest{ActorID: 42, RunID: "r0008"})
-		require.ErrorIs(t, err, bots.ErrIllegalStateTransition)
+		require.ErrorIs(t, err, shared.ErrIllegalStateTransition)
 		require.Equal(t, 1, rr.runCalls)
 		require.Equal(t, 1, bmp.calls)
 		require.Equal(t, 0, rr.updateCalls)
@@ -262,7 +263,7 @@ func TestStopRunHandler_Handle(t *testing.T) {
 			"r0009",
 			"b0009",
 			"token_b0009",
-			bots.StatusActive,
+			bots.RunStatusActive,
 			timePtr(time.Date(2026, 4, 11, 10, 30, 0, 0, time.UTC)),
 			nil,
 		)
@@ -278,7 +279,7 @@ func TestStopRunHandler_Handle(t *testing.T) {
 		require.Equal(t, 1, bmp.calls)
 		require.Equal(t, 1, rr.updateCalls)
 		require.Equal(t, 0, eb.publishCalls)
-		require.Equal(t, bots.StatusStopping, run.Status())
+		require.Equal(t, bots.RunStatusStopping, run.Status())
 	})
 
 	t.Run("publish error", func(t *testing.T) {
@@ -287,7 +288,7 @@ func TestStopRunHandler_Handle(t *testing.T) {
 			"r0010",
 			"b0010",
 			"token_b0010",
-			bots.StatusActive,
+			bots.RunStatusActive,
 			timePtr(time.Date(2026, 4, 11, 10, 30, 0, 0, time.UTC)),
 			nil,
 		)
@@ -313,7 +314,7 @@ func mustRestoreRun(
 	id string,
 	botID string,
 	token string,
-	status bots.Status,
+	status bots.RunStatus,
 	startedAt *time.Time,
 	stoppedAt *time.Time,
 ) *bots.Run {

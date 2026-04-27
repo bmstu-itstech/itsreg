@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/eventhandler"
@@ -41,7 +42,7 @@ func TestStartOnRunRecoverRequestedHandler_Handle(t *testing.T) {
 
 	t.Run("instance manager start fails and run transitions to failed", func(t *testing.T) {
 		startedAt := time.Date(2026, time.April, 11, 12, 0, 0, 0, time.UTC)
-		run := mustRestoreRun(t, "r0010", "b0010", "token_b0010", bots.StatusActive, &startedAt, nil)
+		run := mustRestoreRun(t, "r0010", "b0010", "token_b0010", bots.RunStatusActive, &startedAt, nil)
 		rr := &runRepositoryStub{runs: map[bots.RunID]*bots.Run{run.ID(): run}}
 		im := &instanceManagerStub{startErr: errors.New("telegram unavailable")}
 		eb := &eventBusStub{}
@@ -52,7 +53,7 @@ func TestStartOnRunRecoverRequestedHandler_Handle(t *testing.T) {
 		require.Equal(t, 1, im.startCalls)
 		require.Equal(t, 1, rr.updateCalls)
 		require.Equal(t, 1, eb.publishCalls)
-		require.Equal(t, bots.StatusFailed, run.Status())
+		require.Equal(t, bots.RunStatusFailed, run.Status())
 		require.Len(t, eb.published, 1)
 		require.Equal(t, "run.failed", eb.published[0].EventName())
 	})
@@ -60,14 +61,14 @@ func TestStartOnRunRecoverRequestedHandler_Handle(t *testing.T) {
 	t.Run("instance manager start fails and run fail transition is invalid", func(t *testing.T) {
 		startedAt := time.Date(2026, time.April, 11, 12, 0, 0, 0, time.UTC)
 		stoppedAt := startedAt.Add(10 * time.Minute)
-		run := mustRestoreRun(t, "r0011", "b0011", "token_b0011", bots.StatusStopped, &startedAt, &stoppedAt)
+		run := mustRestoreRun(t, "r0011", "b0011", "token_b0011", bots.RunStatusStopped, &startedAt, &stoppedAt)
 		rr := &runRepositoryStub{runs: map[bots.RunID]*bots.Run{run.ID(): run}}
 		im := &instanceManagerStub{startErr: errors.New("telegram unavailable")}
 		eb := &eventBusStub{}
 		h := eventhandler.NewStartOnRunRecoverRequestedHandler(rr, im, eb, logger)
 
 		err := h.Handle(t.Context(), bots.RunRecoverRequested{RunID: run.ID(), Time: time.Now()})
-		require.ErrorIs(t, err, bots.ErrIllegalStateTransition)
+		require.ErrorIs(t, err, shared.ErrIllegalStateTransition)
 		require.Equal(t, 1, im.startCalls)
 		require.Equal(t, 0, rr.updateCalls)
 		require.Equal(t, 0, eb.publishCalls)
@@ -75,7 +76,7 @@ func TestStartOnRunRecoverRequestedHandler_Handle(t *testing.T) {
 
 	t.Run("recover success does not update run", func(t *testing.T) {
 		startedAt := time.Date(2026, time.April, 11, 12, 0, 0, 0, time.UTC)
-		run := mustRestoreRun(t, "r0012", "b0012", "token_b0012", bots.StatusActive, &startedAt, nil)
+		run := mustRestoreRun(t, "r0012", "b0012", "token_b0012", bots.RunStatusActive, &startedAt, nil)
 		rr := &runRepositoryStub{runs: map[bots.RunID]*bots.Run{run.ID(): run}}
 		im := &instanceManagerStub{}
 		eb := &eventBusStub{}

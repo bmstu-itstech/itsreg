@@ -184,6 +184,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlainError'
 
+  /bots/{botID}/mailings:
+    get:
+      operationId: getBotMailings
+      tags:
+        - Bots
+        - Mailings
+      description: Получить список всех рассылок бота с указанным ID.
+      parameters:
+        - in: path
+          name: botID
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID бота для получения рассылок.
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/MailingStatus'
+          required: false
+          description: Статус рассылки для фильтрации. Если не указан, возвращаются рассылки всех статусов.
+      responses:
+        "200":
+          description: Рассылки бота успешно получены.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mailing'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
   /bots/{botID}/runs:
     post:
       operationId: createRun
@@ -242,7 +285,7 @@ paths:
         - in: query
           name: status
           schema:
-            $ref: '#/components/schemas/Status'
+            $ref: '#/components/schemas/RunStatus'
           required: false
           description: Статус запуска для фильтрации. Если не указан, возвращаются запуски всех статусов.
       responses:
@@ -267,6 +310,115 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlainError'
 
+  /mailings:
+    post:
+      operationId: createMailing
+      tags:
+        - Mailings
+      description: Запланировать рассылку для бота с указанным ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMailingRequest'
+      responses:
+        "201":
+          description: Рассылка успешно запланирована.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateMailingResponse'
+        "400":
+          description: Данные для создания рассылки невалидны.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PlainError'
+                  - $ref: '#/components/schemas/ValidationError'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Бот не существует или недоступен пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+    get:
+      operationId: getMailings
+      tags:
+        - Mailings
+      description: Получить список всех рассылок, доступных пользователю.
+      parameters:
+        - in: query
+          name: botID
+          schema:
+            type: string
+            example: 123abc
+          required: false
+          description: ID бота для фильтрации рассылок. Если не указан, возвращаются рассылки всех ботов пользователя.
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/MailingStatus'
+          required: false
+          description: Статус рассылки для фильтрации. Если не указан, возвращаются рассылки всех статусов.
+      responses:
+        "200":
+          description: Рассылки успешно получены.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mailing'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
+  /mailings/{id}:
+    get:
+      operationId: getMailing
+      tags:
+        - Mailings
+      description: Получить информацию о рассылке с указанным ID.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            example: 123abc
+          required: true
+          description: Уникальный ID рассылки.
+      responses:
+        "200":
+          description: Рассылка успешно найдена.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mailing'
+        "401":
+          description: Не был указан JWT токен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+        "404":
+          description: Рассылка не существует или недоступна пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlainError'
+
   /runs:
     get:
       operationId: getRuns
@@ -284,7 +436,7 @@ paths:
         - in: query
           name: status
           schema:
-            $ref: '#/components/schemas/Status'
+            $ref: '#/components/schemas/RunStatus'
           required: false
           description: Статус запуска для фильтрации. Если не указан, возвращаются запуски всех статусов.
       responses:
@@ -557,6 +709,31 @@ components:
         - token
         - desc
 
+    CreateMailingRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Человекочитаемое название рассылки.
+        botID:
+          type: string
+          description: ID бота, для которого будет запланирована рассылка.
+          example: 123abc
+        entryKey:
+          type: string
+          description: Ключ точки входа сценария бота, которая будет вызвана в рассылке.
+        recipients:
+          type: array
+          description: Массив ID пользователей, которым будет отправлена рассылка.
+          items:
+            type: integer
+            format: int64
+      required:
+        - name
+        - botID
+        - entryKey
+        - recipients
+
     CreateScriptRequest:
       type: object
       properties:
@@ -600,6 +777,16 @@ components:
           example: 123abc
       required:
         - botID
+
+    CreateMailingResponse:
+      type: object
+      properties:
+        mailingID:
+          type: string
+          description: Уникальный ID рассылки.
+          example: 123abc
+      required:
+        - mailingID
 
     CreateRunResponse:
       type: object
@@ -691,7 +878,7 @@ components:
           description: ID бота, который был запущен.
           example: 123abc
         status:
-          $ref: '#/components/schemas/Status'
+          $ref: '#/components/schemas/RunStatus'
         errorMsg:
           type: string
           description: Сообщение об ошибке, если статус запуска failed.
@@ -708,7 +895,7 @@ components:
         - botID
         - status
 
-    Status:
+    RunStatus:
       type: string
       description: Статус бота.
       enum:
@@ -716,6 +903,102 @@ components:
         - active
         - failed
         - stopped
+
+    Mailing:
+      type: object
+      description: Сущность, обозначающая запланированную или уже выполненную рассылку.
+      properties:
+        id:
+          type: string
+          description: Уникальный ID рассылки.
+          example: 123abc
+        botID:
+          type: string
+          description: ID бота, для которого была запланирована рассылка.
+          example: 123abc
+        name:
+          type: string
+          description: Человекочитаемое название рассылки.
+        entryKey:
+          type: string
+          description: Ключ точки входа сценария бота, которая будет вызвана в рассылке.
+        status:
+          $ref: '#/components/schemas/MailingStatus'
+        recipients:
+          type: array
+          description: Массив ID пользователей, которым будет отправлена рассылка.
+          items:
+            type: integer
+            format: int64
+        results:
+          type: array
+          description: Массив результатов рассылки для каждого пользователя. Заполняется по мере выполнения рассылки.
+          items:
+            $ref: '#/components/schemas/UserMailingResult'
+        successCount:
+          type: integer
+          description: Количество успешных отправок рассылки пользователям.
+        failCount:
+          type: integer
+          description: Количество неудачных отправок рассылки пользователям.
+        pendingCount:
+          type: integer
+          description: Количество отправок рассылки пользователям, которые ещё не были завершены.
+        totalCount:
+          type: integer
+          description: Общее количество пользователей в рассылке.
+        createdAt:
+          type: string
+          format: date-time
+          description: Метка времени создания рассылки.
+        startedAt:
+          type: string
+          format: date-time
+          description: Метка времени начала рассылки.
+        completedAt:
+          type: string
+          format: date-time
+          description: Метка времени завершения рассылки.
+      required:
+        - id
+        - botID
+        - name
+        - entryKey
+        - status
+        - recipients
+        - results
+        - successCount
+        - failCount
+        - pendingCount
+        - totalCount
+        - createdAt
+
+    MailingStatus:
+      type: string
+      description: Статус рассылки.
+      enum:
+        - scheduled
+        - started
+        - completed
+        - failed
+
+    UserMailingResult:
+      type: object
+      description: Результат рассылки для одного пользователя.
+      properties:
+        userID:
+          type: integer
+          format: int64
+          description: ID пользователя, которому была отправлена рассылка.
+        success:
+          type: boolean
+          description: Успешность отправки рассылки пользователю.
+        errorMsg:
+          type: string
+          description: Сообщение об ошибке, если отправка рассылки пользователю не удалась.
+      required:
+        - userID
+        - success
 
     Script:
       type: object

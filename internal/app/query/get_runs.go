@@ -37,7 +37,7 @@ func (h *GetRunsHandler) Handle(ctx context.Context, req GetRunsRequest) (GetRun
 
 	var filter port.RunsFilter
 	if req.Status != nil {
-		status, err := bots.StatusFromString(*req.Status)
+		status, err := bots.RunStatusFromString(*req.Status)
 		if err != nil {
 			l.InfoContext(ctx, "invalid status filter", slog.String("error", err.Error()))
 			return GetRunsResponse{}, nil
