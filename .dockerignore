@@ -1,11 +1,19 @@
+Dockerfile
+README.md
+config
+docker-compose.yaml
+docker-compose.ci.yaml
+
 .env*
 
 .idea/
 .vscode/
+.github/
+.pgdata/
+.cache/
+
+.gitignore
+.golangci.yaml
 
 storage
-.pgdata
-.cache
 third_party
-
-config

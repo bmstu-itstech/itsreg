@@ -48,7 +48,10 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - internal
+      - observability
 
 networks:
   internal:
     driver: bridge
+  observability:
+    external: true
