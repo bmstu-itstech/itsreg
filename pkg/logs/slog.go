@@ -13,27 +13,15 @@ const (
 	envProd  = "prod"
 )
 
-var defaultLogger *slog.Logger
-
-func DefaultLogger() *slog.Logger {
-	if defaultLogger == nil {
-		env := os.Getenv("APP_ENV")
-		defaultLogger = NewLogger(env)
-	}
-	return defaultLogger
-}
-
 func NewLogger(env string) *slog.Logger {
 	var log *slog.Logger
 
 	switch env {
 	case envProd:
 		log = slog.New(
-			slogpretty.PrettyHandlerOptions{
-				SlogOpts: &slog.HandlerOptions{
-					Level: slog.LevelInfo,
-				},
-			}.NewPrettyHandler(os.Stdout),
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+				Level: slog.LevelInfo,
+			}),
 		)
 	case envLocal, envDev:
 		log = slog.New(

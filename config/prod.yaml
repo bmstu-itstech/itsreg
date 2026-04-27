@@ -14,7 +14,7 @@ rate_limit:
   rate: 25.0
 
 logging:
-  level: info
+  level: prod
 
 jwt:
   secret:

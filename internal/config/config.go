@@ -25,7 +25,8 @@ type HTTP struct {
 }
 
 type Logging struct {
-	Level string `mapstructure:"level"`
+	Level  string `mapstructure:"level"`
+	Format string `mapstructure:"format"`
 }
 
 type Proxy struct {
