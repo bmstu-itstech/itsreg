@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
@@ -41,7 +42,7 @@ func TestNewRun(t *testing.T) {
 			require.NotNil(t, run)
 			require.Equal(t, tt.botID, run.BotID())
 			require.Equal(t, tt.token, run.Token())
-			require.Equal(t, bots.StatusStarting, run.Status())
+			require.Equal(t, bots.RunStatusStarting, run.Status())
 			require.Nil(t, run.ErrorMsg())
 			require.Nil(t, run.StartedAt())
 			require.Nil(t, run.StoppedAt())
@@ -63,7 +64,7 @@ func TestRestoreRun(t *testing.T) {
 		id        bots.RunID
 		botID     bots.BotID
 		token     bots.Token
-		status    bots.Status
+		status    bots.RunStatus
 		errorMsg  *string
 		startedAt *time.Time
 		stoppedAt *time.Time
@@ -75,7 +76,7 @@ func TestRestoreRun(t *testing.T) {
 			id:        bots.RunID("r00001"),
 			botID:     bots.BotID("b0001"),
 			token:     bots.Token("token:b0001"),
-			status:    bots.StatusActive,
+			status:    bots.RunStatusActive,
 			startedAt: &startedAt,
 		},
 		{
@@ -83,7 +84,7 @@ func TestRestoreRun(t *testing.T) {
 			id:        bots.RunID("r00002"),
 			botID:     bots.BotID("b0002"),
 			token:     bots.Token("token:b0002"),
-			status:    bots.StatusFailed,
+			status:    bots.RunStatusFailed,
 			errorMsg:  &msg,
 			startedAt: &startedAt,
 			stoppedAt: &stoppedAt,
@@ -93,21 +94,21 @@ func TestRestoreRun(t *testing.T) {
 			id:     bots.RunID("r00003"),
 			botID:  bots.BotID("b0003"),
 			token:  bots.Token("token:b0003"),
-			status: bots.StatusStarting,
+			status: bots.RunStatusStarting,
 		},
 		{
 			name:      "valid stopping run",
 			id:        bots.RunID("r000035"),
 			botID:     bots.BotID("b00035"),
 			token:     bots.Token("token:b00035"),
-			status:    bots.StatusStopping,
+			status:    bots.RunStatusStopping,
 			startedAt: &startedAt,
 		},
 		{
 			name:      "zero run id",
 			botID:     bots.BotID("b0001"),
 			token:     bots.Token("token:b0001"),
-			status:    bots.StatusActive,
+			status:    bots.RunStatusActive,
 			startedAt: &startedAt,
 			wantErr:   true,
 			errText:   "zero run id",
@@ -116,7 +117,7 @@ func TestRestoreRun(t *testing.T) {
 			name:      "zero token",
 			id:        bots.RunID("r00004"),
 			botID:     bots.BotID("b0001"),
-			status:    bots.StatusActive,
+			status:    bots.RunStatusActive,
 			startedAt: &startedAt,
 			wantErr:   true,
 			errText:   "zero token",
@@ -125,7 +126,7 @@ func TestRestoreRun(t *testing.T) {
 			name:      "zero bot id",
 			id:        bots.RunID("r00005"),
 			token:     bots.Token("token:b0001"),
-			status:    bots.StatusActive,
+			status:    bots.RunStatusActive,
 			startedAt: &startedAt,
 			wantErr:   true,
 			errText:   "zero botID",
@@ -144,7 +145,7 @@ func TestRestoreRun(t *testing.T) {
 			id:        bots.RunID("r00007"),
 			botID:     bots.BotID("b0001"),
 			token:     bots.Token("token:b0001"),
-			status:    bots.StatusActive,
+			status:    bots.RunStatusActive,
 			startedAt: &zeroTime,
 			wantErr:   true,
 			errText:   "zero startedAt",
@@ -154,7 +155,7 @@ func TestRestoreRun(t *testing.T) {
 			id:        bots.RunID("r00008"),
 			botID:     bots.BotID("b0001"),
 			token:     bots.Token("token:b0001"),
-			status:    bots.StatusStopped,
+			status:    bots.RunStatusStopped,
 			startedAt: &startedAt,
 			stoppedAt: &zeroTime,
 			wantErr:   true,
@@ -282,12 +283,12 @@ func TestRun_Start(t *testing.T) {
 			err := run.Started()
 			if tt.wantErr {
 				require.Error(t, err)
-				require.ErrorIs(t, err, bots.ErrIllegalStateTransition)
+				require.ErrorIs(t, err, shared.ErrIllegalStateTransition)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, bots.StatusActive, run.Status())
+			require.Equal(t, bots.RunStatusActive, run.Status())
 
 			if tt.wantStartedAt {
 				require.NotNil(t, run.StartedAt())
@@ -389,12 +390,12 @@ func TestRun_Fail(t *testing.T) {
 			err := run.Failed(msg)
 			if tt.wantErr {
 				require.Error(t, err)
-				require.ErrorIs(t, err, bots.ErrIllegalStateTransition)
+				require.ErrorIs(t, err, shared.ErrIllegalStateTransition)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, bots.StatusFailed, run.Status())
+			require.Equal(t, bots.RunStatusFailed, run.Status())
 			require.NotNil(t, run.ErrorMsg())
 			require.Equal(t, msg, *run.ErrorMsg())
 			require.NotNil(t, run.StoppedAt())
@@ -471,12 +472,12 @@ func TestRun_Stop(t *testing.T) {
 			err := run.Stop()
 			if tt.wantErr {
 				require.Error(t, err)
-				require.ErrorIs(t, err, bots.ErrIllegalStateTransition)
+				require.ErrorIs(t, err, shared.ErrIllegalStateTransition)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, bots.StatusStopping, run.Status())
+			require.Equal(t, bots.RunStatusStopping, run.Status())
 
 			if tt.wantStoppedAtNil {
 				require.Nil(t, run.StoppedAt())
@@ -553,12 +554,12 @@ func TestRun_Stopped(t *testing.T) {
 			err := run.Stopped()
 			if tt.wantErr {
 				require.Error(t, err)
-				require.ErrorIs(t, err, bots.ErrIllegalStateTransition)
+				require.ErrorIs(t, err, shared.ErrIllegalStateTransition)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, bots.StatusStopped, run.Status())
+			require.Equal(t, bots.RunStatusStopped, run.Status())
 
 			if tt.wantStoppedAt {
 				require.NotNil(t, run.StoppedAt())

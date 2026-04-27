@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/eventhandler"
@@ -117,7 +118,7 @@ func TestStartOnRunStartRequestedHandler_Handle(t *testing.T) {
 	})
 
 	t.Run("instance manager start fails and run transitions to failed", func(t *testing.T) {
-		run := mustRestoreRun(t, "r0001", "b0001", "token_b0001", bots.StatusStarting, nil, nil)
+		run := mustRestoreRun(t, "r0001", "b0001", "token_b0001", bots.RunStatusStarting, nil, nil)
 		rr := &runRepositoryStub{runs: map[bots.RunID]*bots.Run{run.ID(): run}}
 		im := &instanceManagerStub{startErr: errors.New("telegram unavailable")}
 		eb := &eventBusStub{}
@@ -128,13 +129,13 @@ func TestStartOnRunStartRequestedHandler_Handle(t *testing.T) {
 		require.Equal(t, 1, im.startCalls)
 		require.Equal(t, 1, rr.updateCalls)
 		require.Equal(t, 1, eb.publishCalls)
-		require.Equal(t, bots.StatusFailed, run.Status())
+		require.Equal(t, bots.RunStatusFailed, run.Status())
 		require.Len(t, eb.published, 1)
 		require.Equal(t, "run.failed", eb.published[0].EventName())
 	})
 
 	t.Run("start success updates run and publishes run.started", func(t *testing.T) {
-		run := mustRestoreRun(t, "r0002", "b0002", "token_b0002", bots.StatusStarting, nil, nil)
+		run := mustRestoreRun(t, "r0002", "b0002", "token_b0002", bots.RunStatusStarting, nil, nil)
 		rr := &runRepositoryStub{runs: map[bots.RunID]*bots.Run{run.ID(): run}}
 		im := &instanceManagerStub{}
 		eb := &eventBusStub{}
@@ -145,7 +146,7 @@ func TestStartOnRunStartRequestedHandler_Handle(t *testing.T) {
 		require.Equal(t, 1, im.startCalls)
 		require.Equal(t, 1, rr.updateCalls)
 		require.Equal(t, 1, eb.publishCalls)
-		require.Equal(t, bots.StatusActive, run.Status())
+		require.Equal(t, bots.RunStatusActive, run.Status())
 		require.NotNil(t, run.StartedAt())
 		require.Len(t, eb.published, 1)
 		require.Equal(t, "run.started", eb.published[0].EventName())
@@ -153,21 +154,21 @@ func TestStartOnRunStartRequestedHandler_Handle(t *testing.T) {
 
 	t.Run("start success but run state transition error", func(t *testing.T) {
 		startedAt := time.Date(2026, time.April, 11, 12, 0, 0, 0, time.UTC)
-		run := mustRestoreRun(t, "r0003", "b0003", "token_b0003", bots.StatusActive, &startedAt, nil)
+		run := mustRestoreRun(t, "r0003", "b0003", "token_b0003", bots.RunStatusActive, &startedAt, nil)
 		rr := &runRepositoryStub{runs: map[bots.RunID]*bots.Run{run.ID(): run}}
 		im := &instanceManagerStub{}
 		eb := &eventBusStub{}
 		h := eventhandler.NewStartOnRunStartRequestedHandler(rr, im, eb, logger)
 
 		err := h.Handle(t.Context(), bots.RunStartRequested{RunID: run.ID(), BotID: run.BotID(), Time: time.Now()})
-		require.ErrorIs(t, err, bots.ErrIllegalStateTransition)
+		require.ErrorIs(t, err, shared.ErrIllegalStateTransition)
 		require.Equal(t, 1, im.startCalls)
 		require.Equal(t, 0, rr.updateCalls)
 		require.Equal(t, 0, eb.publishCalls)
 	})
 
 	t.Run("update error on success path", func(t *testing.T) {
-		run := mustRestoreRun(t, "r0004", "b0004", "token_b0004", bots.StatusStarting, nil, nil)
+		run := mustRestoreRun(t, "r0004", "b0004", "token_b0004", bots.RunStatusStarting, nil, nil)
 		updateErr := errors.New("update failed")
 		rr := &runRepositoryStub{runs: map[bots.RunID]*bots.Run{run.ID(): run}, updateErr: updateErr}
 		im := &instanceManagerStub{}
@@ -181,7 +182,7 @@ func TestStartOnRunStartRequestedHandler_Handle(t *testing.T) {
 	})
 
 	t.Run("publish error on success path", func(t *testing.T) {
-		run := mustRestoreRun(t, "r0005", "b0005", "token_b0005", bots.StatusStarting, nil, nil)
+		run := mustRestoreRun(t, "r0005", "b0005", "token_b0005", bots.RunStatusStarting, nil, nil)
 		publishErr := errors.New("publish failed")
 		rr := &runRepositoryStub{runs: map[bots.RunID]*bots.Run{run.ID(): run}}
 		im := &instanceManagerStub{}
@@ -200,7 +201,7 @@ func mustRestoreRun(
 	runID bots.RunID,
 	botID bots.BotID,
 	token bots.Token,
-	status bots.Status,
+	status bots.RunStatus,
 	startedAt *time.Time,
 	stoppedAt *time.Time,
 ) *bots.Run {

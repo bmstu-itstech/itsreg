@@ -100,3 +100,32 @@ func (e SendMessageRequested) EventName() string {
 func (e SendMessageRequested) OccurredAt() time.Time {
 	return e.Time
 }
+
+type MailingScheduled struct {
+	MailingID MailingID
+	Time      time.Time
+}
+
+func (e MailingScheduled) EventName() string {
+	return "mailing.scheduled"
+}
+
+func (e MailingScheduled) OccurredAt() time.Time {
+	return e.Time
+}
+
+type SendMailingMessageRequested struct {
+	MailingID MailingID
+	BotID     BotID
+	UserID    UserID
+	Message   BotMessage
+	Time      time.Time
+}
+
+func (e SendMailingMessageRequested) EventName() string {
+	return "message.send_mailing_requested"
+}
+
+func (e SendMailingMessageRequested) OccurredAt() time.Time {
+	return e.Time
+}

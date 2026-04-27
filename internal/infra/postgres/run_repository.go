@@ -25,7 +25,7 @@ func (r *Repository) Run(ctx context.Context, id bots.RunID) (*bots.Run, error) 
 func (r *Repository) RunsByOwnerID(
 	ctx context.Context, ownerID bots.UserID, filter port.RunsFilter,
 ) ([]*bots.Run, error) {
-	rRuns, err := r.selectRunsByOwnerIDRows(ctx, r.db, ownerID.Int64(), getRunsFilterToDB(filter))
+	rRuns, err := r.selectRunsByOwnerIDRows(ctx, r.db, ownerID.Int64(), selectRunsFilterToDB(filter))
 	if err != nil {
 		return nil, err
 	}

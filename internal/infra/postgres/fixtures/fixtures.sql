@@ -70,6 +70,37 @@ VALUES
     (1, 'user1', '2026-04-11 10:00:00'),
     (2, 'user2', '2026-04-11 10:00:00');
 
+INSERT INTO mailings
+    (id, bot_id, name, entry_key, status, created_at, started_at, completed_at)
+VALUES
+    ('m10001', 'b0001', 'Mailing 1', 'start', 'completed', '2026-04-12 10:00:00', '2026-04-12 10:05:00', '2026-04-12 10:10:00'),
+    ('m10002', 'b0003', 'Mailing 2', 'start', 'started', '2026-04-12 11:00:00', '2026-04-12 11:01:00', NULL),
+    ('m10003', 'b0004', 'Mailing 3', 'start', 'started', '2026-04-12 11:10:00', '2026-04-12 11:11:00', NULL),
+    ('m10004', 'b0001', 'Mailing 4', 'start', 'scheduled', '2026-04-12 12:00:00', NULL, NULL),
+    ('m10005', 'b0002', 'Mailing 5', 'start', 'failed', '2026-04-12 12:10:00', '2026-04-12 12:11:00', NULL),
+    ('m10006', 'b0001', 'Mailing 6', 'start', 'started', '2026-04-12 14:00:00', '2026-04-12 14:01:00', NULL),
+    ('m10007', 'b0001', 'Mailing 7', 'start', 'failed', '2026-04-12 15:10:00', '2026-04-12 15:11:00', NULL);
+
+INSERT INTO mailing_recipients
+    (mailing_id, user_id)
+VALUES
+    ('m10001', 1),
+    ('m10001', 2),
+    ('m10002', 1),
+    ('m10003', 1),
+    ('m10004', 1),
+    ('m10005', 1),
+    ('m10006', 1),
+    ('m10007', 2);
+
+INSERT INTO mailing_results
+    (mailing_id, user_id, success, error_msg)
+VALUES
+    ('m10001', 1, true, NULL),
+    ('m10001', 2, false, 'cannot send message'),
+    ('m10005', 1, false, 'network'),
+    ('m10007', 2, false, 'rate limit');
+
 INSERT INTO threads
     (id, bot_id, user_id, key, state, started_at, updated_at)
 VALUES

@@ -60,6 +60,7 @@ func main() {
 		BotRepository:        repos,
 		EventBus:             bus,
 		InstanceManager:      instanceManager,
+		MailingRepository:    repos,
 		MessageSender:        sender,
 		OwnedRunProvider:     repos,
 		RateLimiter:          rateLimiter,
@@ -83,6 +84,8 @@ func main() {
 	mustSubscribe(bus, "run.recover_requested", a.Events.StartOnRunRecoverRequested)
 	mustSubscribe(bus, "run.stop_requsted", a.Events.StopOnRunStopRequested)
 	mustSubscribe(bus, "message.send_requested", a.Events.SendOnSendMessageRequested)
+	mustSubscribe(bus, "mailing.scheduled", a.Events.StartScheduledMailing)
+	mustSubscribe(bus, "message.send_mailing_requested", a.Events.SendMailingMessage)
 
 	// Восстановление состояние
 

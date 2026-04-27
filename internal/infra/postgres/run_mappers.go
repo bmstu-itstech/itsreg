@@ -3,15 +3,16 @@ package postgres
 import (
 	"github.com/bmstu-itstech/itsreg/internal/app/port"
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/pkg/hlpr"
 )
 
-func getRunsFilterToDB(f port.RunsFilter) getRunsFilter {
-	var filter getRunsFilter
+func selectRunsFilterToDB(f port.RunsFilter) selectRunsFilter {
+	var filter selectRunsFilter
 	if f.BotID != nil {
-		filter.BotID = ptr(f.BotID.String())
+		filter.BotID = hlpr.Ptr(f.BotID.String())
 	}
 	if f.Status != nil {
-		filter.Status = ptr(f.Status.String())
+		filter.Status = hlpr.Ptr(f.Status.String())
 	}
 	return filter
 }
@@ -29,7 +30,7 @@ func runToRow(r *bots.Run) runRow {
 }
 
 func runFromRow(r runRow) (*bots.Run, error) {
-	s, err := bots.StatusFromString(r.Status)
+	s, err := bots.RunStatusFromString(r.Status)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +55,4 @@ func runsFromRows(rs []runRow) ([]*bots.Run, error) {
 		res[i] = run
 	}
 	return res, nil
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }

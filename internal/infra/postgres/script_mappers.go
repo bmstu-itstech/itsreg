@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/pkg/hlpr"
 )
 
 func operationToString(op bots.Operation) string {
@@ -136,9 +137,9 @@ func nodesFromRows(
 	rMessages []messageRow,
 	rOptions []optionRow,
 ) ([]bots.Node, error) {
-	mrEdges := groupXByField(rEdges, func(e edgeRow) int { return e.State })
-	mrMessages := groupXByField(rMessages, func(e messageRow) int { return e.State })
-	mrOptions := groupXByField(rOptions, func(e optionRow) int { return e.State })
+	mrEdges := hlpr.GroupBy(rEdges, func(e edgeRow) int { return e.State })
+	mrMessages := hlpr.GroupBy(rMessages, func(e messageRow) int { return e.State })
+	mrOptions := hlpr.GroupBy(rOptions, func(e optionRow) int { return e.State })
 
 	res := make([]bots.Node, len(rNodes))
 	for i, node := range rNodes {
@@ -171,18 +172,6 @@ func entriesFromRows(rows []entryRow) ([]bots.Entry, error) {
 		res[i] = e
 	}
 	return res, nil
-}
-
-// groupXByField группирует значения массива ts по ключу, определяемый функцией key.
-func groupXByField[K comparable, V any](ts []V, key func(v V) K) map[K][]V {
-	res := make(map[K][]V)
-	for _, t := range ts {
-		if _, ok := res[key(t)]; !ok {
-			res[key(t)] = make([]V, 0, 1)
-		}
-		res[key(t)] = append(res[key(t)], t)
-	}
-	return res
 }
 
 func scriptToRow(s *bots.Script) scriptRow {

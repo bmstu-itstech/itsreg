@@ -35,8 +35,7 @@ func (r *Repository) selectRunsByBotIDRows(
 		SELECT
 			id, bot_id, token, status, error_msg, started_at, stopped_at
 		FROM runs
-		WHERE
-		    bot_id = $1
+		WHERE bot_id = $1
 		`, botID,
 	)
 	return rows, err
@@ -46,7 +45,7 @@ func (r *Repository) selectRunsByOwnerIDRows(
 	ctx context.Context,
 	qc sqlx.QueryerContext,
 	ownerID int64,
-	filter getRunsFilter,
+	filter selectRunsFilter,
 ) ([]runRow, error) {
 	var queryBuilder strings.Builder
 	queryBuilder.WriteString(`

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/bmstu-itstech/itsreg/pkg/hlpr"
 	"github.com/jmoiron/sqlx"
 	"github.com/zhikh23/pgutils"
 
@@ -98,31 +99,31 @@ func (r *Repository) ScriptsByOwnerID(ctx context.Context, ownerID bots.UserID) 
 		if err != nil {
 			return fmt.Errorf("selectEntriesByOwnerIDRows: %w", err)
 		}
-		mrEntries := groupXByField(rEntries, func(m entryRow) string { return m.ScriptID })
+		mrEntries := hlpr.GroupBy(rEntries, func(m entryRow) string { return m.ScriptID })
 
 		rNodes, err := r.selectNodesByOwnerIDRows(ctx, tx, ownerID.Int64())
 		if err != nil {
 			return fmt.Errorf("selectNodesByOwnerIDRows: %w", err)
 		}
-		mrNodes := groupXByField(rNodes, func(m nodeRow) string { return m.ScriptID })
+		mrNodes := hlpr.GroupBy(rNodes, func(m nodeRow) string { return m.ScriptID })
 
 		rMessages, err := r.selectMessagesByOwnerIDRows(ctx, tx, ownerID.Int64())
 		if err != nil {
 			return fmt.Errorf("selectMessagesByOwnerIDRows: %w", err)
 		}
-		mrMessages := groupXByField(rMessages, func(m messageRow) string { return m.ScriptID })
+		mrMessages := hlpr.GroupBy(rMessages, func(m messageRow) string { return m.ScriptID })
 
 		rEdges, err := r.selectEdgesByOwnerIDRows(ctx, tx, ownerID.Int64())
 		if err != nil {
 			return fmt.Errorf("selectEdgesByOwnerIDRows: %w", err)
 		}
-		mrEdges := groupXByField(rEdges, func(m edgeRow) string { return m.ScriptID })
+		mrEdges := hlpr.GroupBy(rEdges, func(m edgeRow) string { return m.ScriptID })
 
 		rOptions, err := r.selectOptionsByOwnerIDRows(ctx, tx, ownerID.Int64())
 		if err != nil {
 			return fmt.Errorf("selectOptionsByOwnerIDRows: %w", err)
 		}
-		mrOptions := groupXByField(rOptions, func(m optionRow) string { return m.ScriptID })
+		mrOptions := hlpr.GroupBy(rOptions, func(m optionRow) string { return m.ScriptID })
 
 		for _, rScript := range rScripts {
 			nodes, err2 := nodesFromRows(

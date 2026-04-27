@@ -32,17 +32,25 @@ const (
 	Exact ExactPredicateType = "exact"
 )
 
+// Defines values for MailingStatus.
+const (
+	MailingStatusCompleted MailingStatus = "completed"
+	MailingStatusFailed    MailingStatus = "failed"
+	MailingStatusScheduled MailingStatus = "scheduled"
+	MailingStatusStarted   MailingStatus = "started"
+)
+
 // Defines values for RegexPredicateType.
 const (
 	Regex RegexPredicateType = "regex"
 )
 
-// Defines values for Status.
+// Defines values for RunStatus.
 const (
-	Active   Status = "active"
-	Failed   Status = "failed"
-	Starting Status = "starting"
-	Stopped  Status = "stopped"
+	RunStatusActive   RunStatus = "active"
+	RunStatusFailed   RunStatus = "failed"
+	RunStatusStarting RunStatus = "starting"
+	RunStatusStopped  RunStatus = "stopped"
 )
 
 // AlwaysPredicate Переход по ребру осуществляется на любое сообщение пользователя.
@@ -90,6 +98,27 @@ type CreateBotRequest struct {
 type CreateBotResponse struct {
 	// BotID Уникальный ID бота.
 	BotID string `json:"botID"`
+}
+
+// CreateMailingRequest defines model for CreateMailingRequest.
+type CreateMailingRequest struct {
+	// BotID ID бота, для которого будет запланирована рассылка.
+	BotID string `json:"botID"`
+
+	// EntryKey Ключ точки входа сценария бота, которая будет вызвана в рассылке.
+	EntryKey string `json:"entryKey"`
+
+	// Name Человекочитаемое название рассылки.
+	Name string `json:"name"`
+
+	// Recipients Массив ID пользователей, которым будет отправлена рассылка.
+	Recipients []int64 `json:"recipients"`
+}
+
+// CreateMailingResponse defines model for CreateMailingResponse.
+type CreateMailingResponse struct {
+	// MailingID Уникальный ID рассылки.
+	MailingID string `json:"mailingID"`
 }
 
 // CreateRunResponse defines model for CreateRunResponse.
@@ -161,6 +190,54 @@ type GetScriptResponse = Script
 // GetScriptsResponse defines model for GetScriptsResponse.
 type GetScriptsResponse = []Script
 
+// Mailing Сущность, обозначающая запланированную или уже выполненную рассылку.
+type Mailing struct {
+	// BotID ID бота, для которого была запланирована рассылка.
+	BotID string `json:"botID"`
+
+	// CompletedAt Метка времени завершения рассылки.
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+
+	// CreatedAt Метка времени создания рассылки.
+	CreatedAt time.Time `json:"createdAt"`
+
+	// EntryKey Ключ точки входа сценария бота, которая будет вызвана в рассылке.
+	EntryKey string `json:"entryKey"`
+
+	// FailCount Количество неудачных отправок рассылки пользователям.
+	FailCount int `json:"failCount"`
+
+	// Id Уникальный ID рассылки.
+	Id string `json:"id"`
+
+	// Name Человекочитаемое название рассылки.
+	Name string `json:"name"`
+
+	// PendingCount Количество отправок рассылки пользователям, которые ещё не были завершены.
+	PendingCount int `json:"pendingCount"`
+
+	// Recipients Массив ID пользователей, которым будет отправлена рассылка.
+	Recipients []int64 `json:"recipients"`
+
+	// Results Массив результатов рассылки для каждого пользователя. Заполняется по мере выполнения рассылки.
+	Results []UserMailingResult `json:"results"`
+
+	// StartedAt Метка времени начала рассылки.
+	StartedAt *time.Time `json:"startedAt,omitempty"`
+
+	// Status Статус рассылки.
+	Status MailingStatus `json:"status"`
+
+	// SuccessCount Количество успешных отправок рассылки пользователям.
+	SuccessCount int `json:"successCount"`
+
+	// TotalCount Общее количество пользователей в рассылке.
+	TotalCount int `json:"totalCount"`
+}
+
+// MailingStatus Статус рассылки.
+type MailingStatus string
+
 // Message Любое сообщение в Telegram. На данный момент описывается текстом, но в будущем добавится поддержка файлов.
 type Message struct {
 	Text string `json:"text"`
@@ -219,11 +296,14 @@ type Run struct {
 	StartedAt *time.Time `json:"startedAt,omitempty"`
 
 	// Status Статус бота.
-	Status Status `json:"status"`
+	Status RunStatus `json:"status"`
 
 	// StoppedAt Метка времени остановки бота.
 	StoppedAt *time.Time `json:"stoppedAt,omitempty"`
 }
+
+// RunStatus Статус бота.
+type RunStatus string
 
 // Script Сценарий бота. Является объединением узлов (Node), точек входа (Entry). Гарантируется связность всех узлов относительно любой точки входа Entry.
 type Script struct {
@@ -246,9 +326,6 @@ type Script struct {
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 }
 
-// Status Статус бота.
-type Status string
-
 // Token Telegram-токен бота, полученный через @BotFather. Должен быть уникальным для всех ботов.
 type Token = string
 
@@ -270,6 +347,18 @@ type UpdateBotResponse = Bot
 // UpdateScriptResponse Сценарий бота. Является объединением узлов (Node), точек входа (Entry). Гарантируется связность всех узлов относительно любой точки входа Entry.
 type UpdateScriptResponse = Script
 
+// UserMailingResult Результат рассылки для одного пользователя.
+type UserMailingResult struct {
+	// ErrorMsg Сообщение об ошибке, если отправка рассылки пользователю не удалась.
+	ErrorMsg *string `json:"errorMsg,omitempty"`
+
+	// Success Успешность отправки рассылки пользователю.
+	Success bool `json:"success"`
+
+	// UserID ID пользователя, которому была отправлена рассылка.
+	UserID int64 `json:"userID"`
+}
+
 // ValidationError defines model for ValidationError.
 type ValidationError = []ValidationErrorDetail
 
@@ -285,10 +374,25 @@ type ValidationErrorDetail struct {
 	Message string `json:"message"`
 }
 
+// GetBotMailingsParams defines parameters for GetBotMailings.
+type GetBotMailingsParams struct {
+	// Status Статус рассылки для фильтрации. Если не указан, возвращаются рассылки всех статусов.
+	Status *MailingStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
 // GetBotRunsParams defines parameters for GetBotRuns.
 type GetBotRunsParams struct {
 	// Status Статус запуска для фильтрации. Если не указан, возвращаются запуски всех статусов.
-	Status *Status `form:"status,omitempty" json:"status,omitempty"`
+	Status *RunStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// GetMailingsParams defines parameters for GetMailings.
+type GetMailingsParams struct {
+	// BotID ID бота для фильтрации рассылок. Если не указан, возвращаются рассылки всех ботов пользователя.
+	BotID *string `form:"botID,omitempty" json:"botID,omitempty"`
+
+	// Status Статус рассылки для фильтрации. Если не указан, возвращаются рассылки всех статусов.
+	Status *MailingStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
 // GetRunsParams defines parameters for GetRuns.
@@ -297,7 +401,7 @@ type GetRunsParams struct {
 	BotID *string `form:"botID,omitempty" json:"botID,omitempty"`
 
 	// Status Статус запуска для фильтрации. Если не указан, возвращаются запуски всех статусов.
-	Status *Status `form:"status,omitempty" json:"status,omitempty"`
+	Status *RunStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
 // CreateBotJSONRequestBody defines body for CreateBot for application/json ContentType.
@@ -305,6 +409,9 @@ type CreateBotJSONRequestBody = CreateBotRequest
 
 // UpdateBotJSONRequestBody defines body for UpdateBot for application/json ContentType.
 type UpdateBotJSONRequestBody = UpdateBotRequest
+
+// CreateMailingJSONRequestBody defines body for CreateMailing for application/json ContentType.
+type CreateMailingJSONRequestBody = CreateMailingRequest
 
 // CreateScriptJSONRequestBody defines body for CreateScript for application/json ContentType.
 type CreateScriptJSONRequestBody = CreateScriptRequest

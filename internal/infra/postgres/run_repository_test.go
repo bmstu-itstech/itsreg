@@ -14,7 +14,7 @@ func (s *RepositoryTestSuite) TestRunRepository_Run_Success() {
 	s.Require().Equal(bots.RunID("r0002"), run.ID())
 	s.Require().Equal(bots.BotID("b0001"), run.BotID())
 	s.Require().Equal(bots.Token("token_b0001"), run.Token())
-	s.Require().Equal(bots.StatusFailed, run.Status())
+	s.Require().Equal(bots.RunStatusFailed, run.Status())
 	s.Require().NotNil(run.ErrorMsg())
 	s.Require().Equal("Some error occurred", *run.ErrorMsg())
 	s.Require().NotNil(run.StartedAt())
@@ -44,7 +44,7 @@ func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_ExcludeDeletedBots
 	s.Require().Equal(bots.RunID("r0004"), run.ID())
 	s.Require().Equal(bots.BotID("b0003"), run.BotID())
 	s.Require().Equal(bots.Token("token_b0003"), run.Token())
-	s.Require().Equal(bots.StatusStopping, run.Status())
+	s.Require().Equal(bots.RunStatusStopping, run.Status())
 }
 
 func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_MultipleRuns() {
@@ -73,7 +73,7 @@ func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_FilterByBotID() {
 }
 
 func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_FilterByStatus() {
-	status := bots.StatusActive
+	status := bots.RunStatusActive
 	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(1), port.RunsFilter{Status: &status})
 	s.Require().NoError(err)
 	s.Require().Len(res, 1)
@@ -82,7 +82,7 @@ func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_FilterByStatus() {
 
 func (s *RepositoryTestSuite) TestRunRepository_RunsByOwnerID_FilterByBotIDAndStatus() {
 	botID := bots.BotID("b0001")
-	status := bots.StatusFailed
+	status := bots.RunStatusFailed
 	res, err := s.repos.RunsByOwnerID(s.ctx, bots.UserID(1), port.RunsFilter{BotID: &botID, Status: &status})
 	s.Require().NoError(err)
 	s.Require().Len(res, 1)
@@ -152,7 +152,7 @@ func (s *RepositoryTestSuite) TestRunRepository_UpdateRun_Success() {
 	s.Require().Equal(run.ID(), got.ID())
 	s.Require().Equal(run.BotID(), got.BotID())
 	s.Require().Equal(run.Token(), got.Token())
-	s.Require().Equal(bots.StatusActive, got.Status())
+	s.Require().Equal(bots.RunStatusActive, got.Status())
 	s.Require().NotNil(got.StartedAt())
 	s.Require().WithinDuration(*run.StartedAt(), *got.StartedAt(), time.Second)
 	s.Require().Nil(got.StoppedAt())

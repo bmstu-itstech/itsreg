@@ -41,7 +41,7 @@ func (h *GetBotRunsHandler) Handle(ctx context.Context, req GetBotRunsRequest) (
 	var filter port.RunsFilter
 	filter.BotID = hlpr.Ptr(bots.BotID(req.BotID))
 	if req.Status != nil {
-		status, err := bots.StatusFromString(*req.Status)
+		status, err := bots.RunStatusFromString(*req.Status)
 		if err != nil {
 			l.InfoContext(ctx, "invalid status filter", slog.String("error", err.Error()))
 			return GetRunsResponse{}, nil

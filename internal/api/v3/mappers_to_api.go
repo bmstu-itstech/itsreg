@@ -135,7 +135,7 @@ func ownedRunToAPI(d dto.OwnedRun) Run {
 		ErrorMsg:  d.ErrorMsg,
 		Id:        d.ID,
 		StartedAt: d.StartedAt,
-		Status:    Status(d.Status),
+		Status:    RunStatus(d.Status),
 		StoppedAt: d.StoppedAt,
 	}
 }
@@ -146,7 +146,7 @@ func runToAPI(d dto.Run) Run {
 		ErrorMsg:  d.ErrorMsg,
 		Id:        d.ID,
 		StartedAt: d.StartedAt,
-		Status:    Status(d.Status),
+		Status:    RunStatus(d.Status),
 		StoppedAt: d.StoppedAt,
 	}
 }
@@ -157,4 +157,66 @@ func runsToAPI(ds []dto.Run) []Run {
 		res[i] = runToAPI(d)
 	}
 	return res
+}
+
+func userMailingResultToAPI(d dto.UserMailingResult) UserMailingResult {
+	return UserMailingResult{
+		ErrorMsg: d.ErrorMsg,
+		Success:  d.Success,
+		UserID:   d.UserID,
+	}
+}
+
+func userMailingResultsToAPI(ds []dto.UserMailingResult) []UserMailingResult {
+	res := make([]UserMailingResult, len(ds))
+	for i, d := range ds {
+		res[i] = userMailingResultToAPI(d)
+	}
+	return res
+}
+
+func mailingToAPI(d dto.Mailing) Mailing {
+	return Mailing{
+		BotID:        d.BotID,
+		CompletedAt:  d.CompletedAt,
+		CreatedAt:    d.CreatedAt,
+		EntryKey:     d.EntryKey,
+		FailCount:    d.FailCount,
+		Id:           d.ID,
+		Name:         d.Name,
+		PendingCount: d.PendingCount,
+		Recipients:   d.Recipients,
+		Results:      userMailingResultsToAPI(d.Results),
+		StartedAt:    d.StartedAt,
+		Status:       MailingStatus(d.Status),
+		SuccessCount: d.SuccessCount,
+		TotalCount:   d.TotalCount,
+	}
+}
+
+func mailingsToAPI(ds []dto.Mailing) []Mailing {
+	res := make([]Mailing, len(ds))
+	for i, d := range ds {
+		res[i] = mailingToAPI(d)
+	}
+	return res
+}
+
+func ownedMailingToAPI(d dto.OwnedMailing) Mailing {
+	return Mailing{
+		BotID:        d.BotID,
+		CompletedAt:  d.CompletedAt,
+		CreatedAt:    d.CreatedAt,
+		EntryKey:     d.EntryKey,
+		FailCount:    d.FailCount,
+		Id:           d.ID,
+		Name:         d.Name,
+		PendingCount: d.PendingCount,
+		Recipients:   d.Recipients,
+		Results:      userMailingResultsToAPI(d.Results),
+		StartedAt:    d.StartedAt,
+		Status:       MailingStatus(d.Status),
+		SuccessCount: d.SuccessCount,
+		TotalCount:   d.TotalCount,
+	}
 }

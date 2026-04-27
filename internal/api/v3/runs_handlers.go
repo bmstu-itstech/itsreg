@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/bmstu-itstech/itsreg/internal/app/query"
-	"github.com/bmstu-itstech/itsreg/internal/domain/bots"
+	"github.com/bmstu-itstech/itsreg/internal/domain/shared"
 	"github.com/go-chi/render"
 
 	"github.com/bmstu-itstech/itsreg/internal/api/v3/jwtauth"
@@ -130,7 +130,7 @@ func (s *Server) StopRun(w http.ResponseWriter, r *http.Request, id string) {
 		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
-	if errors.Is(err, bots.ErrIllegalStateTransition) {
+	if errors.Is(err, shared.ErrIllegalStateTransition) {
 		renderPlainError(w, r, err, http.StatusConflict)
 		return
 	}
