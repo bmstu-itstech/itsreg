@@ -684,6 +684,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlainError'
 
+  /health:
+    get:
+      operationId: healthCheck
+      description: Проверить работоспособность сервера.
+      responses:
+        "200":
+          description: Сервер работает исправно.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
 components:
   securitySchemes:
     bearerAuth:

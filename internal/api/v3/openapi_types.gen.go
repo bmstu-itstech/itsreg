@@ -51,6 +51,7 @@ const (
 	RunStatusFailed   RunStatus = "failed"
 	RunStatusStarting RunStatus = "starting"
 	RunStatusStopped  RunStatus = "stopped"
+	RunStatusStopping RunStatus = "stopping"
 )
 
 // AlwaysPredicate Переход по ребру осуществляется на любое сообщение пользователя.

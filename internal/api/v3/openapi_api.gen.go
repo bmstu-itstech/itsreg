@@ -39,6 +39,9 @@ type ServerInterface interface {
 	// (PATCH /bots/{id})
 	UpdateBot(w http.ResponseWriter, r *http.Request, id string)
 
+	// (GET /health)
+	HealthCheck(w http.ResponseWriter, r *http.Request)
+
 	// (GET /mailings)
 	GetMailings(w http.ResponseWriter, r *http.Request, params GetMailingsParams)
 
@@ -114,6 +117,11 @@ func (_ Unimplemented) GetBot(w http.ResponseWriter, r *http.Request, id string)
 
 // (PATCH /bots/{id})
 func (_ Unimplemented) UpdateBot(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /health)
+func (_ Unimplemented) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -396,6 +404,23 @@ func (siw *ServerInterfaceWrapper) UpdateBot(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateBot(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// HealthCheck operation middleware
+func (siw *ServerInterfaceWrapper) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.HealthCheck(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -836,6 +861,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Patch(options.BaseURL+"/bots/{id}", wrapper.UpdateBot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/health", wrapper.HealthCheck)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/mailings", wrapper.GetMailings)
