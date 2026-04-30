@@ -6,7 +6,7 @@ services:
     ]
     environment:
       IR_POSTGRES_URI: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
-      IR_HTTP_PORT: 8000  # Обязательно 8000, проксируется на две строчки ниже
+      IR_HTTP_PORT: 8000  # Обязательно 8000, проксируется ниже
       IR_JWT_SECRET: ${IR_JWT_SECRET}
     ports:
       - "${EXTERNAL_HTTP_PORT:-8000}:8000"
@@ -19,6 +19,7 @@ services:
       - ./config:/etc/app:ro
 
   db:
+    hostname: db
     image: postgres:15.3-alpine3.18
     command: postgres
     environment:
@@ -38,9 +39,7 @@ services:
     volumes:
       - ${POSTGRES_VOLUME:-.pgdata/}:/var/lib/postgresql/data
     networks:
-      internal:
-        aliases:
-          - db
+      - internal
 
   migrate:
     image: migrate/migrate
@@ -55,7 +54,7 @@ services:
     volumes:
       - ./migrations:/migrations:ro
     networks:
-      internal:
+      - internal
 
 networks:
   internal:

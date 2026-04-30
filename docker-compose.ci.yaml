@@ -1,3 +1,13 @@
+x-logging:
+  &default-logging
+  driver: loki
+  options:
+    loki-url: "http://localhost:3100/loki/api/v1/push"
+    loki-batch-size: 100
+    loki-retries: 2
+    loki-max-backoff: 1000ms
+    loki-timeout: 1s
+
 services:
   http:
     build: .
@@ -15,17 +25,10 @@ services:
       - "${EXTERNAL_HTTP_PORT:-8000}:8000"
     volumes:
       - ./config:/etc/app:ro
-      - ${PGSSLROOTCERT}:/certs:ro
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://loki:3100/loki/api/v1/push"
-        loki-batch-size: "100"
-        loki-retries: 2
-        loki-max-backoff: 1000ms
-        loki-timeout: 1s
+      - ${PGSSLROOTCERT:-./certs}:/certs:ro
     networks:
       - internal
+    logging: *default-logging
 
   migrate:
     image: migrate/migrate
@@ -38,17 +41,25 @@ services:
       PGSSLROOTCERT: /certs/root.crt
     volumes:
       - ./migrations:/migrations:ro
-      - ${PGSSLROOTCERT}:/certs:ro
+      - ${PGSSLROOTCERT:-./certs}:/certs:ro
 
   loki:
     hostname: loki
     image: grafana/loki:latest
     ports:
       - "${EXTERNAL_LOKI_PORT:-3100}:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./config/loki-config.yaml:/etc/loki/loki-config.yaml:ro
     networks:
       - internal
       - observability
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3100/ready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
 
 networks:
   internal:
