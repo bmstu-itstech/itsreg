@@ -34,6 +34,7 @@ services:
       retries: 2
       start_period: 10s
       timeout: 3s
+    restart: unless-stopped
     logging: *default-logging
 
   migrate:
