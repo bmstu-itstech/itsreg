@@ -2,7 +2,7 @@ x-logging:
   &default-logging
   driver: loki
   options:
-    loki-url: "http://localhost:3100/loki/api/v1/push"
+    loki-url: "${LOKI_ADDRESS:-http://localhost:3100}/loki/api/v1/push"
     loki-batch-size: 100
     loki-retries: 2
     loki-max-backoff: 1000ms
@@ -50,26 +50,8 @@ services:
       - ./migrations:/migrations:ro
       - ${PGSSLROOTCERT:-./certs}:/certs:ro
 
-  loki:
-    hostname: loki
-    image: grafana/loki:latest
-    ports:
-      - "${EXTERNAL_LOKI_PORT:-3100}:3100"
-    command: -config.file=/etc/loki/loki-config.yaml
-    volumes:
-      - ./config/loki-config.yaml:/etc/loki/loki-config.yaml:ro
-      - loki-data:/loki
-    networks:
-      - internal
-      - observability
-    logging: *default-logging
-
 networks:
   internal:
     driver: bridge
   observability:
     external: true
-
-volumes:
-  loki-data:
-    driver: local
