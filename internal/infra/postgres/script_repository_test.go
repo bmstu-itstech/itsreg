@@ -334,6 +334,115 @@ func (s *RepositoryTestSuite) TestScriptRepository_UpdateScript_Success() {
 	s.Require().Equal(wantNodes, gotNodes)
 }
 
+func (s *RepositoryTestSuite) TestScriptRepository_UpdateScript_NewEntryOnNewNode() {
+	// Сохраняем исходный скрипт
+	script := makeSampleScript()
+	err := s.repos.SaveScript(s.ctx, script)
+	s.Require().NoError(err)
+
+	// Обновляем скрипт: добавляем новый узел с состоянием 3 и новый entry, указывающий на этот узел
+	err = script.Replace(
+		"Test script with new entry",
+		[]bots.Node{
+			bots.MustNewNode(
+				bots.MustNewState(1),
+				"Node 1",
+				[]bots.Edge{
+					bots.NewEdge(
+						bots.MustNewRegexMatchPredicate("^Далее$"),
+						bots.MustNewState(2),
+						bots.SaveOp{},
+					),
+					bots.NewEdge(
+						bots.AlwaysTruePredicate{},
+						bots.MustNewState(2),
+						bots.AppendOp{},
+					),
+				},
+				[]bots.Message{
+					bots.MustNewMessage("Message 1 for Node 1"),
+					bots.MustNewMessage("Message 2 for Node 1"),
+				},
+				[]bots.Option{
+					bots.MustNewOption("Option 1 for Node 1"),
+					bots.MustNewOption("Option 2 for Node 1"),
+				},
+			),
+			bots.MustNewNode(
+				bots.MustNewState(2),
+				"Node 2",
+				[]bots.Edge{
+					bots.NewEdge(
+						bots.MustNewExactMatchPredicate("Назад"),
+						bots.MustNewState(1),
+						bots.NoOp{},
+					),
+				},
+				[]bots.Message{
+					bots.MustNewMessage("Message 1 for Node 2"),
+				},
+				[]bots.Option{
+					bots.MustNewOption("Option 1 for Node 2"),
+				},
+			),
+			bots.MustNewNode(
+				bots.MustNewState(3),
+				"Node 3",
+				[]bots.Edge{
+					bots.NewEdge(
+						bots.MustNewExactMatchPredicate("Назад"),
+						bots.MustNewState(1),
+						bots.NoOp{},
+					),
+				},
+				[]bots.Message{
+					bots.MustNewMessage("Message 1 for Node 3"),
+				},
+				[]bots.Option{
+					bots.MustNewOption("Option 1 for Node 3"),
+				},
+			),
+		},
+		[]bots.Entry{
+			bots.MustNewEntry("start", bots.MustNewState(1)),
+			bots.MustNewEntry("start3", bots.MustNewState(3)),
+		},
+	)
+	s.Require().NoError(err)
+
+	// Сохраняем изменения
+	err = s.repos.UpdateScript(s.ctx, script)
+	s.Require().NoError(err)
+
+	// Получаем и проверяем
+	got, err := s.repos.Script(s.ctx, script.ID())
+	s.Require().NoError(err)
+	s.Require().NotNil(got)
+
+	// Проверяем, что добавлен новый entry, указывающий на новый узел
+	entries := got.Entries()
+	s.Require().Len(entries, 2)
+	found := false
+	for _, e := range entries {
+		if e.Key().String() == "start3" {
+			s.Require().Equal(bots.MustNewState(3), e.Start())
+			found = true
+		}
+	}
+	s.Require().True(found)
+
+	// Проверяем, что новый узел присутствует в наборе узлов
+	nodes := got.Nodes()
+	foundNode3 := false
+	for _, n := range nodes {
+		if n.State().Int() == 3 {
+			foundNode3 = true
+			s.Require().Equal("Node 3", n.Title())
+		}
+	}
+	s.Require().True(foundNode3)
+}
+
 func makeSampleScript() *bots.Script {
 	return bots.MustNewScript(
 		actorUserID,

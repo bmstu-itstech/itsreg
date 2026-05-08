@@ -216,12 +216,12 @@ func (r *Repository) UpdateScript(ctx context.Context, s *bots.Script) error {
 			return fmt.Errorf("updateScriptRow: %w", err)
 		}
 
-		if err := r.syncEntriesRows(ctx, tx, scriptID, rEntries); err != nil {
-			return fmt.Errorf("syncEntriesRows: %w", err)
-		}
-
 		if err := r.syncNodesRows(ctx, tx, scriptID, rNodes); err != nil {
 			return fmt.Errorf("syncNodesRows: %w", err)
+		}
+
+		if err := r.syncEntriesRows(ctx, tx, scriptID, rEntries); err != nil {
+			return fmt.Errorf("syncEntriesRows: %w", err)
 		}
 
 		if err := r.syncEdgesRows(ctx, tx, scriptID, rEdges); err != nil {
