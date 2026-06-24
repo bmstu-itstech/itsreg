@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: ITS Reg API
   description: ITS Reg API
-  version: 3.0.0
+  version: 3.1.0
 servers:
   - url: "{addr}/api/v3"
     variables:
