@@ -48,7 +48,8 @@ func main() {
 	l.Debug(fmt.Sprintf("config: %+v", cfg))
 
 	repos := postgres.MustNewRepository(cfg.Postgres)
-	bus := inmemory.NewEventBus(l)
+	bus, closeBus := inmemory.NewEventBus(l)
+	defer closeBus()
 	inbound := dispatcher.NewInboundDispatcher(l)
 	httpClient := mustProxyOrDefaultHTTPClient(cfg.Proxy)
 	instanceManager := telegram.NewInstanceManager(inbound, httpClient, l)
