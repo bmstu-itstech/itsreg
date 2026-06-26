@@ -90,6 +90,10 @@ func (h *EntryHandler) Handle(ctx context.Context, req EntryRequest) (EntryRespo
 	// Непосредственно процедура входа в тред
 
 	thread, msgs, err := script.Entry(bot.ID(), bots.UserID(req.UserID), bots.EntryKey(req.EntryKey))
+	if errors.Is(err, bots.ErrEntryNotFound) {
+		l.InfoContext(ctx, "entry not found, skipping")
+		return EntryResponse{}, nil
+	}
 	if err != nil {
 		l.ErrorContext(ctx, "failed to entry in script", slog.String("error", err.Error()))
 		return EntryResponse{}, err
