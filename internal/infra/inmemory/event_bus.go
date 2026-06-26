@@ -21,7 +21,7 @@ type EventBus struct {
 	wg       sync.WaitGroup
 }
 
-func NewEventBus(l *slog.Logger) *EventBus {
+func NewEventBus(l *slog.Logger) (*EventBus, func()) {
 	b := &EventBus{
 		handlers: make(map[string][]port.EventHandler),
 		logger:   l,
@@ -30,7 +30,7 @@ func NewEventBus(l *slog.Logger) *EventBus {
 	}
 	b.wg.Add(1)
 	go b.worker()
-	return b
+	return b, b.Close
 }
 
 func (b *EventBus) Publish(ctx context.Context, events ...event.Event) error {
