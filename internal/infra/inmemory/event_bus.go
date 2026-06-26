@@ -13,12 +13,13 @@ import (
 const EventBusCapacity = 256
 
 type EventBus struct {
-	mu       sync.RWMutex
-	handlers map[string][]port.EventHandler
-	logger   *slog.Logger
-	queue    chan job
-	done     chan struct{}
-	wg       sync.WaitGroup
+	mu        sync.RWMutex
+	handlers  map[string][]port.EventHandler
+	logger    *slog.Logger
+	queue     chan job
+	done      chan struct{}
+	wg        sync.WaitGroup
+	closeOnce sync.Once
 }
 
 func NewEventBus(l *slog.Logger) (*EventBus, func()) {
@@ -74,7 +75,12 @@ func (b *EventBus) worker() {
 
 func (b *EventBus) handle(ctx context.Context, ev event.Event) {
 	l := b.logger.With(slog.String("op", "inmemory.EventBus.handle"))
-	for _, h := range b.handlers[ev.EventName()] {
+
+	b.mu.RLock()
+	handlers := append([]port.EventHandler(nil), b.handlers[ev.EventName()]...)
+	defer b.mu.RUnlock()
+
+	for _, h := range handlers {
 		if err := h.Handle(ctx, ev); err != nil {
 			l.ErrorContext(ctx, "failed to handle event",
 				slog.String("event_name", ev.EventName()),
@@ -86,6 +92,8 @@ func (b *EventBus) handle(ctx context.Context, ev event.Event) {
 
 func (b *EventBus) Close() {
 	b.logger.DebugContext(context.Background(), "closing event bus")
-	close(b.done)
+	b.closeOnce.Do(func() {
+		close(b.done)
+	})
 	b.wg.Wait()
 }
