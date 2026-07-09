@@ -7,7 +7,7 @@ REST API для создания и управления Telegram-ботами �
 
 - Go 1.25+
 - PostgreSQL
-- Docker / Docker Compose (опционально)
+- Docker / Docker Compose (опционально)т
 
 ## Структура проекта
 
