@@ -40,7 +40,8 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           EXTERNAL_HTTP_PORT: ${{ vars.EXTERNAL_HTTP_PORT }}
-          PGSSLROOTCERT: ${{ vars.PGSSLROOTCERT }}
+          PGSSLROOTCERT_NAME: ${{ vars.PGSSLROOTCERT_NAME }}
+          PGSSLROOTCERT_DIR: ${{ vars.PGSSLROOTCERT_DIR }}
           IR_POSTGRES_URI: ${{ secrets.IR_POSTGRES_URI }}
           IR_JWT_SECRET: ${{ secrets.IR_JWT_SECRET }}
           IR_HTTP_CORS_ALLOW_ORIGINS: ${{ vars.IR_HTTP_CORS_ALLOW_ORIGINS }}
@@ -51,10 +52,11 @@ jobs:
           username: ${{ vars.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script_stop: true
-          envs: EXTERNAL_HTTP_PORT,PGSSLROOTCERT,IR_POSTGRES_URI,IR_JWT_SECRET,IR_HTTP_CORS_ALLOW_ORIGINS,IR_PROXY_URL
+          envs: EXTERNAL_HTTP_PORT,PGSSLROOTCERT_NAME,PGSSLROOTCERT_DIR,IR_POSTGRES_URI,IR_JWT_SECRET,IR_HTTP_CORS_ALLOW_ORIGINS,IR_PROXY_URL
           script: |
             cd ${{ vars.PROJECT_DIR }}
             git stash
             git checkout main
             git pull origin main
             docker compose -f docker-compose.ci.yaml up --build -d
+            docker system prune -f
