@@ -1,6 +1,6 @@
 # ITS Reg
 
-REST API для создания и управления Telegram-ботами на основе конечных автоматов. 
+REST API для создания и управления Telegram-ботами на основе конечных автоматов.
 Платформа позволяет определять ботов, сценарии их поведения и запускать обработку сообщений через заданные сценарии.
 
 ## Требования
@@ -55,14 +55,14 @@ docker-compose up
    ```bash
    docker compose --env-file .env up -d
    ```
-   
+
 ### Локально через go run
 
 1. Подготовить .env:
-   ```bash 
+   ```bash
    cp .env.example .env # отредактировать при необходимости
    ```
-   
+
 2. Поднять PostgreSQL и применить миграции:
    ```bash
    docker compose --env-file .env up -d db
@@ -73,10 +73,10 @@ docker-compose up
    ```bash
    go run cmd/http/main.go -config config/local.yaml
    ```
-   
+
 ## Конфигурация
 
-Файл конфигурации (YAML) указывается флагом `-config`. 
+Файл конфигурации (YAML) указывается флагом `-config`.
 Переменные окружения с префиксом `IR_` переопределяют значения из файла.
 
 ```yaml
@@ -105,8 +105,8 @@ proxy:
 
 Пример с переменными окружения:
 ```bash
-IR_POSTGRES_URI="postgres://..." \
-IR_JWT_SECRET="key" \
+export IR_POSTGRES_URI="postgres://..." \
+export IR_JWT_SECRET="key" \
 go run cmd/http/main.go -config config/local.yaml
 ```
 
@@ -116,7 +116,7 @@ REST API на `/api/v3`. Спецификация OpenAPI в `api/openapi/itsreg
 
 Основные эндпоинты:
 - `/bots` - управление ботами
-- `/scripts` - управление сценариями  
+- `/scripts` - управление сценариями
 - `/runs` - управление запусками
 
 ## Разработка
@@ -154,7 +154,7 @@ migrate create -ext sql -dir migrations -seq migration_name
 
 Реализована на основе CQRS и event sourcing:
 - **Commands** - изменение состояния
-- **Queries** - чтение состояния  
+- **Queries** - чтение состояния
 - **Event handlers** - реакция на события
 - **Ports** - интерфейсы инфраструктуры
 
