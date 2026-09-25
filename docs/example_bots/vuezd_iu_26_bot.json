@@ -1,0 +1,395 @@
+{
+  "desc": "Регистрация на Выезд ИУ (9–11 октября, Ступино)",
+  "entries": [
+    { "key": "start", "start": 1 }
+  ],
+  "nodes": [
+    {
+      "state": 1,
+      "title": "Приветствие",
+      "messages": [
+        { "text": "Привет, на связи бот регистрации на Выезд ИУ 👾\n\nТри незабываемых дня в Ступино – это твой шанс ещё больше сплотиться с факультетом, а главное – отлично провести время с друзьями и единомышленниками!\n\n⏰ Когда? 9–11 октября\n📍 Где? Ступино, УЦ «Бауманец»\n\nТы с нами? Нажми «Начать регистрацию», чтобы продолжить 📲" }
+      ],
+      "options": ["Начать регистрацию"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Начать регистрацию" },
+          "to": 2,
+          "operation": "noop"
+        }
+      ]
+    },
+
+    {
+      "state": 2,
+      "title": "Согласие на обработку ПД",
+      "messages": [
+        { "text": "🪪 Согласие на обработку персональных данных\n\nПродолжая регистрацию, я подтверждаю, что ознакомился с положением об обработке персональных данных в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных»." }
+      ],
+      "options": ["Принимаю", "Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Принимаю" },
+          "to": 3,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 1,
+          "operation": "noop"
+        }
+      ]
+    },
+
+    {
+      "state": 3,
+      "title": "ФИО",
+      "messages": [
+        { "text": "👤 Введи свое ФИО\nНапример: Иванов Иван Иванович" }
+      ],
+      "options": ["Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 2,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "regex", "pattern": "^[А-ЯЁа-яё-]+\\s+[А-ЯЁа-яё-]+\\s+[А-ЯЁа-яё-]+$" },
+          "to": 4,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "always" },
+          "to": 1001,
+          "operation": "noop"
+        }
+      ]
+    },
+    {
+      "state": 1001,
+      "title": "ФИО — ошибка",
+      "messages": [
+        { "text": "❌ Неверный формат ФИО. Введи полностью Фамилию, Имя и Отчество.\nНапример: Иванов Иван Иванович" }
+      ],
+      "options": ["Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 2,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "regex", "pattern": "^[А-ЯЁа-яё-]+\\s+[А-ЯЁа-яё-]+\\s+[А-ЯЁа-яё-]+$" },
+          "to": 4,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "always" },
+          "to": 1001,
+          "operation": "noop"
+        }
+      ]
+    },
+
+    {
+      "state": 4,
+      "title": "Группа",
+      "messages": [
+        { "text": "🧑‍🏫 Введи номер группы\nФормат: ИУ7-11Б" }
+      ],
+      "options": ["Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 3,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "regex", "pattern": "^(ИУ|ИБМ|МТ|СМ|БМТ|РЛ|Э|РК|ФН|Л|СГН|РКТ|АК|ПС|РТ|ЛТ|К|ЮР|ЮР\\.ДК|МК|ИУК)([1-9]\\d?)?[КИЦ]?-[1-9]\\d?([1-9]|(\\.1\\d))[АМБ]?В?(/\\d)?$" },
+          "to": 5,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "always" },
+          "to": 1002,
+          "operation": "noop"
+        }
+      ]
+    },
+    {
+      "state": 1002,
+      "title": "Группа — ошибка",
+      "messages": [
+        { "text": "❌ Неверный формат группы. Попробуй ещё раз.\nФормат: ИУ7-11Б" }
+      ],
+      "options": ["Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 3,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "regex", "pattern": "^(ИУ|ИБМ|МТ|СМ|БМТ|РЛ|Э|РК|ФН|Л|СГН|РКТ|АК|ПС|РТ|ЛТ|К|ЮР|ЮР\\.ДК|МК|ИУК)([1-9]\\d?)?[КИЦ]?-[1-9]\\d?([1-9]|(\\.1\\d))[АМБ]?В?(/\\d)?$" },
+          "to": 5,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "always" },
+          "to": 1002,
+          "operation": "noop"
+        }
+      ]
+    },
+
+    {
+      "state": 5,
+      "title": "Дата рождения",
+      "messages": [
+        { "text": "🎂 Твой день рождения\nНапиши дату в формате ДД.ММ.ГГГГ.\nНапример: 01.01.2001" }
+      ],
+      "options": ["Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 4,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "regex", "pattern": "^(0[1-9]|[12]\\d|3[01])\\.(0[1-9]|1[0-2])\\.(19|20)\\d{2}$" },
+          "to": 6,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "always" },
+          "to": 1003,
+          "operation": "noop"
+        }
+      ]
+    },
+    {
+      "state": 1003,
+      "title": "Дата рождения — ошибка",
+      "messages": [
+        { "text": "❌ Неверный формат даты. Используй формат ДД.ММ.ГГГГ.\nНапример: 01.01.2001" }
+      ],
+      "options": ["Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 4,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "regex", "pattern": "^(0[1-9]|[12]\\d|3[01])\\.(0[1-9]|1[0-2])\\.(19|20)\\d{2}$" },
+          "to": 6,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "always" },
+          "to": 1003,
+          "operation": "noop"
+        }
+      ]
+    },
+
+    {
+      "state": 6,
+      "title": "Телефон",
+      "messages": [
+        { "text": "📞 Номер телефона\nУкажи номер, по которому с тобой можно будет связаться.\nНапример: +71234567890" }
+      ],
+      "options": ["Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 5,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "regex", "pattern": "^\\+7\\d{10}$" },
+          "to": 7,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "always" },
+          "to": 1004,
+          "operation": "noop"
+        }
+      ]
+    },
+    {
+      "state": 1004,
+      "title": "Телефон — ошибка",
+      "messages": [
+        { "text": "❌ Неверный формат номера телефона. Используй формат +7XXXXXXXXXX.\nНапример: +71234567890" }
+      ],
+      "options": ["Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 5,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "regex", "pattern": "^\\+7\\d{10}$" },
+          "to": 7,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "always" },
+          "to": 1004,
+          "operation": "noop"
+        }
+      ]
+    },
+
+    {
+      "state": 7,
+      "title": "Ограничения по здоровью",
+      "messages": [
+        { "text": "🫀 Есть ли у тебя ограничения по здоровью?" }
+      ],
+      "options": ["Да", "Нет", "Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 6,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "exact", "text": "Да" },
+          "to": 8,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "exact", "text": "Нет" },
+          "to": 9,
+          "operation": "save"
+        }
+      ]
+    },
+    {
+      "state": 8,
+      "title": "Описание ограничений по здоровью",
+      "messages": [
+        { "text": "Укажи, какие ограничения по здоровью у тебя есть:" }
+      ],
+      "options": ["Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 7,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "always" },
+          "to": 9,
+          "operation": "save"
+        }
+      ]
+    },
+
+    {
+      "state": 9,
+      "title": "Аллергии",
+      "messages": [
+        { "text": "🤧 Есть ли у тебя аллергии?" }
+      ],
+      "options": ["Да", "Нет", "Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 7,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "exact", "text": "Да" },
+          "to": 10,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "exact", "text": "Нет" },
+          "to": 11,
+          "operation": "save"
+        }
+      ]
+    },
+    {
+      "state": 10,
+      "title": "Описание аллергий",
+      "messages": [
+        { "text": "Уточни, на что у тебя аллергия:" }
+      ],
+      "options": ["Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 9,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "always" },
+          "to": 11,
+          "operation": "save"
+        }
+      ]
+    },
+
+    {
+      "state": 11,
+      "title": "Мясо",
+      "messages": [
+        { "text": "🍗 Ты ешь мясо?" }
+      ],
+      "options": ["Да", "Нет", "Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 9,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "exact", "text": "Да" },
+          "to": 12,
+          "operation": "save"
+        },
+        {
+          "predicate": { "type": "exact", "text": "Нет" },
+          "to": 12,
+          "operation": "save"
+        }
+      ]
+    },
+
+    {
+      "state": 12,
+      "title": "Подтверждение",
+      "messages": [
+        { "text": "✔️ Подтверждение\nВсе ли данные указаны верно?" }
+      ],
+      "options": ["Да", "Назад"],
+      "edges": [
+        {
+          "predicate": { "type": "exact", "text": "Назад" },
+          "to": 11,
+          "operation": "noop"
+        },
+        {
+          "predicate": { "type": "exact", "text": "Да" },
+          "to": 13,
+          "operation": "noop"
+        }
+      ]
+    },
+
+    {
+      "state": 13,
+      "title": "Финал",
+      "messages": [
+        { "text": "🎉 Поздравляем, регистрация пройдена. До встречи на Выезде ИУ!\n\nПри возникновении вопросов обращайся к @h1rotik" }
+      ]
+    }
+  ]
+}
