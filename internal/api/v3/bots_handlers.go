@@ -159,6 +159,10 @@ func (s *Server) DeleteBot(w http.ResponseWriter, r *http.Request, id string) {
 		renderPlainError(w, r, err, http.StatusNotFound)
 		return
 	}
+	if errors.Is(err, shared.ErrBotHasActiveRuns) {
+		renderPlainError(w, r, err, http.StatusConflict)
+		return
+	}
 	if err != nil {
 		renderInternalServerError(w, r)
 		return
