@@ -76,7 +76,7 @@ func NewApplication(i Infra, l *slog.Logger) *Application {
 			CreateMailing: command.NewCreateMailingHandler(i.MailingRepository, i.BotMetaProvider, i.EventBus, l),
 			CreateRun:     command.NewCreateRunHandler(i.RunRepository, i.BotMetaProvider, i.EventBus, l),
 			CreateScript:  command.NewCreateScriptHandler(i.ScriptRepository, l),
-			DeleteBot:     command.NewDeleteBotHandler(i.BotRepository, l),
+			DeleteBot:     command.NewDeleteBotHandler(i.BotRepository, i.RunRepository, l),
 			DeleteScript:  command.NewDeleteScriptHandler(i.ScriptRepository, l),
 			Entry: command.NewEntryHandler(
 				i.BotRepository, i.ScriptRepository, i.ThreadRepository, i.UserRepository, i.EventBus, l,
